@@ -1,0 +1,26 @@
+[workspace]
+resolver = "2"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+publish = false
+
+# Versions are pinned to techstack.md. Nothing is added here that is not on that list.
+[workspace.dependencies]
+p2pchat-core = { path = "crates/p2pchat-core" }
+p2pchat-crypto = { path = "crates/p2pchat-crypto" }
+p2pchat-net = { path = "crates/p2pchat-net" }
+p2pchat-store = { path = "crates/p2pchat-store" }
+p2pchat-tui = { path = "crates/p2pchat-tui" }
+
+anyhow = "1"
+directories = "5"
+thiserror = "2"
+toml = "0.8"
+tracing = "0.1"
+tracing-appender = "0.2"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+tempfile = "3"

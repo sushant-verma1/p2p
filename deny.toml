@@ -1,0 +1,28 @@
+# cargo-deny: advisories, licences, bans and sources.
+
+[advisories]
+# Nothing is ignored: an advisory against anything in the tree fails CI.
+# RUSTSEC-2023-0071 is why techstack.md rejects the `rsa` crate outright.
+ignore = []
+
+[licenses]
+# Extend as the tree grows; an unlisted licence fails the check.
+allow = [
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "MIT",
+    "MPL-2.0",
+    "Unicode-3.0",
+]
+# The workspace crates are unpublished and carry no licence of their own.
+private = { ignore = true }
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+# Internal path dependencies have no version requirement by design.
+allow-wildcard-paths = true
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
