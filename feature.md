@@ -217,6 +217,7 @@ TOML at `~/.config/p2pchat/config.toml`.
 - Ports, display name, log level, data directory.
 - Missing file uses defaults and writes one.
 - Invalid file is a clear error, not a panic.
+- Every config value is overridable by environment variable, and the override wins over the file. Two nodes must be runnable on one machine from M3 onward — the integration tests depend on it. The variables are listed in `techstack.md`.
 
 ### F-28 — CLI subcommands · P1
 - `p2pchat` — launch TUI

@@ -1,6 +1,8 @@
 # techstack.md — V0.1
 
-Rust 2021 edition, MSRV 1.75. Cargo workspace, six members.
+Rust 2021 edition, MSRV 1.88, pinned in `rust-toolchain.toml`. Cargo workspace, six members.
+
+The MSRV was 1.75 during design. It moved because the patched `time` (≥ 0.3.47, which clears RUSTSEC-2026-0009) declares `rust-version = 1.88`, and `tracing-appender` depends on `time` unconditionally. A clean `cargo audit` is `project.md` §6 criterion 5; nothing here is consumed as a library, so the MSRV was the cheaper of the two to move. No advisory is ignored.
 
 Versions below are the majors to pin in `Cargo.toml`. Do not add a dependency that is not listed here without recording the reason in this file.
 
@@ -73,6 +75,18 @@ Version note: `ed25519-dalek` 2.x and `rand` 0.8 are compatible; `rand` 0.9 is n
 | `anyhow` | 1 | Error handling in the binary only |
 | `clap` | 4 | CLI. Feature: `derive` |
 | `directories` | 5 | Platform config and data paths |
+
+### Environment overrides
+
+Every path and port has an environment override. This is not a convenience: from M3 onward the integration tests run two nodes on one machine, which is impossible if the config paths and ports are fixed. `directories` resolves platform paths that no environment variable reaches, so the override has to be ours.
+
+| Variable | Overrides | Default |
+|---|---|---|
+| `P2PCHAT_CONFIG_DIR` | Config directory, holding `identity.key` | `~/.config/p2pchat` |
+| `P2PCHAT_DATA_DIR` | Data directory, holding the log and the database | `~/.local/share/p2pchat` |
+| `P2PCHAT_PUBLIC_PORT` | Public node UDP port | 47100 |
+| `P2PCHAT_PRIVATE_PORT` | Private node UDP port | 47101 |
+| `RUST_LOG` | Log level | `info` |
 
 **Logs go to a file, never to stdout or stderr.** The TUI owns the terminal; a log line written to stdout corrupts the display. Set this up in M0, before the TUI exists, or the first hour of M9 is spent debugging a scrambled screen. Default path `~/.local/share/p2pchat/p2pchat.log`, daily rotation.
 

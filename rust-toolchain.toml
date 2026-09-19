@@ -1,0 +1,5 @@
+# The MSRV, pinned so that a newer local toolchain cannot silently accept code
+# that CI will reject. techstack.md records why it is 1.88.
+[toolchain]
+channel = "1.88.0"
+components = ["rustfmt", "clippy"]

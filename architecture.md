@@ -32,7 +32,7 @@ p2pchat (bin)
 └── p2pchat-tui       ratatui rendering and input
 ```
 
-Dependency direction is strictly downward. `core` depends on nothing internal. `crypto` depends on `core`. `net` depends on `core` and `crypto`. `store` depends on `core` only. `tui` depends on `core` only and talks to everything else through channels. Nothing depends on `tui`.
+Dependency direction is strictly downward. `core` depends on nothing internal. `crypto` depends on `core`. `net` depends on `core` and `crypto`. `store` depends on `core` only. `tui` depends on `core` only and talks to everything else through channels. **No library crate depends on `tui`.** The binary is the composition root: it depends on all five, wires them together, and is the only place that may name `tui`.
 
 This matters because it keeps the crypto and protocol layers testable without a terminal, a socket, or a database.
 
@@ -108,7 +108,7 @@ Displayed to humans as a **fingerprint** — first 16 hex chars in groups of fou
 
 The Ed25519 key signs. It never performs key agreement. Deriving X25519 from Ed25519 is possible but mixes key usage across two algorithms, and there is no reason to do it when generating a separate ephemeral key is trivial.
 
-**Storage:** `~/.config/p2pchat/identity.key`, mode `0600`. Encryption of this file is **OD-2**, unresolved.
+**Storage:** `~/.config/p2pchat/identity.key`, mode `0600`, containing the 32-byte Ed25519 seed and nothing else. Permissions are verified on load and the application refuses to start if they are wider; on platforms with no `0600` equivalent it says so rather than skipping the check. The file is **not** encrypted — OD-2, resolved; see `project.md` §5 and §7.
 
 ---
 
@@ -271,7 +271,7 @@ CREATE TABLE messages (
     conversation_id BLOB NOT NULL REFERENCES conversations(conversation_id),
     sender_id       BLOB NOT NULL,
     msg_seq         INTEGER NOT NULL,
-    body            BLOB NOT NULL,        -- see OD-1
+    body            BLOB NOT NULL,        -- plaintext, OD-1
     created_at      INTEGER NOT NULL,
     received_at     INTEGER,
     status          INTEGER NOT NULL,     -- 0 pending 1 sent 2 delivered 3 read 4 failed
@@ -289,7 +289,7 @@ CREATE TABLE schema_version (version INTEGER NOT NULL);
 
 The `UNIQUE (conversation_id, sender_id, msg_seq)` constraint is the real dedupe mechanism. An `INSERT OR IGNORE` that affects zero rows means "already have it", which is atomic and avoids a check-then-insert race.
 
-**OD-1 unresolved:** whether `body` holds plaintext, or ciphertext under an Argon2id-derived local key. Plaintext is simpler and honest given that the identity key sits next to it unencrypted under OD-2; per-row encryption is meaningfully better only if OD-2 also chooses a passphrase. Decide both together.
+**OD-1 resolved: `body` holds plaintext.** Per-row encryption under an Argon2id-derived key is meaningfully better only if the identity key sitting next to it is also protected, and OD-2 chose not to protect it. Encrypting one and not the other buys nothing and costs an unlock screen. `project.md` §7 states the consequence plainly.
 
 ---
 
@@ -307,10 +307,12 @@ struct Invite {
     display_name: String,     // advisory only, never trusted
     addrs: Vec<SocketAddr>,   // public node addresses
     created_at: u64,
-    expires_at: Option<u64>,  // OD-3
+    expires_at: Option<u64>,  // created_at + 24h, OD-3
     sig: [u8; 64],            // over all preceding fields
 }
 ```
+
+**Expiry (OD-3, resolved).** `expires_at` is set to `created_at + 24h`. A receiver rejects an invite whose `expires_at` is in the past, allowing 5 minutes of clock skew so that a fast clock does not reject an invite that was just generated. Expiry is checked *after* the signature verifies — an unsigned timestamp is not worth acting on — and produces its own error variant, distinct from "malformed" and from "bad signature", because the user's next move differs: ask for a new invite, rather than re-copy the one they have.
 
 Roughly 180–220 characters. Self-signed, so tampering is detectable — but self-signed means it proves only internal consistency, not who sent it. An attacker who controls the channel carrying the invite substitutes their own wholesale. The fingerprint comparison in §4 is the only defence and it is manual. Say so in the UI, not just the docs.
 

@@ -5,7 +5,7 @@ members = ["crates/*"]
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.75"
+rust-version = "1.88"
 publish = false
 
 # Versions are pinned to techstack.md. Nothing is added here that is not on that list.
@@ -17,10 +17,15 @@ p2pchat-store = { path = "crates/p2pchat-store" }
 p2pchat-tui = { path = "crates/p2pchat-tui" }
 
 anyhow = "1"
+blake3 = "1"
+clap = { version = "4", features = ["derive"] }
 directories = "5"
+ed25519-dalek = { version = "2", features = ["rand_core", "zeroize"] }
+rand = "0.8"
 thiserror = "2"
 toml = "0.8"
 tracing = "0.1"
 tracing-appender = "0.2"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+zeroize = { version = "1", features = ["zeroize_derive"] }
 tempfile = "3"

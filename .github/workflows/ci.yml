@@ -8,18 +8,12 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  # Pinned to the MSRV in techstack.md. NOTE: this job currently fails — the
-  # patched `time` (>= 0.3.47, needed to clear RUSTSEC-2026-0009) declares
-  # rust-version 1.88, and `tracing-appender` depends on `time`. MSRV 1.75 and
-  # a clean `cargo audit` cannot both hold. Pending a decision.
+  # rust-toolchain.toml pins the MSRV; this job is the thing that enforces it.
   build:
     name: fmt / clippy / test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.75.0
-        with:
-          components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
       - run: cargo fmt --all -- --check
       - run: cargo clippy --all-targets -- -D warnings

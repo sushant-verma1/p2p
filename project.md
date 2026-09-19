@@ -47,13 +47,13 @@ These came from discovery and are settled unless deliberately revisited. Marked 
 | AEAD | ChaCha20-Poly1305 | [derived] — pairs with the dalek stack, no AES-NI dependency |
 | Async runtime | Tokio | [derived] — `quinn` requires it |
 
-## 5. Open decisions
+## 5. Settled decisions
 
-Still genuinely undecided. Each is flagged at the milestone where it must be resolved.
+The three open decisions of the design phase are resolved. Recorded here rather than deleted, so the reasoning survives.
 
-- **OD-1 — Message storage at rest.** Plaintext in SQLite, per-row encryption with a passphrase-derived key, or SQLCipher. Blocks M6. See `architecture.md` §8.
-- **OD-2 — Identity key at rest.** Passphrase-protected on every launch, or unencrypted file with strict permissions. Blocks M1. Affects whether the TUI needs an unlock screen.
-- **OD-3 — Invite blob expiry.** Whether invites expire, and after how long. Blocks M7.
+- **OD-1 — Message storage at rest. Resolved: plaintext in SQLite.** At-rest protection is out of scope for V0.1. Decided together with OD-2: per-row encryption is only meaningful if the identity key sitting next to it is also protected, and neither is. Consequence in §7. See `architecture.md` §8.
+- **OD-2 — Identity key at rest. Resolved: unencrypted file, mode `0600`, permissions verified at startup.** No passphrase, so the TUI needs no unlock screen. Windows has no `0600`; where the equivalent cannot be verified the application says so explicitly rather than skipping the check silently. Consequence in §7.
+- **OD-3 — Invite blob expiry. Resolved: invites expire 24 hours after `created_at`,** with a few minutes of skew tolerance so a fast clock does not reject a fresh invite. An expired invite produces a distinct error from a malformed or badly signed one: "ask for a new invite" is a different instruction from "your paste is corrupted". See `architecture.md` §9.
 
 ## 6. Success criteria
 
@@ -75,6 +75,7 @@ Accepted for V0.1, recorded so they are not mistaken for oversights:
 - **CGNAT.** Most Indian home broadband and all mobile data put the node behind carrier-grade NAT, where inbound connections are impossible. With no hole punching in scope, real-world testing requires a VPS, a LAN, or a port-forwarded connection. This is the single largest practical limitation.
 - **Trust on first use.** Nothing verifies that an invite blob came from the person who claims to have sent it. If the channel used to share the invite is compromised, the attacker is the peer. Out-of-band fingerprint comparison is the only mitigation and it is manual.
 - **Metadata.** An observer on the wire sees that two IP addresses are talking, when, and roughly how much. Only content is protected.
+- **No protection at rest.** The identity key is an unencrypted file and message bodies are plaintext in SQLite (OD-1, OD-2). Anyone who can read the disk — a stolen unlocked laptop, a backup, another local account with sufficient privilege — reads the entire history and can impersonate the identity from that point on. What a stolen identity key does *not* do is decrypt past traffic: session keys are ephemeral and are never written down, so recorded conversations stay unreadable. Full-disk encryption is the mitigation, and it is the operating system's job.
 - **Presence.** A node is reachable only while running. There is no store-and-forward.
 
 ## 8. Glossary

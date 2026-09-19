@@ -2,6 +2,13 @@
 
 #![forbid(unsafe_code)]
 
+pub mod identity;
+pub mod keystore;
+
+pub use identity::{derive_user_id, Identity};
+
+use std::path::PathBuf;
+
 use thiserror::Error;
 
 /// Handshake and session failures.
@@ -15,6 +22,19 @@ pub enum CryptoError {
 
     #[error("decryption failed")]
     Decrypt,
+
+    #[error("key file {} is accessible to other users (mode {mode:04o}); run: chmod 600 {}", path.display(), path.display())]
+    KeyFilePermissions { path: PathBuf, mode: u32 },
+
+    #[error("key file {} is malformed: expected {} bytes, found {found}", path.display(), identity::SEED_LEN)]
+    MalformedKeyFile { path: PathBuf, found: usize },
+
+    #[error("key file {}: {source}", path.display())]
+    KeyFileIo {
+        path: PathBuf,
+        #[source]
+        source: std::io::Error,
+    },
 
     #[error(transparent)]
     Core(#[from] p2pchat_core::CoreError),

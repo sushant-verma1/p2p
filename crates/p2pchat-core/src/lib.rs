@@ -4,6 +4,10 @@
 
 #![forbid(unsafe_code)]
 
+pub mod id;
+
+pub use id::UserId;
+
 use thiserror::Error;
 
 /// Maximum size of a single wire frame — `architecture.md` §5.
