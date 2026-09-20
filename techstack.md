@@ -19,6 +19,12 @@ Versions below are the majors to pin in `Cargo.toml`. Do not add a dependency th
 
 `quinn` pulls `rustls` in transitively; pin it explicitly anyway, because a version skew between them produces type errors that are hard to read.
 
+Both are taken with `default-features = false`. `rustls` 0.23 defaults to `aws-lc-rs`, which wants `cmake` and `nasm`; `ring` is the choice here and `p2pchat-net::crypto_provider` is where it is named, so no dependency's feature flags can quietly change it. Dropping `quinn`'s `platform-verifier` drops a web-PKI trust store this project has no use for — `architecture.md` §3 explains why there is no PKI here at all.
+
+`tokio`'s `io-util` and `process` features are enabled only in `p2pchat-net`'s dev-dependencies, for the two-process transport test. The library itself needs neither.
+
+**A C compiler is required from M3 on.** `ring` builds C and assembly. Linux and macOS have one; on Windows the `x86_64-pc-windows-gnu` toolchain does not ship `gcc`, and the workspace does not build there without one. Building in a `rust` container is the practical route on such a machine; CI runs on Linux regardless.
+
 ## Cryptography
 
 | Crate | Version | Role |

@@ -69,7 +69,7 @@ Both are `quinn::Endpoint`s, separated by ALPN so a misdirected connection fails
 | Auth required | No | Yes, mutual |
 | Carries | Profile, connection requests | The conversation |
 
-The public node answers three request types and nothing else: `PROFILE_REQUEST`, `CONNECTION_REQUEST`, and `CONNECTION_STATUS`. It is deliberately dumb and stateless apart from a pending-requests table. **Anything it says about identity is untrusted.** The private node authenticates the peer itself and never relies on the public node's claim — this is what the original spec's §4 was pointing at, and it is load-bearing.
+The public node answers three request types and nothing else: `PROFILE_REQUEST`, `CONNECTION_REQUEST`, and `CONNECTION_STATUS`. It is deliberately dumb and stateless apart from a pending-requests table. On the wire the three are the variants of one closed enum, `PublicRequest`, answered by a closed `PublicResponse`; "and nothing else" is then a property of the types rather than of a match arm someone remembers not to add. `CONNECTION_STATUS` is a *query* — "what became of my request?" — keyed by the caller's user ID, which is how the pending-requests table is keyed. The answer to `PROFILE_REQUEST` is the owner's signed invite (§9), not a fresh unsigned profile type: the caller verifies a signature instead of trusting the node that handed it over. **Anything it says about identity is untrusted.** The private node authenticates the peer itself and never relies on the public node's claim — this is what the original spec's §4 was pointing at, and it is load-bearing.
 
 ### QUIC TLS layer
 
@@ -117,6 +117,28 @@ The Ed25519 key signs. It never performs key agreement. Deriving X25519 from Ed2
 `postcard` over QUIC streams. Chosen over JSON and CBOR because it is deterministic — the same value always serializes to the same bytes. That property is required, not aesthetic: both sides independently hash the handshake transcript, and a serializer permitted to reorder map keys or vary integer encodings would make those hashes disagree.
 
 Every stream carries length-delimited frames: `u32` big-endian length, then that many bytes of `postcard`. Maximum frame size 64 KiB; anything larger closes the connection with a protocol error. QUIC does not preserve message boundaries within a stream, so framing is still required.
+
+### Signed structures
+
+Anything signed "over all preceding fields" is a nested struct holding exactly those fields, with the signature beside it: `HelloResp { unsigned, sig_r }`, `Invite { body, sig }`. `postcard` writes a nested struct inline, so the bytes are identical to the flat layouts drawn in §6 and §9, while the signed range becomes a type instead of a comment about where to stop.
+
+### Bounds
+
+Every variable-length field has a declared maximum, checked on decode at the one call site that turns bytes into a wire type. A peer must not get to choose our allocation sizes.
+
+| Field | Maximum | Why |
+|---|---|---|
+| frame | 64 KiB | above; checked from the length prefix, before anything is allocated |
+| `ciphertext` | 4096 + 16 | F-13's 4 KiB body plus the ChaCha20-Poly1305 tag |
+| `display_name` | 32 bytes | keeps an invite blob inside F-04's 300 characters |
+| `addrs` | 4 | one node, a handful of public addresses |
+| `nonce_i`, `nonce_r` | 32 bytes, exactly | fixed size, so nothing to bound; the length matters because they are inside the signed transcript |
+
+An `ACK` arriving from a peer carries only `DELIVERED` or `READ`. `PENDING`, `SENT` and `FAILED` are local states the peer cannot observe, and a frame claiming one of them is malformed, not a disagreement (§11).
+
+### Version
+
+`version` is **not** checked while decoding. A v2 peer sends a well-formed message that we decline — §6 check 1, at the handshake — and that is a different outcome from a corrupt one: different error, different thing to tell the user.
 
 ### Stream usage
 
@@ -170,6 +192,10 @@ h.update(postcard(HELLO_INIT))
 h.update(postcard(HELLO_RESP_unsigned))   // all fields except sig_r
 ```
 
+`nonce_i` and `nonce_r` are 32 bytes each, from `OsRng`. They exist only inside the signed transcript, which is the one place their length matters.
+
+The two nonces are redundant with the channel binding and the ephemeral public keys, which already make every transcript unique; they are kept as defence in depth. If the channel binding is ever dropped — by a refactor, or by a transport that cannot export one — the nonces are what still stops a transcript from repeating. Do not remove them as unused.
+
 - `sig_r = Ed25519_sign(identity_sk_r, h.finalize())` computed at that point.
 - `h.update(sig_r)`, then `sig_i = Ed25519_sign(identity_sk_i, h.finalize())`.
 
@@ -184,6 +210,12 @@ Because the transcript covers `nonce_i`, `nonce_r`, both ephemeral public keys, 
 5. `eph_pk_peer` is not the all-zero point and not a known small-order point. `x25519_dalek`'s `SharedSecret::was_contributory()` covers this — check it and abort if false.
 
 Any failure closes the connection immediately with a generic error code. Do not report *which* check failed to the peer; it is an oracle. Log the detail locally.
+
+### Timeout
+
+The whole exchange must complete within **10 seconds** of the QUIC connection opening, else abort. Each individual read gets the same deadline, so a peer that sends one byte a second cannot stretch the exchange out by keeping a read alive.
+
+A peer that connects and never finishes the handshake otherwise holds a connection, a stream and an ephemeral key pair for as long as it likes, at no cost to itself. The timeout is the only thing that bounds that.
 
 ### Key derivation
 
@@ -217,6 +249,8 @@ Derived, never random. Each direction has its own key and its own counter starti
 
 Sequence numbers are **per-session**, reset to 0 on every new session, and are not the same thing as the message sequence used for resync. Keeping these confused is the easiest way to reintroduce nonce reuse. The wire type names them distinctly: `frame_seq` (transport, per-session) and `msg_seq` (application, per-conversation, persistent).
 
+**`frame_seq` is never transmitted.** It is a local counter, one per direction, advanced on every frame sent and every frame accepted. The QUIC stream delivers exactly once and in order, so the sender's counter and the receiver's counter cannot drift apart; if they somehow did, the next tag would fail. Putting it on the wire would hand an attacker a mutable nonce selector and buy nothing in return. `MessageFrame` is therefore `{ header, ciphertext }`, and `frame_seq` is absent from the AAD for the same reason it is absent from the wire.
+
 If `frame_seq` would exceed 2^32, tear down the session and rekey. It will not happen in practice; assert it anyway.
 
 ### AAD
@@ -233,12 +267,12 @@ The header travels in the clear so the receiver can dedupe and order before decr
 
 Applied in this order, before anything else:
 
-1. `frame_seq > last_seen_frame_seq`, else drop silently. Replay defence, at the transport layer.
+1. Take the next `frame_seq` for this direction from the local counter. There is no peer-supplied value to validate: transport replay is prevented by the QUIC stream, which delivers each frame exactly once and in order, and the counter is correct by construction. A duplicated or reordered frame is not something the stream can deliver, and a stream that fails is a closed connection rather than a scrambled one.
 2. Decrypt and verify the tag. Failure → close the session. A single forgery attempt means the session is not trustworthy; do not continue.
 3. `sender_id` matches the authenticated peer of this session. Guards against a peer relaying someone else's traffic.
 4. `message_id` not already in the store → otherwise re-send the ACK and stop. Idempotency, at the application layer.
 
-Rule 1 is cryptographic. Rule 4 is application-level retry handling. The original spec §17 provided only rule 4 and described it as replay protection; it is not.
+Transport replay is handled by rule 1 — the QUIC stream and the local counter together. Rule 4 is application-level retry handling. The original spec §17 provided only rule 4 and described it as replay protection; on its own it is not.
 
 ---
 
@@ -340,6 +374,14 @@ Backoff: 1s, 2s, 4s, 8s, 16s, 30s, then every 30s with ±20% jitter. Give up aft
 
 A verification failure — bad signature, ID mismatch — never retries automatically. It means either a bug or an attack, and quietly reconnecting in a loop is the wrong response to both.
 
+### Simultaneous dial
+
+Two peers who dial each other at the same moment both complete a handshake, and end up with two valid sessions to the same peer. Both are cryptographically sound; the problem is only that messages would split across them.
+
+Rule: **keep the session whose initiator has the lower `user_id`, close the other.** Byte-wise comparison of the 32-byte IDs. Both sides run the same rule on the same two IDs and reach the same answer without exchanging anything further.
+
+Implementing this is M8's work, when a session registry exists to notice the duplicate. Recorded here because the ambiguity is in the protocol, not in the code that will eventually resolve it.
+
 ### Reconnect and resync
 
 Every reconnection produces a **completely new session**: new ephemeral keys, new directional keys, `frame_seq` back to 0. No session resumption in V0.1. This is what makes per-connection forward secrecy real, and it costs one extra round trip.
@@ -377,6 +419,7 @@ Collected here because each is a plausible implementation slip that silently rem
 - Forgetting the channel binding, making the inner handshake relayable.
 - Signing only one's own nonce, reintroducing replay.
 - A random nonce sneaking back into the AEAD path.
+- A `frame_seq` that travels on the wire, where a peer gets to choose it.
 - One session key used in both directions with a shared counter.
 - Skipping check 3 in §6 on outbound connections, so any peer can answer.
 - Reporting which handshake check failed back to the peer.

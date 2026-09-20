@@ -1,8 +1,9 @@
 //! Long-term Ed25519 identity and the user ID derived from it —
 //! `architecture.md` §4.
 
-use ed25519_dalek::SigningKey;
-use p2pchat_core::UserId;
+use ed25519_dalek::{Signer, SigningKey};
+use p2pchat_core::wire::Signature;
+use p2pchat_core::{ConversationId, UserId};
 use zeroize::Zeroizing;
 
 /// Domain separator for user ID derivation. Changing this changes every user
@@ -11,6 +12,9 @@ pub const USER_ID_DOMAIN: &[u8] = b"p2pchat-v1-userid";
 
 /// The Ed25519 seed as stored on disk.
 pub const SEED_LEN: usize = 32;
+
+/// Domain separator for conversation ID derivation — `architecture.md` §8.
+pub const CONVERSATION_ID_DOMAIN: &[u8] = b"p2pchat-v1-conv";
 
 /// `BLAKE3(b"p2pchat-v1-userid" || identity_pk)`.
 ///
@@ -21,6 +25,23 @@ pub fn derive_user_id(identity_pk: &[u8; 32]) -> UserId {
     hasher.update(USER_ID_DOMAIN);
     hasher.update(identity_pk);
     UserId::from_bytes(*hasher.finalize().as_bytes())
+}
+
+/// `BLAKE3(b"p2pchat-v1-conv" || min(a, b) || max(a, b))` — `architecture.md` §8.
+///
+/// Never negotiated: both peers compute it from the pair of user IDs alone, so
+/// the ordering has to come from the IDs themselves rather than from who dialled
+/// whom. Hashing them in argument order instead would give the two sides
+/// different conversation IDs, and nothing would fail until the first restart
+/// failed to find the history.
+pub fn derive_conversation_id(a: &UserId, b: &UserId) -> ConversationId {
+    let (low, high) = if a <= b { (a, b) } else { (b, a) };
+
+    let mut hasher = blake3::Hasher::new();
+    hasher.update(CONVERSATION_ID_DOMAIN);
+    hasher.update(low.as_bytes());
+    hasher.update(high.as_bytes());
+    ConversationId::from_bytes(*hasher.finalize().as_bytes())
 }
 
 /// A local identity: the signing key and the ID it implies.
@@ -56,6 +77,13 @@ impl Identity {
 
     pub fn identity_pk(&self) -> [u8; 32] {
         self.signing.verifying_key().to_bytes()
+    }
+
+    /// Ed25519 over `message`. The handshake signs a transcript hash with it
+    /// at the two points `architecture.md` §6 specifies, and nothing else in
+    /// the project signs anything the peer chose the bytes of.
+    pub fn sign(&self, message: &[u8]) -> Signature {
+        Signature::from_bytes(self.signing.sign(message).to_bytes())
     }
 
     /// The seed, for writing to the keystore. Zeroized when the caller drops it.
@@ -125,6 +153,49 @@ mod tests {
         assert_eq!(identity.user_id().fingerprint().len(), 19);
         eprintln!("keygen took {elapsed:?}");
         assert!(elapsed.as_millis() < 100, "keygen took {elapsed:?}");
+    }
+
+    /// M6 gate 6. `min`/`max` is the whole mechanism: derive from the pair in
+    /// argument order and each side gets a different ID for the same
+    /// conversation.
+    #[test]
+    fn conversation_id_derivation_is_order_independent() {
+        let a = Identity::generate().user_id();
+        let b = Identity::generate().user_id();
+        assert_ne!(a, b);
+        assert_eq!(
+            derive_conversation_id(&a, &b),
+            derive_conversation_id(&b, &a)
+        );
+    }
+
+    /// The property above holds trivially for a function that ignores its
+    /// arguments, so pin the value to the specification as well.
+    #[test]
+    fn conversation_id_is_the_documented_hash() {
+        let low = UserId::from_bytes([0x11; 32]);
+        let high = UserId::from_bytes([0x99; 32]);
+
+        let mut expected = blake3::Hasher::new();
+        expected.update(b"p2pchat-v1-conv");
+        expected.update(&[0x11; 32]);
+        expected.update(&[0x99; 32]);
+
+        assert_eq!(
+            derive_conversation_id(&high, &low).as_bytes(),
+            expected.finalize().as_bytes()
+        );
+    }
+
+    #[test]
+    fn different_pairs_get_different_conversations() {
+        let a = Identity::generate().user_id();
+        let b = Identity::generate().user_id();
+        let c = Identity::generate().user_id();
+        assert_ne!(
+            derive_conversation_id(&a, &b),
+            derive_conversation_id(&a, &c)
+        );
     }
 
     #[test]

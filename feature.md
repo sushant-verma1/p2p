@@ -14,7 +14,7 @@ On first launch, generate an Ed25519 keypair and derive the user ID.
 - Second launch loads the same identity; user ID is byte-identical.
 - Key file is mode `0600`; the app refuses to start if permissions are wider.
 - Generation completes in under 100 ms.
-- Secret key material is wrapped in `Zeroizing` everywhere it appears.
+- Secret key material is either wrapped in `Zeroizing<_>` or held in a type that implements `ZeroizeOnDrop`. `ed25519-dalek`'s `SigningKey` is the second kind: it zeroizes itself on drop and cannot be wrapped in `Zeroizing`, so it is held bare and a test asserts the bound.
 
 ### F-02 — Fingerprint display · P0
 Show a short fingerprint for the local identity and every peer.

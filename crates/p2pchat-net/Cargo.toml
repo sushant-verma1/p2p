@@ -6,6 +6,15 @@ rust-version.workspace = true
 publish.workspace = true
 
 [dependencies]
+quinn.workspace = true
+rcgen.workspace = true
+rustls.workspace = true
 thiserror.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+
 p2pchat-core.workspace = true
 p2pchat-crypto.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "process", "io-util"] }

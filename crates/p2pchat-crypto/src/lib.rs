@@ -2,10 +2,14 @@
 
 #![forbid(unsafe_code)]
 
+pub mod handshake;
 pub mod identity;
 pub mod keystore;
+pub mod session;
 
-pub use identity::{derive_user_id, Identity};
+pub use handshake::{Initiator, Responder, Role, Session};
+pub use identity::{derive_conversation_id, derive_user_id, Identity};
+pub use session::SessionCipher;
 
 use std::path::PathBuf;
 
@@ -23,6 +27,18 @@ pub enum CryptoError {
     #[error("decryption failed")]
     Decrypt,
 
+    /// §7 receiver rule 3. Local only: the peer is closed on, never told.
+    #[error("frame is not from the authenticated peer")]
+    SenderMismatch,
+
+    /// `architecture.md` §7: "if `frame_seq` would exceed 2^32, tear down the
+    /// session and rekey". An error, because wrapping reuses a nonce.
+    #[error("frame sequence exhausted; the session must be torn down")]
+    SequenceExhausted,
+
+    #[error("key derivation failed")]
+    Kdf,
+
     #[error("key file {} is accessible to other users (mode {mode:04o}); run: chmod 600 {}", path.display(), path.display())]
     KeyFilePermissions { path: PathBuf, mode: u32 },
 
@@ -38,4 +54,12 @@ pub enum CryptoError {
 
     #[error(transparent)]
     Core(#[from] p2pchat_core::CoreError),
+}
+
+/// The AEAD says only "it did not authenticate", which is all §7 needs: the
+/// receiver closes the connection either way.
+impl From<chacha20poly1305::Error> for CryptoError {
+    fn from(_: chacha20poly1305::Error) -> Self {
+        Self::Decrypt
+    }
 }

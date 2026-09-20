@@ -29,7 +29,7 @@ These are not style preferences.
 - **Never log key material, plaintext message bodies, or full user IDs.** Log fingerprints. There is a test that greps logs for known-secret patterns; do not weaken it.
 - **Never add a dependency** that is not in `techstack.md`. Propose it, with a reason, and wait.
 - **Never use `rand` in the message encryption path.** Nonces are derived from `frame_seq`. An RNG call there is a bug even if it appears to work.
-- **Never write to stdout or stderr** outside the TUI's own rendering. Use `tracing`.
+- **Never write to stdout or stderr** outside the TUI's own rendering and the CLI subcommands whose whole job is printing — `whoami`, `invite`, `--version`. F-28 requires `invite` to be pipeable, so it prints to stdout and nothing else. Everywhere else, use `tracing`.
 
 ---
 
