@@ -9,6 +9,14 @@ publish.workspace = true
 anyhow.workspace = true
 clap.workspace = true
 directories.workspace = true
+# `config.toml` — F-27. Derive only, for the two address fields the file holds.
+serde.workspace = true
+toml.workspace = true
+# The conversation stream hands back the QUIC stream the handshake ran on, so
+# the composition root names quinn's types. Already a workspace dependency.
+quinn.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
 tracing.workspace = true
 tracing-appender.workspace = true
 tracing-subscriber.workspace = true
@@ -20,5 +28,23 @@ p2pchat-store.workspace = true
 p2pchat-tui.workspace = true
 
 [dev-dependencies]
+# `tests/secrets.rs` searches the log for every rendering of a secret, and
+# recomputes §7's HKDF so that the session keys a real node derived are known
+# values it can search for. All three are already in the tree under
+# p2pchat-crypto.
+base64.workspace = true
+hkdf.workspace = true
+sha2.workspace = true
+# `tests/screen.rs` drives the TUI's own `App` over the real channel, so it
+# needs the key events crossterm would deliver. ratatui re-exports crossterm,
+# which is the only way to get the `Event` type p2pchat-tui compiled against.
+ratatui.workspace = true
 tempfile.workspace = true
-toml.workspace = true
+# `process` and `io-util` drive the two-process gates, exactly as in
+# p2pchat-net's dev-dependencies, and stay out of the shipped binary.
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "process", "io-util"] }
+
+# Gate 9 needs a real terminal, not a `TestBackend`: only a pty can show that
+# `stty` sees the tty restored after the process is gone.
+[target.'cfg(unix)'.dev-dependencies]
+rexpect.workspace = true

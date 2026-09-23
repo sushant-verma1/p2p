@@ -19,7 +19,10 @@ mod schema;
 
 pub use actor::Store;
 pub use db::{db_path, open, FILE_NAME, PERMISSIONS_ENFORCED};
-pub use repo::{conversations, messages, peers, Conversation, Cursor, Message, Peer, PAGE_SIZE};
+pub use repo::{
+    conversations, messages, peers, requests, Conversation, Cursor, Message, Peer, PendingRequest,
+    MAX_PENDING, PAGE_SIZE,
+};
 pub use schema::SCHEMA_VERSION;
 
 use std::path::PathBuf;
@@ -30,6 +33,12 @@ use thiserror::Error;
 pub enum StoreError {
     #[error("database is at schema version {found}, expected {expected}")]
     SchemaVersion { found: i64, expected: i64 },
+
+    /// A message cannot be numbered in a conversation that was never opened.
+    /// Carries the short form of the ID: the full one identifies a pair of
+    /// users — agent.md §2.
+    #[error("conversation {0} is not open")]
+    UnknownConversation(String),
 
     /// Bodies are plaintext (OD-1), so this is the same trust boundary as the
     /// identity key file, and it is refused the same way.

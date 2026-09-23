@@ -6,5 +6,15 @@ rust-version.workspace = true
 publish.workspace = true
 
 [dependencies]
+ratatui.workspace = true
+ratatui-textarea.workspace = true
 thiserror.workspace = true
+# Only `sync`, and only for the channel types this crate hands to the binary.
+# The TUI thread is not a runtime thread: it uses `blocking_send` and
+# `blocking_recv` and never awaits anything — architecture.md §2.
+tokio.workspace = true
+# Wrapping and truncation are column arithmetic, and a column is not a char:
+# an emoji takes two and a combining mark takes none.
+unicode-width.workspace = true
+
 p2pchat-core.workspace = true

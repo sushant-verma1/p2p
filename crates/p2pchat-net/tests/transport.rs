@@ -367,14 +367,16 @@ async fn a_hundred_frames_each_way_keep_the_counters_in_step() {
     let responder = tokio::spawn(async move {
         let session = p2pchat_net::handshake::respond(&accepted, &identity_r)
             .await
-            .unwrap();
+            .unwrap()
+            .session;
         let cipher = SessionCipher::derive(session).unwrap();
         exchange(&accepted, &identity_r, cipher, true).await
     });
 
     let session = p2pchat_net::handshake::initiate(&dialled, &identity_i, Some(expected_peer))
         .await
-        .unwrap();
+        .unwrap()
+        .session;
     let cipher = SessionCipher::derive(session).unwrap();
     let initiator = exchange(&dialled, &identity_i, cipher, false).await;
 

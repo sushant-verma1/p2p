@@ -49,10 +49,10 @@ main
       └── crossterm event read loop
 ```
 
-The TUI runs on a dedicated OS thread, not a Tokio task, because `crossterm`'s event read is blocking and must not occupy a runtime worker. It communicates over two channels:
+The TUI runs on a dedicated OS thread — the process's main thread, with the runtime built underneath it — and never as a Tokio task, because `crossterm`'s event read is blocking and must not occupy a runtime worker. Being outside the runtime is also why it reaches the core with `blocking_send` and `oneshot::blocking_recv`: `block_on` from inside a runtime deadlocks it. The seam is a `Core` trait declared in `p2pchat-tui` and implemented in the binary, so the screen knows about channels no more than it knows about sockets. Two channels:
 
-- `mpsc<UiCommand>` — TUI to core ("send this message", "accept this request")
-- `mpsc<AppEvent>` — core to TUI ("message received", "peer disconnected")
+- `mpsc<Request>` — TUI to core ("send this message", "accept this request", "import this invite"), each with a oneshot for the answer
+- `mpsc<Notice>` — core to TUI, and notifications only: "conversation X changed", "the peer list changed", "the requests changed". Never a payload. The core sends with `try_send` and never waits, so a stalled screen cannot stall a session task, and a dropped notice loses nothing: the store holds the truth and the TUI reads back the page it needs. The alternative — events carrying message bodies — makes the screen's speed the network's speed, which is the deadlock this design exists to avoid.
 
 `rusqlite::Connection` is not `Sync` and SQLite writes serialize anyway, so a single store actor task owns the connection and receives requests over a channel with oneshot replies. No connection pool, no `Arc<Mutex<Connection>>`.
 
@@ -66,8 +66,15 @@ Both are `quinn::Endpoint`s, separated by ALPN so a misdirected connection fails
 |---|---|---|
 | ALPN | `p2pchat-pub/1` | `p2pchat-priv/1` |
 | Default port | 47100 | 47101 |
+| Default bind address | `0.0.0.0` | `0.0.0.0` |
 | Auth required | No | Yes, mutual |
 | Carries | Profile, connection requests | The conversation |
+
+**The bind address and the advertised address are different addresses, and neither is derived from the other.** The bind address says which of this host's interfaces will accept packets; it defaults to every one of them, because a node bound to `127.0.0.1` is reachable by nothing but the machine it runs on. The advertised address is what a peer elsewhere has to dial, it is carried in invites and in the answer to a status query, and this process cannot work it out — behind NAT the address a peer must use is not an address this host holds at all. So it is supplied, by `--addr`, and an invite that would advertise an unspecified address is refused rather than emitted (§9, F-04). Every integration test binds loopback explicitly, which is why binding loopback by default survived this long unnoticed.
+
+**The private advertised address is not a secret.** A node's private endpoint is where an accepted requester dials it (§10), and that address is handed out in the answer to `CONNECTION_STATUS` — an unauthenticated query anyone can make. It is derived from `--addr`'s host with the private port, `--private-addr` overriding it, and like the invite's address it may never be unspecified: a node given nowhere to advertise refuses to start rather than hand out `0.0.0.0`.
+
+Two things make giving it away cheap. The address is only told to a caller whose request the *user accepted*, so it is not a free read of where the node listens; and knowing it buys nothing anyway, because §10's access control, not obscurity, is what keeps an unaccepted peer out of a session — an unaccepted dialler completes §6 and is closed. The reverse lie costs no more: a public node that answers `Accepted` with somebody *else's* private address makes the requester dial that node, where §6 check 3 finds an identity that is not the one the requester asked for and aborts. A false address is worth one failed connection. It is never worth an impersonation.
 
 The public node answers three request types and nothing else: `PROFILE_REQUEST`, `CONNECTION_REQUEST`, and `CONNECTION_STATUS`. It is deliberately dumb and stateless apart from a pending-requests table. On the wire the three are the variants of one closed enum, `PublicRequest`, answered by a closed `PublicResponse`; "and nothing else" is then a property of the types rather than of a match arm someone remembers not to add. `CONNECTION_STATUS` is a *query* — "what became of my request?" — keyed by the caller's user ID, which is how the pending-requests table is keyed. The answer to `PROFILE_REQUEST` is the owner's signed invite (§9), not a fresh unsigned profile type: the caller verifies a signature instead of trusting the node that handed it over. **Anything it says about identity is untrusted.** The private node authenticates the peer itself and never relies on the public node's claim — this is what the original spec's §4 was pointing at, and it is load-bearing.
 
@@ -131,7 +138,7 @@ Every variable-length field has a declared maximum, checked on decode at the one
 | frame | 64 KiB | above; checked from the length prefix, before anything is allocated |
 | `ciphertext` | 4096 + 16 | F-13's 4 KiB body plus the ChaCha20-Poly1305 tag |
 | `display_name` | 32 bytes | keeps an invite blob inside F-04's 300 characters |
-| `addrs` | 4 | one node, a handful of public addresses |
+| `addrs` | 4 | one node, a handful of public addresses. The invite's field, and since M9d the only one: a `CONNECTION_REQUEST` carries no address at all (§10) |
 | `nonce_i`, `nonce_r` | 32 bytes, exactly | fixed size, so nothing to bound; the length matters because they are inside the signed transcript |
 
 An `ACK` arriving from a peer carries only `DELIVERED` or `READ`. `PENDING`, `SENT` and `FAILED` are local states the peer cannot observe, and a frame claiming one of them is malformed, not a disagreement (§11).
@@ -142,8 +149,8 @@ An `ACK` arriving from a peer carries only `DELIVERED` or `READ`. `PENDING`, `SE
 
 ### Stream usage
 
-- Handshake: one bidirectional stream, opened by the initiator, closed after the handshake completes.
-- Messages: one bidirectional stream per conversation, long-lived.
+- Handshake: one bidirectional stream, opened by the initiator.
+- Messages: the same stream, which **becomes** the conversation stream once the handshake reaches Established. It is not closed and a second one is not opened. A stream opened with `open_bi()` is invisible to the peer until something is written on it, so a fresh conversation stream would leave both sides waiting for the other to speak first, and the ordering guarantee that makes this work (F-14) is per-stream: the conversation's order is the handshake stream's order.
 - Control (ACKs, resync): the same conversation stream. Separate streams would reintroduce ordering problems that QUIC just solved.
 
 ---
@@ -217,6 +224,14 @@ The whole exchange must complete within **10 seconds** of the QUIC connection op
 
 A peer that connects and never finishes the handshake otherwise holds a connection, a stream and an ephemeral key pair for as long as it likes, at no cost to itself. The timeout is the only thing that bounds that.
 
+The 10 seconds start when the QUIC connection opens, so they cover none of the connect. A whole dial — connect *plus* handshake — gets **20 seconds**, and an unreachable peer produces a failed dial at that point rather than whatever QUIC eventually decides. `P2PCHAT_DIAL_TIMEOUT_MS` overrides it; the gates set it low so that this deadline, and not QUIC's, is what they measure.
+
+### Keep-alive
+
+An established connection carries a packet at least every **5 seconds**, and is declared lost after **20 seconds** without one.
+
+quinn's defaults are a 30-second idle timeout and no keep-alive. A chat is silent most of the time, so those defaults close every conversation thirty seconds after the last message — the connection is gone while both screens still say connected, and the next message is written to a session that no longer exists. Both values are set on the shared transport config, so the two endpoints cannot drift apart; a keep-alive on one side only is still a session that dies.
+
 ### Key derivation
 
 ```
@@ -289,7 +304,8 @@ CREATE TABLE peers (
     display_name  TEXT,
     first_seen    INTEGER NOT NULL,
     last_seen     INTEGER,
-    verified      INTEGER NOT NULL DEFAULT 0   -- fingerprint confirmed out-of-band
+    verified      INTEGER NOT NULL DEFAULT 0,  -- fingerprint confirmed out-of-band
+    accepted      INTEGER NOT NULL DEFAULT 0   -- the user let this peer in (§10)
 );
 
 CREATE TABLE conversations (
@@ -313,17 +329,50 @@ CREATE TABLE messages (
 );
 
 CREATE INDEX idx_messages_conv_seq ON messages(conversation_id, msg_seq);
+
+CREATE TABLE pending_requests (
+    from_user_id     BLOB PRIMARY KEY,      -- 32 bytes, self-declared
+    from_identity_pk BLOB NOT NULL,         -- 32 bytes, self-declared
+    display_name     TEXT NOT NULL,         -- advisory, attacker-controlled
+    created_at       INTEGER NOT NULL,      -- the caller's clock, unverified
+    received_at      INTEGER NOT NULL,      -- ours
+    state            INTEGER NOT NULL       -- 0 pending 1 accepted 2 rejected
+);
+
+CREATE INDEX idx_pending_requests_state ON pending_requests(state, received_at);
+
+CREATE TABLE outbound_requests (
+    to_user_id  BLOB PRIMARY KEY,      -- 32 bytes, from the invite we are acting on
+    addr        TEXT NOT NULL,         -- that invite's public node, where we ask again
+    created_at  INTEGER NOT NULL       -- ours
+);
+
 CREATE TABLE schema_version (version INTEGER NOT NULL);
 ```
 
-`conversation_id` is derived deterministically so both sides compute the same value without negotiating:
+`pending_requests` is the one piece of state the public node keeps (§3), and F-07 requires it to survive restart. Every column but `received_at` and `state` is copied from a `CONNECTION_REQUEST` that nobody has authenticated — the row records *a claim that arrived*, not a peer. Nothing may be trusted out of it, and a row here is not a `peers` row: a peer is written only after the §6 handshake proves the key.
+
+Keyed by `from_user_id`, so a caller who repeats a request finds their existing row rather than adding one. The count of rows in state 0 is capped; a request arriving at a full queue is refused rather than queued, and the refusal is the same `REJECTED` the user's own refusal produces. Rows in state 1 and 2 do not count against the cap, and accumulate only as fast as the user resolves them.
+
+`outbound_requests` is the mirror of it: requests *we* sent and nobody has answered. A row is written when the request goes out and removed when the answer is `ACCEPTED` or `REJECTED`, so the table is exactly the set of open questions. It exists because the answer is rarely immediate and the requester is the side that must keep asking (§10) — without the row, a request pending when the process stops is one nobody ever returns to, and the user would have to send it again to find out it had been accepted an hour ago. The address is stored beside the ID because it is where the *question* goes, which is the invite's public node and not anywhere the peer has claimed to be since.
+
+`peers.accepted` is the user's decision about a peer — §10's access rule, and the half of F-06 that outlives the queue row. It is written by an accept or a reject and by nothing else: a handshake never sets it, or a peer would grant itself access by connecting. A peer may therefore have a row here with no `identity_pk` yet, because the decision can be made before the first handshake; the column is all-zero until §6 proves a key, and an all-zero key cannot satisfy §6 check 2. The migration that adds the column defaults existing rows to 0 — those rows were written when a handshake was all it took, and none of them records a decision anyone made.
+
+`conversation_id` is derived deterministically
+ so both sides compute the same value without negotiating:
 `BLAKE3(b"p2pchat-v1-conv" || min(user_id_a, user_id_b) || max(user_id_a, user_id_b))`
 
 `message_id` is a UUIDv7 — time-ordered, so the primary key index stays dense.
 
 The `UNIQUE (conversation_id, sender_id, msg_seq)` constraint is the real dedupe mechanism. An `INSERT OR IGNORE` that affects zero rows means "already have it", which is atomic and avoids a check-then-insert race.
 
+It dedupes **per sender, not per conversation.** `msg_seq` is a per-conversation counter held by each peer for the messages *it* sends, so both peers number from their own counter and the column is not unique within a conversation — hence `sender_id` in the constraint, and hence the fact that a conversation normally holds two rows with `msg_seq = 1`.
+
+Ordering is `(msg_seq DESC, message_id DESC)`, the UUIDv7 primary key breaking the tie between the two peers' Nth messages. That tie-break is **arrival-ish order** — the instant each side minted its message ID — and not a happens-before relation: nothing in V0.1 establishes one across the pair, and clocks are not synchronised. Interleaving between the two peers is therefore resolved by that approximation, which both sides compute identically from stored bytes and so agree on. Accepted for V0.1. A real causal order needs a Lamport timestamp or vector clock in `MessageHeader`, which is a wire-format change and does not belong in a point release.
+
 **OD-1 resolved: `body` holds plaintext.** Per-row encryption under an Argon2id-derived key is meaningfully better only if the identity key sitting next to it is also protected, and OD-2 chose not to protect it. Encrypting one and not the other buys nothing and costs an unlock screen. `project.md` §7 states the consequence plainly.
+
+Because the bodies are plaintext, **the database file is refused if it is group- or other-readable**, mirroring the key file check in §4: the file mode is the whole of the protection, not a defence in depth behind encryption. It is created `0600` at the moment it first exists rather than fixed up afterwards, since SQLite would otherwise create it at `0666` minus the umask and leave a window. On a platform with no `0600` equivalent the application says so rather than skipping the check quietly.
 
 ---
 
@@ -374,6 +423,28 @@ Backoff: 1s, 2s, 4s, 8s, 16s, 30s, then every 30s with ±20% jitter. Give up aft
 
 A verification failure — bad signature, ID mismatch — never retries automatically. It means either a bug or an attack, and quietly reconnecting in a loop is the wrong response to both.
 
+### Access control
+
+A private node holds a session **only with a peer the user has accepted** — §6 proves who the peer is, and this decides whether that peer gets in. `peers.accepted` (§8) is the record, F-06 is the decision, and it survives restart, so a peer accepted once reconnects without asking again.
+
+Without this rule the reject in F-06 does nothing. The private address is not a secret (§3): it is handed to every accepted requester, it is derivable from the same `--addr` an invite advertises, and nothing stops a peer that once held it from dialling straight past the public node. The queue would then be a suggestion.
+
+The rule runs in both directions. Inbound, the check is made **after the §6 handshake completes**, on the user ID the handshake *authenticated*, and it is the first thing done with a finished handshake. An unaccepted peer is closed with the same code and reason as a handshake failure (§6), so from outside the two are one event. Outbound, we dial only peers we have accepted: a dial to an unaccepted peer is refused before the connection is opened when the peer is known in advance, and the same post-handshake check catches it when it is not.
+
+**The check is not made on the `user_id` in `HELLO_INIT`, and the connection is not closed early to save the handshake work.** `HELLO_INIT` is unauthenticated: anybody can send any user ID with its matching public key, both of which an invite hands out. Closing early for a claimed-unaccepted ID while carrying on for a claimed-accepted one makes the handshake an oracle — the difference in behaviour is a free read of the accepted list for anyone who can open a QUIC connection, with no key and no invite. Doing the full exchange and then closing is a few signatures wasted on a connection that was going to be closed anyway; that is the price, and it is worth paying. The probe that would exploit the optimisation is a gate test (`p2pchat/tests/access.rs`), and it asserts both the close code *and* how far the exchange got, because an identical close string proves nothing if one connection was cut before `HELLO_RESP` and the other was not.
+
+Note that the claimed ID and the authenticated one are the same value once the handshake has finished — check 2 binds the ID to the key and `sig_i` binds the key to the transcript. Checking the claim at that point is therefore not wrong, it is just indistinguishable; what matters is that nothing is decided *before* it. The equivalence holds only while §6 checks 2 and 4 both hold: check 2 binds the ID to the key, check 4 binds the key to the transcript. The code checks the authenticated ID rather than leaning on the equivalence, because if check 2 is ever relaxed the two diverge, the claim becomes forgeable, and no test in the suite would catch it — the mutant that checks the claim is dead only under the checks as they stand today.
+
+### Who dials, and the wait
+
+**The requester dials. The acceptor never dials back.**
+
+A `CONNECTION_REQUEST` therefore carries no address: the requester's own is of no use to anyone, and the field that used to hold it was a standing invitation to advertise a bind address by accident. The acceptor answers `CONNECTION_STATUS` with its own private advertised address, and only when the state is `ACCEPTED` — `PENDING` and `REJECTED` carry nothing, because a node that has not let someone in has nothing to tell them about where it listens. The requester dials that address with the user ID from the invite as the expected peer, so §6 check 3 decides whether the address was honest.
+
+The reason is reachability. Only the invite's owner has to be reachable — they published an address and are waiting to be asked. The requester published nothing, and under CGNAT has nothing it *could* publish. Having the acceptor dial back would require the requester to be reachable too, which doubles the hosting requirement for no gain and rules out exactly the peer this design is for: someone on mobile data who was handed an invite. `project.md` §7 records what is left of the CGNAT problem after this change.
+
+An answer is rarely immediate — a human has to decide — so the requester asks again: **2 seconds, doubling to a ceiling of 60**, for as long as the request is unanswered and the node is running. The interval starts short because the common case is a user watching both screens, and ends long because the uncommon case is a user who will answer tomorrow. Pending requests are stored (`outbound_requests`, §8) and polling resumes at startup, immediately rather than after the first interval: the decision may well have been made while we were gone. `REJECTED` stops the polling and takes back the acceptance that sending the request recorded, since §10 would otherwise leave us dialling a peer who said no.
+
 ### Simultaneous dial
 
 Two peers who dial each other at the same moment both complete a handshake, and end up with two valid sessions to the same peer. Both are cryptographically sound; the problem is only that messages would split across them.
@@ -397,6 +468,12 @@ Each side then retransmits everything it holds above the peer's `have_through`, 
 
 Duplicates are harmless: the `UNIQUE` constraint absorbs them.
 
+**`have_through` is also a cumulative acknowledgement.** It is the peer saying it has stored everything up to that number, which is exactly what `DELIVERED` means (§11). The per-message ACKs for those went down with the session that carried them, and the peer will never send them again — from its side they arrived — so without this every message whose ACK was in flight when the connection dropped would sit on `SENT` for the rest of the conversation's life.
+
+**Only the peer that dialled redials.** The rule above — the requester dials, the acceptor never dials back — holds for a session that drops as much as for one that never existed, and for the same reason: the acceptor still has nowhere to dial the requester, and the requester's address is still of no use to anyone. So on a dropped session the side that opened it runs the backoff loop, and the side that answered waits to be dialled again. The address it dials is the one §6 last completed a handshake on, cached in `peers.last_addr` (§8); a node that comes back up dials every accepted peer it has an address for, which is the same path.
+
+**The V0.1 limitation this leaves:** if the original requester is unreachable and the acceptor is not, the session stays down until the requester comes back. Nothing recovers it from the other end, because nothing at the other end knows where to dial. That is accepted rather than unnoticed — the alternative is the acceptor storing and dialling requester addresses, which is exactly the reachability requirement §10 removed, and it would rule out the peer this design is for.
+
 ---
 
 ## 11. Acknowledgements
@@ -408,6 +485,8 @@ SENT ──▶ DELIVERED ──▶ READ
 `SENT` is local, set on write to the socket. `DELIVERED` on receipt of an ACK, which the receiver emits after the store commit, not on receipt — otherwise a crash between the two loses a message that was reported as delivered. `READ` when the conversation pane is focused and the message is on screen.
 
 ACKs are ordinary encrypted frames on the conversation stream. They are not themselves acknowledged.
+
+An ACK's own `MessageHeader` carries a fresh UUIDv7 `message_id` and `msg_seq = 0`. Neither is load-bearing: nothing acknowledges an ACK, so its ID is never referenced, and `msg_seq` numbers stored messages, which an ACK is not. The acknowledged message is named by the `Ack` body inside the frame, not by the header around it. A reader looking for meaning in those two fields will not find any.
 
 ---
 
@@ -423,6 +502,7 @@ Collected here because each is a plausible implementation slip that silently rem
 - One session key used in both directions with a shared counter.
 - Skipping check 3 in §6 on outbound connections, so any peer can answer.
 - Reporting which handshake check failed back to the peer.
+- Deciding §10 access on the `user_id` `HELLO_INIT` claims, or closing early for an unaccepted claim — either turns the handshake into an oracle for the accepted list.
 - Logging key material, plaintext, or full user IDs at any level.
 - Storing wire ciphertext, breaking resync after key rotation.
 - `unwrap()` on network-supplied data — a remote panic is a remote denial of service.

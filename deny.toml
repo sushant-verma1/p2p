@@ -18,6 +18,9 @@ allow = [
     "MIT",
     "MPL-2.0",
     "Unicode-3.0",
+    # `foldhash`, under ratatui's hashbrown. Permissive, OSI-approved, and a
+    # licence entry rather than an advisory ignore: nothing is being waived.
+    "Zlib",
 ]
 # The workspace crates are unpublished and carry no licence of their own.
 private = { ignore = true }

@@ -8,9 +8,11 @@
 
 mod accept_any_server_cert;
 pub mod handshake;
+pub mod public;
 
 use std::net::{Ipv4Addr, SocketAddr};
 use std::sync::Arc;
+use std::time::Duration;
 
 use quinn::{Connection, Endpoint, RecvStream, SendStream};
 use rustls::crypto::CryptoProvider;
@@ -93,6 +95,12 @@ pub enum NetError {
     #[error("handshake timed out")]
     HandshakeTimeout,
 
+    /// `public::Limits::request_timeout` elapsed. A public exchange is one
+    /// round trip with no authentication in it; a caller that cannot manage it
+    /// inside the timeout is not owed a task.
+    #[error("public request timed out")]
+    RequestTimeout,
+
     /// `architecture.md` §3. Only reachable if the connection negotiated no
     /// TLS exporter at all, which QUIC does not permit.
     #[error("the connection exported no channel binding")]
@@ -141,6 +149,31 @@ pub fn crypto_provider() -> Arc<CryptoProvider> {
     Arc::new(rustls::crypto::ring::default_provider())
 }
 
+/// How long a connection may carry no packet at all before QUIC declares it
+/// lost — `architecture.md` §6.
+pub const MAX_IDLE: Duration = Duration::from_secs(20);
+
+/// How often an otherwise silent connection sends one — `architecture.md` §6.
+///
+/// quinn's defaults are a 30-second idle timeout and **no** keep-alive, which
+/// closes every conversation thirty seconds after the last message: a chat is
+/// silent most of the time, so the keep-alive is not optional here. Four
+/// intervals fit inside [`MAX_IDLE`], so three lost packets do not end a
+/// session.
+pub const KEEP_ALIVE: Duration = Duration::from_secs(5);
+
+/// The transport settings both endpoints share. Every config in this crate is
+/// built from it, so the two cannot drift — a keep-alive on one side only is
+/// still a session that dies.
+fn transport_config() -> Arc<quinn::TransportConfig> {
+    let mut transport = quinn::TransportConfig::default();
+    transport.max_idle_timeout(Some(
+        MAX_IDLE.try_into().expect("MAX_IDLE fits in a QUIC varint"),
+    ));
+    transport.keep_alive_interval(Some(KEEP_ALIVE));
+    Arc::new(transport)
+}
+
 /// A listening endpoint with a fresh self-signed certificate.
 ///
 /// The certificate is generated per run and carries no identity meaning
@@ -157,9 +190,10 @@ pub fn server_endpoint(addr: SocketAddr, kind: NodeKind) -> Result<Endpoint, Net
         .with_single_cert(vec![cert], key.into())?;
     crypto.alpn_protocols = vec![kind.alpn().to_vec()];
 
-    let config = quinn::ServerConfig::with_crypto(Arc::new(
+    let mut config = quinn::ServerConfig::with_crypto(Arc::new(
         quinn::crypto::rustls::QuicServerConfig::try_from(crypto)?,
     ));
+    config.transport_config(transport_config());
     let endpoint = Endpoint::server(config, addr)?;
     tracing::info!(?kind, addr = %endpoint.local_addr()?, "listening");
     Ok(endpoint)
@@ -168,7 +202,10 @@ pub fn server_endpoint(addr: SocketAddr, kind: NodeKind) -> Result<Endpoint, Net
 /// An endpoint that only dials, on an ephemeral port.
 pub fn client_endpoint(kind: NodeKind) -> Result<Endpoint, NetError> {
     let mut endpoint = Endpoint::client(SocketAddr::from((Ipv4Addr::UNSPECIFIED, 0)))?;
-    endpoint.set_default_client_config(accept_any_server_cert::client_config(kind.alpn())?);
+    let mut config = accept_any_server_cert::client_config(kind.alpn())?;
+    config.transport_config(transport_config());
+    endpoint.set_default_client_config(config);
+    tracing::info!(?kind, addr = %endpoint.local_addr()?, "dialling from");
     Ok(endpoint)
 }
 

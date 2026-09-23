@@ -25,8 +25,13 @@ use crate::CryptoError;
 /// HKDF's `info` — `architecture.md` §7.
 pub const SESSION_INFO: &[u8] = b"p2pchat-v1-session";
 
-/// `k_i2r ‖ k_r2i`: two ChaCha20-Poly1305 keys, in that order.
-const OKM_LEN: usize = 64;
+/// `k_i2r ‖ k_r2i ‖ session_id`: two ChaCha20-Poly1305 keys and the public
+/// name of the pair, in that order. HKDF-Expand's output is a prefix, so
+/// lengthening it left both keys exactly as they were.
+const OKM_LEN: usize = 96;
+
+/// Where the two keys end and [`SessionCipher::session_id`] begins.
+const KEY_LEN: usize = 32;
 
 /// The two directional keys, each with its own counter, already resolved by
 /// role.
@@ -39,6 +44,7 @@ pub struct SessionCipher {
     recv: Direction,
     /// The peer authenticated in §6. Receiver rule 3 compares against this.
     peer: UserId,
+    session_id: [u8; 32],
 }
 
 impl SessionCipher {
@@ -54,7 +60,10 @@ impl SessionCipher {
     /// keys even though the identity keys never change — F-11.
     pub fn derive(session: Session) -> Result<Self, CryptoError> {
         let okm = expand(session.shared_secret(), session.transcript_hash())?;
-        let (k_i2r, k_r2i) = okm.split_at(OKM_LEN / 2);
+        let (keys, id) = okm.split_at(2 * KEY_LEN);
+        let (k_i2r, k_r2i) = keys.split_at(KEY_LEN);
+        let mut session_id = [0u8; 32];
+        session_id.copy_from_slice(id);
 
         // The one place a direction is chosen.
         let (send, recv) = match session.role() {
@@ -66,6 +75,7 @@ impl SessionCipher {
             send: Direction::new(send),
             recv: Direction::new(recv),
             peer: session.peer_user_id(),
+            session_id,
         })
     }
 
@@ -146,6 +156,18 @@ impl SessionCipher {
     pub fn peer(&self) -> UserId {
         self.peer
     }
+
+    /// A public name for this session's keys — §10's "every reconnection is a
+    /// completely new session".
+    ///
+    /// The last 32 bytes of the same HKDF output the keys come from, so it
+    /// changes exactly when they do: a fresh handshake gives a fresh one, and
+    /// a session that reused a key — resumption, which V0.1 does not do —
+    /// would repeat it. Safe to log and to compare; it is one-way from the
+    /// keys and reveals nothing about them.
+    pub fn session_id(&self) -> [u8; 32] {
+        self.session_id
+    }
 }
 
 /// The peer's fingerprint and nothing else — two of these fields are keys.
@@ -191,7 +213,7 @@ impl Direction {
     }
 }
 
-/// HKDF-SHA256 to 64 bytes. Separate from [`SessionCipher::derive`] so the
+/// HKDF-SHA256 to [`OKM_LEN`] bytes. Separate from [`SessionCipher::derive`] so the
 /// halves can be compared in a test — a `ChaCha20Poly1305` will not show them.
 fn expand(
     shared_secret: &[u8; 32],
@@ -260,8 +282,33 @@ mod tests {
     #[test]
     fn the_two_directional_keys_differ() {
         let okm = expand(&[1u8; 32], &[2u8; 32]).unwrap();
-        let (k_i2r, k_r2i) = okm.split_at(OKM_LEN / 2);
+        let (k_i2r, k_r2i) = okm[..2 * KEY_LEN].split_at(KEY_LEN);
         assert_ne!(k_i2r, k_r2i);
+    }
+
+    /// M10 gate 4, at this layer: two handshakes between the same two
+    /// identities name themselves differently, because §10 makes every
+    /// reconnection a new session rather than a resumed one. The node-level
+    /// gate asserts the same thing across a real reconnect.
+    #[test]
+    fn two_sessions_between_the_same_identities_have_different_ids() {
+        let (i, r) = (Identity::generate(), Identity::generate());
+        let (first, _) = connect(&i, &r);
+        let (second, _) = connect(&i, &r);
+        assert_ne!(
+            first.session_id(),
+            second.session_id(),
+            "two handshakes produced one session id, so the keys were reused"
+        );
+    }
+
+    /// Both ends of one session agree on its name — otherwise it names a
+    /// direction rather than a session.
+    #[test]
+    fn both_sides_of_one_session_share_its_id() {
+        let (i, r) = (Identity::generate(), Identity::generate());
+        let (side_i, side_r) = connect(&i, &r);
+        assert_eq!(side_i.session_id(), side_r.session_id());
     }
 
     /// The salt has to be *read*. Every gate test above still passes with a

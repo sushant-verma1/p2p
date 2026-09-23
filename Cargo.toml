@@ -17,6 +17,7 @@ p2pchat-store = { path = "crates/p2pchat-store" }
 p2pchat-tui = { path = "crates/p2pchat-tui" }
 
 anyhow = "1"
+base64 = "0.22"
 blake3 = "1"
 chacha20poly1305 = "0.10"
 clap = { version = "4", features = ["derive"] }
@@ -33,6 +34,15 @@ postcard = { version = "1", default-features = false, features = ["use-std"] }
 quinn = { version = "0.11", default-features = false, features = ["log", "runtime-tokio", "rustls-ring"] }
 rand = "0.8"
 rcgen = "0.13"
+# techstack.md "Terminal UI". crossterm is deliberately absent: ratatui picks
+# it via its own `crossterm` feature and re-exports it, so only one version of
+# its `Event` type can ever be in scope.
+ratatui = "0.30"
+# The ratatui project's fork. The crate that was `tui-textarea` pinned ratatui
+# 0.29 and would have held the whole tree there. Note the name is reused by an
+# unrelated abandoned crate at 0.4.x; this is the one whose repository field is
+# github.com/ratatui/ratatui-textarea.
+ratatui-textarea = { version = "0.9", default-features = false, features = ["crossterm"] }
 # Same reason: `ring`, explicitly, not the default `aws-lc-rs` — which wants
 # cmake and nasm and is the worse half of the choice on a GNU toolchain.
 # `bundled` compiles SQLite from source, so the build does not depend on what
@@ -51,6 +61,9 @@ toml = "0.8"
 tracing = "0.1"
 tracing-appender = "0.2"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+# Column arithmetic for wrapping. Already in the tree under ratatui, which is
+# why the version tracks ratatui's rather than being chosen freshly.
+unicode-width = "0.2"
 uuid = { version = "1", features = ["v7", "serde"] }
 # `reusable_secrets` is on techstack.md's list; the handshake uses
 # `EphemeralSecret`, which is consumed by the DH and zeroized on the spot.
@@ -58,4 +71,7 @@ x25519-dalek = { version = "2", features = ["reusable_secrets", "zeroize"] }
 zeroize = { version = "1", features = ["zeroize_derive"] }
 
 proptest = "1"
+# A real pty for M9's gate 9. Unix only, which is where CI runs; the tests
+# using it are `#![cfg(unix)]`.
+rexpect = "0.6"
 tempfile = "3"

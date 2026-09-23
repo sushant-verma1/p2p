@@ -195,7 +195,6 @@ prop_compose! {
         from_user_id in user_id(),
         from_identity_pk in bytes32(),
         display_name in display_name(),
-        addrs in addrs(),
         created_at in any::<u64>(),
     ) -> ConnectionRequest {
         ConnectionRequest {
@@ -203,7 +202,6 @@ prop_compose! {
             from_user_id,
             from_identity_pk,
             display_name,
-            addrs,
             created_at,
         }
     }
@@ -235,7 +233,21 @@ fn request_state() -> impl Strategy<Value = RequestState> {
 fn public_response() -> impl Strategy<Value = PublicResponse> {
     prop_oneof![
         invite().prop_map(|invite| PublicResponse::Profile(Box::new(invite))),
-        request_state().prop_map(PublicResponse::State),
+        // M9d: the address rides only with `Accepted`, and `validate` refuses
+        // anything else — so the round-trip properties generate only pairings
+        // a node is allowed to send.
+        request_state().prop_flat_map(|state| {
+            match state {
+                RequestState::Accepted => addr()
+                    .prop_filter("an advertised address is never unspecified", |addr| {
+                        !addr.ip().is_unspecified()
+                    })
+                    .prop_map(Some)
+                    .boxed(),
+                _ => Just(None).boxed(),
+            }
+            .prop_map(move |addr| PublicResponse::State(state, addr))
+        }),
     ]
 }
 
@@ -570,6 +582,43 @@ fn a_local_only_status_is_not_an_acknowledgement() {
     }
 }
 
+/// M9d, §3: an address may ride with `Accepted` and with nothing else, and it
+/// is never an unspecified one. Checked on decode, so a caller cannot be asked
+/// to remember to ignore it.
+#[test]
+fn a_state_that_is_not_accepted_may_not_carry_an_address() {
+    let addr = SocketAddr::from(([203, 0, 113, 7], 47101));
+
+    for state in [
+        RequestState::Pending,
+        RequestState::Rejected,
+        RequestState::Unknown,
+    ] {
+        let hostile = postcard::to_stdvec(&PublicResponse::State(state, Some(addr))).unwrap();
+        let err = decode::<PublicResponse>(&hostile).unwrap_err();
+        assert!(
+            matches!(err, CoreError::MisplacedAddr),
+            "{state:?} was allowed to carry an address: {err}"
+        );
+
+        // The same state without one is ordinary.
+        let fine = postcard::to_stdvec(&PublicResponse::State(state, None)).unwrap();
+        decode::<PublicResponse>(&fine).unwrap_or_else(|err| panic!("{state:?}: {err}"));
+    }
+
+    let accepted = postcard::to_stdvec(&PublicResponse::State(
+        RequestState::Accepted,
+        Some(SocketAddr::from(([0, 0, 0, 0], 47101))),
+    ))
+    .unwrap();
+    let err = decode::<PublicResponse>(&accepted).unwrap_err();
+    assert!(matches!(err, CoreError::MisplacedAddr), "{err}");
+
+    let accepted =
+        postcard::to_stdvec(&PublicResponse::State(RequestState::Accepted, Some(addr))).unwrap();
+    decode::<PublicResponse>(&accepted).unwrap();
+}
+
 /// Bounds nested inside an envelope are still checked.
 #[test]
 fn the_public_request_envelope_checks_its_payload() {
@@ -578,7 +627,6 @@ fn the_public_request_envelope_checks_its_payload() {
         from_user_id: UserId::from_bytes([1; 32]),
         from_identity_pk: [2; 32],
         display_name: "x".repeat(MAX_DISPLAY_NAME + 1),
-        addrs: Vec::new(),
         created_at: 0,
     });
 

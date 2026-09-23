@@ -27,6 +27,7 @@ fn peer(user_id: UserId) -> Peer {
         first_seen: 1_700_000_000,
         last_seen: None,
         verified: false,
+        accepted: false,
     }
 }
 

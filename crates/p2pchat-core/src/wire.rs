@@ -349,20 +349,22 @@ impl WireType for ProfileRequest {}
 /// is untrusted", and F-06 requires the UI to show the fingerprint and user ID
 /// rather than the display name alone. The private node authenticates the peer
 /// itself in §6.
+///
+/// It carries **no address**, M9d: the requester dials the acceptor and the
+/// acceptor never dials back (§10), so the requester's own address is of no use
+/// to anybody. A requester behind NAT or CGNAT can therefore still connect.
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct ConnectionRequest {
     pub version: u8,
     pub from_user_id: UserId,
     pub from_identity_pk: [u8; 32],
     pub display_name: String,
-    pub addrs: Vec<SocketAddr>,
     pub created_at: u64,
 }
 
 impl WireType for ConnectionRequest {
     fn validate(&self) -> Result<(), CoreError> {
-        bound("display_name", self.display_name.len(), MAX_DISPLAY_NAME)?;
-        bound("addrs", self.addrs.len(), MAX_ADDRS)
+        bound("display_name", self.display_name.len(), MAX_DISPLAY_NAME)
     }
 }
 
@@ -412,14 +414,26 @@ impl WireType for PublicRequest {
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub enum PublicResponse {
     Profile(Box<Invite>),
-    State(RequestState),
+    /// The state of the caller's request and, **only when it is `Accepted`**,
+    /// the answering node's advertised private address — M9d, §10. That is
+    /// where the requester dials; a `Pending` or `Rejected` answer has nothing
+    /// to dial and says nothing about where this node listens.
+    ///
+    /// The rule is enforced in [`WireType::validate`] and therefore on decode,
+    /// so an address attached to any other state is a malformed response
+    /// rather than something a caller has to remember to ignore.
+    State(RequestState, Option<SocketAddr>),
 }
 
 impl WireType for PublicResponse {
     fn validate(&self) -> Result<(), CoreError> {
         match self {
             Self::Profile(invite) => invite.validate(),
-            Self::State(_) => Ok(()),
+            Self::State(_, None) => Ok(()),
+            Self::State(RequestState::Accepted, Some(addr)) if !addr.ip().is_unspecified() => {
+                Ok(())
+            }
+            Self::State(..) => Err(CoreError::MisplacedAddr),
         }
     }
 }

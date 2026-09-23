@@ -64,11 +64,16 @@ Version note: `ed25519-dalek` 2.x and `rand` 0.8 are compatible; `rand` 0.9 is n
 
 | Crate | Version | Role |
 |---|---|---|
-| `ratatui` | 0.29 | Widgets, layout, rendering |
-| `crossterm` | 0.28 | Terminal backend, events, raw mode |
-| `tui-textarea` | 0.7 | Multi-line input with editing. Saves writing a text editor |
+| `ratatui` | 0.30 | Widgets, layout, rendering |
+| `crossterm` | 0.29 | Terminal backend, events, raw mode |
+| `ratatui-textarea` | 0.9 | Multi-line input with editing. Saves writing a text editor |
+| `unicode-width` | 0.2 | Display width of a char, for wrapping and truncation |
 
-`crossterm`'s version must match what `ratatui` expects, or two incompatible `Event` types end up in scope. Let `ratatui` choose it via its `crossterm` feature rather than pinning independently.
+`unicode-width` is already in the tree under `ratatui`, which is why the version tracks `ratatui`'s rather than being picked freshly — two copies of it would disagree about how wide an emoji is, and the wrapping would not match the renderer. A column is not a char: an emoji is two and a combining mark is none, and counting chars wraps a message over the pane border.
+
+`crossterm`'s version must match what `ratatui` expects, or two incompatible `Event` types end up in scope. Let `ratatui` choose it via its `crossterm` feature rather than pinning independently. `cargo tree -d` is the check: one `ratatui`, one `crossterm`.
+
+`ratatui-textarea` is the ratatui project's fork of `tui-textarea`, taken in M9b because the original pins `ratatui` 0.29 and would have held the whole tree there. The API is the same bar the crate name in the import. Beware: an unrelated abandoned crate squats the same name at 0.4.x — the one meant here has `repository = "https://github.com/ratatui/ratatui-textarea"`.
 
 ## Operational
 
@@ -92,7 +97,12 @@ Every path and port has an environment override. This is not a convenience: from
 | `P2PCHAT_DATA_DIR` | Data directory, holding the log and the database | `~/.local/share/p2pchat` |
 | `P2PCHAT_PUBLIC_PORT` | Public node UDP port | 47100 |
 | `P2PCHAT_PRIVATE_PORT` | Private node UDP port | 47101 |
+| `P2PCHAT_BIND_ADDR` | IP both endpoints bind to. Not what invites advertise — that is `--addr` | `0.0.0.0` |
+| `P2PCHAT_ADDR` | Public node addresses to advertise, comma-separated. `--addr`, and `addr` in `config.toml` | none; an invite without one is refused |
+| `P2PCHAT_PRIVATE_ADDR` | Where an accepted requester is told to dial. `--private-addr`, and `private_addr` in `config.toml` | `P2PCHAT_ADDR`'s host with the private port |
 | `RUST_LOG` | Log level | `info` |
+
+The last two are also the only values in `config.toml`, read from the config directory. They are there because they are the only settings this process cannot work out for itself — an address reachable from outside is a fact about a network, not about a host — and retyping them at every launch is how a node ends up started without one. Precedence is the same as everywhere else: environment, then flag, then file. A malformed `config.toml` is logged and ignored rather than fatal; a stale config file should not be the reason a node will not start.
 
 **Logs go to a file, never to stdout or stderr.** The TUI owns the terminal; a log line written to stdout corrupts the display. Set this up in M0, before the TUI exists, or the first hour of M9 is spent debugging a scrambled screen. Default path `~/.local/share/p2pchat/p2pchat.log`, daily rotation.
 
@@ -104,12 +114,17 @@ Every path and port has an environment override. This is not a convenience: from
 | `proptest` | Property tests for wire round-trips and sequence handling |
 | `tempfile` | Throwaway databases in tests |
 | `tokio-test` | Async test helpers |
+| `rexpect` | A pty, for M9's gate 9. Unix only; the tests using it are `#![cfg(unix)]` |
+
+`rexpect` was taken for gate 9 because a `TestBackend` has no line discipline and no terminal, so it cannot say whether raw mode was turned off — only a pty can, and `stty` is what reads it. Unix only, which is where CI runs; `portable-pty` is the fallback if `rexpect` ever fails `cargo deny`.
 
 Required in CI: `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test --all`, `cargo audit`, `cargo deny check`.
 
 ---
 
 ## Rejected alternatives
+
+**Ignoring the advisories instead of upgrading (M9b).** `ratatui` 0.29 dragged in `paste` (RUSTSEC-2024-0436, unmaintained) and `lru` 0.12 (RUSTSEC-2026-0002 and RUSTSEC-2026-0253). Adding three entries to `deny.toml`'s `ignore` list would have been one line each and would have made the list mean "these are fine", which none of them are. Upgrading to `ratatui` 0.30 dropped `paste` and moved `lru` to 0.18, clearing all three with no waiver. `ignore` stays empty. `Zlib` was added to the licence *allow* list for `foldhash`, which is a different kind of entry: a permissive licence being recognised, not a vulnerability being tolerated.
 
 Recorded so these are not relitigated at 2am.
 

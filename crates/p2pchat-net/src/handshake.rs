@@ -14,7 +14,7 @@
 use std::future::Future;
 use std::time::Duration;
 
-use quinn::{Connection, VarInt};
+use quinn::{Connection, RecvStream, SendStream, VarInt};
 use tokio::time::{timeout_at, Instant};
 
 use p2pchat_core::wire::{HelloConfirm, HelloInit, HelloResp};
@@ -35,6 +35,31 @@ pub const HANDSHAKE_ERROR_CODE: u32 = 1;
 /// including a timeout: the peer learns that it failed and nothing else.
 pub const HANDSHAKE_ERROR_REASON: &[u8] = b"handshake failed";
 
+/// A finished handshake, and the stream it ran on.
+///
+/// The stream stays open: `architecture.md` §10 continues on "the conversation
+/// stream", and this is it. One stream per session is what makes QUIC's
+/// ordering the conversation's ordering (F-14), and reusing the one both sides
+/// already hold avoids the alternative — a second stream that QUIC does not
+/// deliver to the peer until something is written on it, so whichever side
+/// opened it would have to speak first.
+pub struct Established {
+    pub session: Session,
+    pub send: SendStream,
+    pub recv: RecvStream,
+}
+
+/// The peer, and deliberately nothing else: [`Session`] holds the shared
+/// secret, and a derived `Debug` would print it the first time a test wrote
+/// `expect_err` — agent.md §2.
+impl std::fmt::Debug for Established {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Established")
+            .field("peer", &self.session.peer_user_id())
+            .finish_non_exhaustive()
+    }
+}
+
 /// Dial side. Opens the handshake stream and runs I → R.
 ///
 /// `expected_peer` is the user ID from the invite. Pass it whenever there is
@@ -44,7 +69,7 @@ pub async fn initiate(
     connection: &Connection,
     identity: &Identity,
     expected_peer: Option<UserId>,
-) -> Result<Session, NetError> {
+) -> Result<Established, NetError> {
     finish(
         connection,
         run_initiator(connection, identity, expected_peer).await,
@@ -52,12 +77,18 @@ pub async fn initiate(
 }
 
 /// Accept side. Takes the handshake stream the initiator opened.
-pub async fn respond(connection: &Connection, identity: &Identity) -> Result<Session, NetError> {
+pub async fn respond(
+    connection: &Connection,
+    identity: &Identity,
+) -> Result<Established, NetError> {
     finish(connection, run_responder(connection, identity).await)
 }
 
 /// Close the connection on any failure, with the generic code.
-fn finish(connection: &Connection, result: Result<Session, NetError>) -> Result<Session, NetError> {
+fn finish(
+    connection: &Connection,
+    result: Result<Established, NetError>,
+) -> Result<Established, NetError> {
     if let Err(error) = &result {
         tracing::warn!(%error, "handshake failed");
         connection.close(
@@ -72,7 +103,7 @@ async fn run_initiator(
     connection: &Connection,
     identity: &Identity,
     expected_peer: Option<UserId>,
-) -> Result<Session, NetError> {
+) -> Result<Established, NetError> {
     let deadline = Instant::now() + HANDSHAKE_TIMEOUT;
     let cb = channel_binding(connection)?;
 
@@ -85,10 +116,17 @@ async fn run_initiator(
     by(deadline, send_frame(&mut send, &confirm)).await??;
 
     tracing::info!(peer = %session.peer_user_id(), "session established");
-    Ok(session)
+    Ok(Established {
+        session,
+        send,
+        recv,
+    })
 }
 
-async fn run_responder(connection: &Connection, identity: &Identity) -> Result<Session, NetError> {
+async fn run_responder(
+    connection: &Connection,
+    identity: &Identity,
+) -> Result<Established, NetError> {
     let deadline = Instant::now() + HANDSHAKE_TIMEOUT;
     let cb = channel_binding(connection)?;
 
@@ -102,7 +140,11 @@ async fn run_responder(connection: &Connection, identity: &Identity) -> Result<S
     let session = state.finish(&confirm)?;
 
     tracing::info!(peer = %session.peer_user_id(), "session established");
-    Ok(session)
+    Ok(Established {
+        session,
+        send,
+        recv,
+    })
 }
 
 /// Every await in the handshake goes through here, against the deadline the

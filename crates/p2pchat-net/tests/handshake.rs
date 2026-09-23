@@ -25,9 +25,9 @@ use std::time::{Duration, Instant};
 
 use p2pchat_core::wire::{HelloConfirm, HelloInit, HelloResp, Signature};
 use p2pchat_core::UserId;
-use p2pchat_crypto::handshake::{Initiator, Responder, Session};
+use p2pchat_crypto::handshake::{Initiator, Responder};
 use p2pchat_crypto::Identity;
-use p2pchat_net::handshake::{initiate, respond, HANDSHAKE_TIMEOUT};
+use p2pchat_net::handshake::{initiate, respond, Established, HANDSHAKE_TIMEOUT};
 use p2pchat_net::{
     channel_binding, client_endpoint, connect, recv_frame, send_frame, server_endpoint, NetError,
     NodeKind,
@@ -72,7 +72,11 @@ where
 /// The honest responder.
 fn listen_responder(
     identity: Arc<Identity>,
-) -> (Endpoint, SocketAddr, JoinHandle<Result<Session, NetError>>) {
+) -> (
+    Endpoint,
+    SocketAddr,
+    JoinHandle<Result<Established, NetError>>,
+) {
     listen(move |connection| async move { respond(&connection, &identity).await })
 }
 
@@ -122,10 +126,13 @@ async fn two_peers_complete_the_handshake_and_agree() {
         let (_endpoint, addr, task) = listen_responder(responder.clone());
         let (_client, connection) = dial(addr).await;
 
+        // The conversation stream comes back with the session; M8 is what
+        // uses it.
         let session_i = initiate(&connection, &initiator, Some(responder_id))
             .await
-            .unwrap();
-        let session_r = task.await.unwrap().unwrap();
+            .unwrap()
+            .session;
+        let session_r = task.await.unwrap().unwrap().session;
 
         assert_eq!(
             session_i.shared_secret().as_slice(),

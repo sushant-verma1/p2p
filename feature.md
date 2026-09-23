@@ -40,6 +40,7 @@ Produce a pasteable invite blob for the local identity.
 - Output is a single line beginning `p2pchat:v1:`, under 300 characters.
 - Contains user ID, identity public key, display name, public node addresses.
 - Signed by the identity key.
+- Never advertises an unspecified address (`0.0.0.0`, `[::]`). That is a bind address; it names no host, so a peer cannot dial it. Generation fails and says to pass `--addr`. Loopback is allowed: it names this host, and two nodes on one machine is how the tests run.
 
 ### F-05 — Invite import · P0
 Accept a pasted invite blob.
@@ -57,6 +58,7 @@ Ask a peer's public node for permission to open a private session.
 - Recipient can accept or reject.
 - Rejection is reported to the sender and does not retry.
 - A request from an unknown peer shows its fingerprint and user ID, never only a self-declared display name.
+- A peer the user has not accepted cannot open a private session, even with a valid handshake: it is closed, with the same code a handshake failure closes with.
 
 ### F-07 — Pending request queue · P1
 Requests arriving while the user is elsewhere in the UI are queued, not dropped.
@@ -148,7 +150,7 @@ Conversations persist.
 ### F-18 — Disconnect detection · P0
 A dropped connection is noticed and shown.
 
-- Detected within 15 seconds via QUIC keepalive and idle timeout.
+- Detected within 20 seconds via QUIC keepalive and idle timeout (`architecture.md` §6). The keepalive is 5 seconds, so 20 seconds is three missed keepalives before the connection is declared lost.
 - Peer shown as offline in the TUI.
 - Queued outbound messages are marked pending rather than failed.
 

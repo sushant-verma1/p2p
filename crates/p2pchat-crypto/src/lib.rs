@@ -4,6 +4,7 @@
 
 pub mod handshake;
 pub mod identity;
+pub mod invite;
 pub mod keystore;
 pub mod session;
 
@@ -51,6 +52,43 @@ pub enum CryptoError {
         #[source]
         source: std::io::Error,
     },
+
+    // The four invite outcomes are separate variants, unlike the handshake's
+    // single `Handshake`, because `architecture.md` §9 requires it: an invite
+    // is pasted by the user, not offered by a live peer, so there is no oracle
+    // to protect and the user's next move differs in each case.
+    /// Not an invite at all: wrong scheme, bad base64, bad `postcard`, or a
+    /// field past the bounds in `wire`. Re-copy it.
+    #[error("not a valid p2pchat invite")]
+    InviteMalformed,
+
+    /// `BLAKE3(domain ‖ identity_pk) != user_id` — the blob contradicts itself.
+    #[error("invite user ID does not match its identity key")]
+    InviteUserId,
+
+    /// The signature does not verify: the invite was altered in transit, or it
+    /// was written by someone else. Never a timing signal — see `invite`.
+    #[error("invite signature does not verify")]
+    InviteSignature,
+
+    /// Signed, consistent, and past `expires_at` plus the skew allowance —
+    /// OD-3. Its own variant because the answer is "ask for a new invite"
+    /// rather than "re-copy the one you have".
+    #[error("invite has expired; ask for a new one")]
+    InviteExpired,
+
+    /// `0.0.0.0` or `[::]`: a bind address, which names no host. Refused where
+    /// the invite is built rather than where it is dialled, because by then it
+    /// is a blob someone has already pasted into a chat.
+    #[error("cannot advertise {0}: that is a bind address, not one another host can reach; pass --addr with an address peers can dial")]
+    InviteUnspecifiedAddr(std::net::SocketAddr),
+
+    /// Nothing to advertise at all — M9d. Same instruction as
+    /// [`CryptoError::InviteUnspecifiedAddr`] for the same reason, and the
+    /// same one `Node::decide` gives when a request cannot be accepted for
+    /// want of an address to answer with.
+    #[error("{}", invite::NO_ADDR)]
+    InviteNoAddr,
 
     #[error(transparent)]
     Core(#[from] p2pchat_core::CoreError),

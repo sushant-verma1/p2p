@@ -95,6 +95,14 @@ Wire M4, M5, M6, M7 together. Send, receive, persist, ACK. Still headless, drive
 
 ---
 
+## M8a — Private-node access control · ~0.5 day
+
+Close the hole M8's gate exposed: `architecture.md` §6 proves who a peer is, and nothing was deciding whether that peer was allowed in. Persist the user's acceptance per peer (§8's `peers.accepted`), check it after the handshake on the authenticated ID, dial only accepted peers.
+
+**Gate:** an unaccepted peer that completes a valid handshake is closed; an accepted peer's session succeeds; acceptance survives restart and the peer reconnects without re-requesting; a rejected peer cannot open a session; a peer claiming an accepted `user_id` without its key is rejected; and probing with a claimed-accepted ID and a claimed-unaccepted ID, neither holding the key, is indistinguishable — same close code, same point in the exchange.
+
+---
+
 ## M9 — TUI · ~4 days
 
 `ratatui` layout, the dedicated input thread, channel bridge to the async core, scrollback, textarea, help overlay, panic hook that restores the terminal.
@@ -110,6 +118,8 @@ Wire M4, M5, M6, M7 together. Send, receive, persist, ACK. Still headless, drive
 Connection state machine, backoff with jitter, `RESYNC` exchange, retransmission under the new session key.
 
 **Gate:** F-20's test — kill the network, send 50 messages, restore, assert all 50 arrive exactly once in order. Also: an authentication failure does not enter the retry loop.
+
+M9 left two of F-25's five states unreachable: nothing reports `handshaking`, and `reconnecting` has nothing to report yet. Both belong to the state machine built here, and the status bar already has the labels.
 
 ---
 

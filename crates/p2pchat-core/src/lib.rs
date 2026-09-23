@@ -43,4 +43,11 @@ pub enum CoreError {
     /// `architecture.md` §6 check 1.
     #[error("unsupported protocol version")]
     UnsupportedVersion,
+
+    /// `architecture.md` §3: a `CONNECTION_STATUS` answer carries an address
+    /// only when the state is `Accepted`, and never an unspecified one. Both
+    /// halves are checked on decode — a node that leaks where it listens to
+    /// every caller who asks, or that advertises `0.0.0.0`, is malformed.
+    #[error("a request state carries an address it is not entitled to")]
+    MisplacedAddr,
 }

@@ -30,6 +30,7 @@ These are not style preferences.
 - **Never add a dependency** that is not in `techstack.md`. Propose it, with a reason, and wait.
 - **Never use `rand` in the message encryption path.** Nonces are derived from `frame_seq`. An RNG call there is a bug even if it appears to work.
 - **Never write to stdout or stderr** outside the TUI's own rendering and the CLI subcommands whose whole job is printing — `whoami`, `invite`, `--version`. F-28 requires `invite` to be pipeable, so it prints to stdout and nothing else. Everywhere else, use `tracing`.
+  - One exception: **a fatal startup error, before the TUI has taken the terminal, may go to stderr.** One line, then a non-zero exit. There is no display to corrupt yet, and the alternative is a binary that exits zero having done nothing — which is how the no-tty launch behaved until M9a. Log it as well; the terminal message is for whoever ran it, the log line is for whoever reads the log. This is not licence for progress messages: if the TUI is up, or the process is going to carry on, it goes to `tracing` and nowhere else.
 
 ---
 
