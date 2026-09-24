@@ -170,6 +170,17 @@ def phase_split(lines, t_session):
             "phase_events": len(ph)}
 
 
+def acceptor_settles(acceptor, since):
+    """Whether the acceptor's side of a session arrives, waited for.
+
+    The dialler reports its session once HELLO_CONFIRM is written, not once it
+    is delivered. Quit the dialler straight away and a lost confirm is never
+    resent: the acceptor's §6 times out 14 s later on a session the dialler
+    counted, and logs a warning M12c took for a failure. 30 s is past that.
+    """
+    return bool(acceptor.wait(lambda l: l.startswith("event\tsession"), 30, since))
+
+
 def pct(xs, p):
     xs = sorted(x for x in xs if x is not None)
     if not xs:
@@ -207,7 +218,7 @@ def run_profile(name, spec):
     bob = Node(B, ["node", "--name", "bob"])
     pub, priv = f"{a_ip}:47100", f"{a_ip}:47101"
 
-    # --- 2a: the connection request, against its 5 s -------------------------
+    # --- 2a: the connection request, against its 20 s ------------------------
     req = []
     for i in range(REQ_SAMPLES):
         t, ans = bob.call(f"request {pub} {alice.me}", 30)
@@ -219,12 +230,13 @@ def run_profile(name, spec):
                     "failed": sum(1 for r in req if not (r["answer"] or "").startswith("ok"))}
 
     # --- 2b: accept, the poller notices, the dial against its 20 s -----------
-    mb = bob.mark()
+    ma, mb = alice.mark(), bob.mark()
     t_acc = alice.cmd(f"accept {bob.me}")
     got = bob.wait(lambda l: l.startswith("event\tsession"), 150, mb)
     first = {"accept_to_session": got and got[0] - t_acc}
     if got:
         first.update(phase_split(bob.since(mb), got[0]) or {})
+        first["alice_session"] = acceptor_settles(alice, ma)
     first["dial_failed"] = [l for _, l in bob.since(mb) if "dial-failed" in l]
     R["first_session"] = first
     log(name, "first session", first)
@@ -233,6 +245,7 @@ def run_profile(name, spec):
     hs = []
     for i in range(HS_SAMPLES):
         bob.quit()
+        ma = alice.mark()
         bob = Node(B, ["node", "--name", "bob"])
         got = bob.wait(lambda l: l.startswith("event\tsession"), 120)
         if not got:
@@ -242,6 +255,7 @@ def run_profile(name, spec):
         s = phase_split(bob.since(0), got[0]) or {}
         s["ok"] = True
         s["retries"] = sum(1 for _, l in bob.since(0) if "dial-failed" in l)
+        s["alice_session"] = acceptor_settles(alice, ma)
         hs.append(s)
         log(name, "hs", i, {k: round(v, 3) if isinstance(v, float) else v for k, v in s.items()})
     R["handshake"] = {"samples": hs,
@@ -249,7 +263,8 @@ def run_profile(name, spec):
                       "handshake": stats([s.get("handshake") for s in hs]),
                       "dial": stats([s.get("dial") for s in hs]),
                       "extra_phase_events": sum(1 for s in hs if s.get("phase_events", 4) > 4),
-                      "failed": sum(1 for s in hs if not s["ok"])}
+                      "failed": sum(1 for s in hs if not s["ok"]),
+                      "alice_missed": sum(1 for s in hs if s["ok"] and not s["alice_session"])}
 
     # --- give-up paths: nothing listening ------------------------------------
     t, ans = bob.call(f"request {a_ip}:47199 {alice.me}", 30)

@@ -119,6 +119,8 @@ Connection state machine, backoff with jitter, `RESYNC` exchange, retransmission
 
 **Gate:** F-20's test — kill the network, send 50 messages, restore, assert all 50 arrive exactly once in order. Also: an authentication failure does not enter the retry loop.
 
+> **Amended in M12c.** The backoff's 1, 2, 4, 8 s is what the code schedules, not what a user experiences. Each attempt against a silent peer costs its delay *plus* the whole 20-second dial deadline, so attempts actually start 21, 22, 24, 28, 36, 50 s apart and about every 50 s after that. That is **15 attempts** in the 10-minute budget (14–16 with jitter), not the 20-odd the nominal schedule suggests, and the loop gives up at about 10.5 minutes. `architecture.md` §10 has the arithmetic.
+
 M9 left two of F-25's five states unreachable: nothing reports `handshaking`, and `reconnecting` has nothing to report yet. Both belong to the state machine built here, and the status bar already has the labels.
 
 ---

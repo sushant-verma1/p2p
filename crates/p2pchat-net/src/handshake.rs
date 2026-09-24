@@ -3,7 +3,7 @@
 //! The state machine is in `p2pchat-crypto`; this is the stream, the deadline,
 //! and the generic close. Two rules live here rather than there:
 //!
-//! - **Ten seconds, from the connection opening.** A peer that connects and
+//! - **Fourteen seconds, from the connection opening.** A peer that connects and
 //!   stops holds a connection, a stream and an ephemeral key pair for free
 //!   otherwise. Every await below is against the same deadline, so no
 //!   individual read can extend the total.
@@ -26,7 +26,12 @@ use crate::{channel_binding, recv_frame, send_frame, NetError};
 
 /// `architecture.md` §6: the whole exchange, measured from the connection
 /// opening.
-pub const HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(10);
+///
+/// Fourteen seconds: the slowest of 150 handshakes over an 800 ms round trip
+/// with bursty loss took 13.22 s, and the next 8.47 s (M12b). The link lost
+/// 16.95% of pings round trip, about 8.9% a leg against the 8% intended, so
+/// the figure is conservative.
+pub const HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(14);
 
 /// The one code a failed handshake closes with.
 pub const HANDSHAKE_ERROR_CODE: u32 = 1;

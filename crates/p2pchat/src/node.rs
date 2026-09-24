@@ -66,9 +66,21 @@ const POLL_MAX: Duration = Duration::from_secs(60);
 /// peer is bounded only by whatever QUIC eventually decides, and a peer that
 /// answers packets but never finishes opening is not bounded at all.
 ///
-/// Twenty seconds: §6's ten for the handshake plus ten for a connect over a
-/// slow link, and short enough that the screen stops saying `connecting`.
+/// Twenty seconds: §6's fourteen for the handshake plus `USUAL_CONNECT_BUDGET`,
+/// and short enough that the screen stops saying `connecting`. The same twenty
+/// a connection request waits, so both give-ups are one number.
 const DIAL_TIMEOUT_MS: u64 = 20_000;
+
+/// What a dial leaves the connect once §6 has its fourteen seconds — M12c.
+/// A budget that covers almost every connect, not the slowest one seen. Over
+/// an 800 ms round trip with 8% loss, independent or bursty, M12b's slowest of
+/// 180 connects was 3.80 s, and M12c's was 3.23 s bar one: a single 8.02 s
+/// connect under bursty loss, whose handshake then took 2.40 s. Raising the
+/// dial deadline to cover that one would make every unreachable peer wait
+/// longer for it. Nothing enforces this alone; the test holding the two
+/// timeouts under the dial deadline reads it.
+#[cfg(test)]
+const USUAL_CONNECT_BUDGET: Duration = Duration::from_secs(6);
 
 /// What to check when a peer's node does not answer — M12, `project.md` §7.
 ///
@@ -679,8 +691,8 @@ impl Node {
     /// Everyone this node is part way through reaching — M9e.
     ///
     /// The stored outbound request, which exists from the moment the request
-    /// is sent until it has been answered *and* the dial that answer asked for
-    /// has finished. So it covers the whole attempt, and it survives a restart:
+    /// is sent until a session answers it or it is refused — M12c. So it
+    /// covers the whole attempt, retries included, and it survives a restart:
     /// a node that comes up still polling says `connecting`, because it is.
     pub async fn connecting(&self) -> HashSet<UserId> {
         match self.store.outbound_requests().await {
@@ -785,18 +797,35 @@ impl Node {
     ) -> bool {
         match (state, private) {
             (RequestState::Accepted, Some(private)) => {
+                // A session from somewhere else — a manual dial, a reconnect —
+                // already answers the request.
+                if self.registry.lock().await.get(&peer).is_some() {
+                    let _ = self.store.remove_outbound_request(peer).await;
+                    return true;
+                }
+
                 // Dialled with the request row still in place, so the screen
                 // keeps saying `connecting` for the whole attempt — the dial is
                 // the slowest part of it, and a QUIC dial to an address nothing
-                // answers on takes the idle timeout to give up.
+                // answers on takes the dial deadline to give up.
                 tracing::info!(%peer, addr = %private, "accepted; dialling the peer privately");
                 let dialled = self.dial(private, Some(peer)).await;
 
-                // The request is answered either way: a dial that fails is not
-                // a reason to ask again, and §6 check 3 is what decides whether
-                // the address was honest. Cleared before the event, so a screen
-                // that re-reads on the hint sees the attempt already over.
-                let _ = self.store.remove_outbound_request(peer).await;
+                // M12c: the row goes only once a session exists, or once §6
+                // has refused the peer. A dial that merely went unanswered keeps
+                // it, and the poller asks and dials again, as often as it takes
+                // and across restarts. Without that, a first dial lost to a
+                // blip strands the peer: accepted, but with no address on
+                // record, because only an address §6 has proved is stored.
+                // Cleared before the event, so a screen that re-reads on the
+                // hint sees the attempt already over.
+                let settled = match &dialled {
+                    Ok(_) => true,
+                    Err(error) => fatal(error),
+                };
+                if settled {
+                    let _ = self.store.remove_outbound_request(peer).await;
+                }
                 if let Err(error) = dialled {
                     // `?error` and not `%error`: the cause chain is the whole
                     // value of this line when it is all somebody has.
@@ -804,6 +833,7 @@ impl Node {
                         ?error,
                         %peer,
                         addr = %private,
+                        retrying = !settled,
                         "dialling an accepting peer failed",
                     );
                     let _ = self.events.try_send(Event::DialFailed {
@@ -811,7 +841,7 @@ impl Node {
                         reason: format!("{error:#}"),
                     });
                 }
-                true
+                settled
             }
             (RequestState::Rejected, _) => {
                 // Taking back the acceptance `request_connection` recorded: we
@@ -1257,6 +1287,35 @@ mod tests {
             assert!(attempts < 100, "the budget was never reached");
         }
         assert!(elapsed >= Duration::from_secs(10 * 60), "{elapsed:?}");
+    }
+
+    /// M12b: a silent address has to hit the dial deadline, which says what to
+    /// check, before quinn's idle limit, which only says "timed out".
+    #[test]
+    fn the_dial_deadline_fires_before_the_connection_goes_idle() {
+        assert!(Duration::from_millis(DIAL_TIMEOUT_MS) < p2pchat_net::CONNECT_IDLE);
+    }
+
+    /// M12c: a dial is a connect then §6, under one deadline. Raise the
+    /// handshake timeout without the dial deadline and a slow connect eats
+    /// the handshake's time, so the handshake timeout never fires.
+    #[test]
+    fn the_handshake_and_a_slow_connect_fit_inside_the_dial_deadline() {
+        assert!(
+            handshake::HANDSHAKE_TIMEOUT + USUAL_CONNECT_BUDGET
+                <= Duration::from_millis(DIAL_TIMEOUT_MS),
+            "{:?} + {USUAL_CONNECT_BUDGET:?} > {DIAL_TIMEOUT_MS} ms",
+            handshake::HANDSHAKE_TIMEOUT,
+        );
+    }
+
+    /// M12c: a request and a dial give up after the same time.
+    #[test]
+    fn a_request_and_a_dial_give_up_together() {
+        assert_eq!(
+            Limits::default().request_timeout,
+            Duration::from_millis(DIAL_TIMEOUT_MS)
+        );
     }
 
     /// Gate 5's classifier. A peer that is down is retried; a peer that fails

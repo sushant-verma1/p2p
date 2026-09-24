@@ -252,11 +252,15 @@ fn a_pasted_invite_that_is_accepted_ends_on_a_connected_screen() {
         |caller| caller.app.state() == ConnState::Established,
     );
 
+    // Waited for, not read: §6's responder finishes on `HELLO_CONFIRM`, which
+    // the initiator sends as it finishes, so the acceptor's session always
+    // lands a moment after the requester's.
     assert_eq!(host.app.peer(), Some(caller.me));
-    assert_eq!(
-        host.app.state(),
-        ConnState::Established,
-        "the acceptor's screen never said connected"
+    until(
+        &mut host,
+        &mut caller,
+        "the acceptor's screen to say connected",
+        |host| host.app.state() == ConnState::Established,
     );
 }
 

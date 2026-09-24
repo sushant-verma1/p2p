@@ -220,11 +220,21 @@ Any failure closes the connection immediately with a generic error code. Do not 
 
 ### Timeout
 
-The whole exchange must complete within **10 seconds** of the QUIC connection opening, else abort. Each individual read gets the same deadline, so a peer that sends one byte a second cannot stretch the exchange out by keeping a read alive.
+The whole exchange must complete within **14 seconds** of the QUIC connection opening, else abort. Each individual read gets the same deadline, so a peer that sends one byte a second cannot stretch the exchange out by keeping a read alive.
 
 A peer that connects and never finishes the handshake otherwise holds a connection, a stream and an ephemeral key pair for as long as it likes, at no cost to itself. The timeout is the only thing that bounds that.
 
-The 10 seconds start when the QUIC connection opens, so they cover none of the connect. A whole dial — connect *plus* handshake — gets **20 seconds**, and an unreachable peer produces a failed dial at that point rather than whatever QUIC eventually decides. `P2PCHAT_DIAL_TIMEOUT_MS` overrides it; the gates set it low so that this deadline, and not QUIC's, is what they measure.
+The value is measured, not chosen (M12b, `netem/`). Over an 800 ms round trip with bursty loss — netem's Gilbert-Elliott model, set for 8% loss with a mean burst of 1.45 — 150 handshakes took p50 0.80 s, p99 8.47 s, max 13.22 s; the old 10 seconds failed one of them. The link measured 16.95% round-trip ping loss, about 8.9% a leg, which is harsher than the 8% intended, so 14 seconds is a conservative figure rather than a tight one.
+
+It is not a loose one either. M12c came close to it twice, both over the same 800 ms round trip with 8% independent loss:
+- 13.93 s, 0.07 s under the limit: M12c's sweep, 30 handshakes, 13.25% round-trip ping loss over 400 pings.
+- 13.21 s, 0.79 s under it: the re-run after the harness fix, 150 handshakes, 15.75% round-trip ping loss over 2000 pings.
+
+The margin is tight on purpose, and only on profiles harsher than real mobile networks: an 800 ms round trip losing 13–16% of pings is past what a poor cellular link does. Covering these near-misses would mean a higher limit, and every peer that connects and then stalls would hold its connection that much longer. So 14 seconds stays. A handshake timeout under real conditions, not under netem, is the signal to raise it.
+
+The 14 seconds start when the QUIC connection opens, so they cover none of the connect. A whole dial — connect *plus* handshake — gets **20 seconds**: the 14, plus 6 for the connect. The 6 is a budget that covers almost every connect, not the slowest ever seen. Over the same 800 ms round trip, at 8% independent loss and bursty loss alike, M12b's slowest of 180 connects was 3.80 s, and every one of M12c's 486 was 3.23 s or under except one: 8.02 s, under bursty loss, followed by a 2.40 s handshake, so that dial still finished inside the 20. Raising the dial deadline to guarantee that case would make every unreachable peer wait longer to buy it. A unit test holds the handshake timeout plus the connect budget under the dial deadline, so raising one without the other fails. An unreachable peer produces a failed dial at that point rather than whatever QUIC eventually decides. `P2PCHAT_DIAL_TIMEOUT_MS` overrides it; the gates set it low so that this deadline, and not QUIC's, is what they measure. For the same reason a dialler offers a **60-second** idle limit rather than 20: until the peer answers there is no negotiation, the dialler's own limit governs, and at 20 it raced the dial deadline and usually won with a bare "timed out" (M12b). Once the peer's transport parameters arrive QUIC takes the smaller offer, so an established session still uses the 20 seconds below.
+
+A connection request to a public node (§3) also waits **20 seconds**, so a request and a dial give up after the same time. Over an 800 ms round trip with 8% loss (16.35% round-trip ping loss), 200 requests took p50 1.61 s, p90 4.94 s, p99 16.37 s, max 25.05 s. QUIC's loss recovery doubles its timer on each consecutive loss, so the answers bunch up: about 7.3 s after three losses in a row, 14.5–17.4 s after four, about 25 s after five. The old 5 seconds failed 9.5% of them. 20 seconds fails 0.5%, the one five-loss run, which is the same rate as the 18.2 s the samples alone suggest. The public node applies the same 20 seconds to its side of the exchange. A node that gave up sooner would cut off callers on slow links who were still inside their own deadline.
 
 ### Keep-alive
 
@@ -354,7 +364,7 @@ CREATE TABLE schema_version (version INTEGER NOT NULL);
 
 Keyed by `from_user_id`, so a caller who repeats a request finds their existing row rather than adding one. The count of rows in state 0 is capped; a request arriving at a full queue is refused rather than queued, and the refusal is the same `REJECTED` the user's own refusal produces. Rows in state 1 and 2 do not count against the cap, and accumulate only as fast as the user resolves them.
 
-`outbound_requests` is the mirror of it: requests *we* sent and nobody has answered. A row is written when the request goes out and removed when the answer is `ACCEPTED` or `REJECTED`, so the table is exactly the set of open questions. It exists because the answer is rarely immediate and the requester is the side that must keep asking (§10) — without the row, a request pending when the process stops is one nobody ever returns to, and the user would have to send it again to find out it had been accepted an hour ago. The address is stored beside the ID because it is where the *question* goes, which is the invite's public node and not anywhere the peer has claimed to be since.
+`outbound_requests` is the mirror of it: requests *we* sent and nobody has answered. A row is written when the request goes out. It is removed when the answer is `REJECTED`, or when an `ACCEPTED` answer has produced a session (§10, M12c), so the table is exactly the set of attempts not yet finished. It exists because the answer is rarely immediate and the requester is the side that must keep asking (§10) — without the row, a request pending when the process stops is one nobody ever returns to, and the user would have to send it again to find out it had been accepted an hour ago. The address is stored beside the ID because it is where the *question* goes, which is the invite's public node and not anywhere the peer has claimed to be since.
 
 `peers.accepted` is the user's decision about a peer — §10's access rule, and the half of F-06 that outlives the queue row. It is written by an accept or a reject and by nothing else: a handshake never sets it, or a peer would grant itself access by connecting. A peer may therefore have a row here with no `identity_pk` yet, because the decision can be made before the first handshake; the column is all-zero until §6 proves a key, and an all-zero key cannot satisfy §6 check 2. The migration that adds the column defaults existing rows to 0 — those rows were written when a handshake was all it took, and none of them records a decision anyone made.
 
@@ -421,6 +431,8 @@ DISCONNECTED
 
 Backoff: 1s, 2s, 4s, 8s, 16s, 30s, then every 30s with ±20% jitter. Give up after 10 minutes and require user action.
 
+That is the schedule the code sets, not what a user sees. Against a peer that is down, each attempt costs its backoff delay plus the whole 20-second dial deadline (§6). A node that is down, a closed UDP port and a wrong address all look like silence to QUIC. So attempts start 21, 22, 24, 28, 36 and 50 s apart, and then about every 50 s (44–56 with the jitter). The budget is checked before each attempt, so **15 attempts** start inside the 10 minutes, 14 to 16 depending on the jitter. The last one starts at about 9 min 41 s, and the loop gives up at about 10 min 31 s.
+
 A verification failure — bad signature, ID mismatch — never retries automatically. It means either a bug or an attack, and quietly reconnecting in a loop is the wrong response to both.
 
 ### Access control
@@ -444,6 +456,8 @@ A `CONNECTION_REQUEST` therefore carries no address: the requester's own is of n
 The reason is reachability. Only the invite's owner has to be reachable — they published an address and are waiting to be asked. The requester published nothing, and under CGNAT has nothing it *could* publish. Having the acceptor dial back would require the requester to be reachable too, which doubles the hosting requirement for no gain and rules out exactly the peer this design is for: someone on mobile data who was handed an invite. `project.md` §7 records what is left of the CGNAT problem after this change.
 
 An answer is rarely immediate — a human has to decide — so the requester asks again: **2 seconds, doubling to a ceiling of 60**, for as long as the request is unanswered and the node is running. The interval starts short because the common case is a user watching both screens, and ends long because the uncommon case is a user who will answer tomorrow. Pending requests are stored (`outbound_requests`, §8) and polling resumes at startup, immediately rather than after the first interval: the decision may well have been made while we were gone. `REJECTED` stops the polling and takes back the acceptance that sending the request recorded, since §10 would otherwise leave us dialling a peer who said no.
+
+`ACCEPTED` does not end the request by itself. **The request stays on file until a session exists** (M12c). If the dial it triggers goes unanswered, the poller keeps asking, gets `ACCEPTED` again and dials again, for as long as the node runs and again after a restart. There is no cap. Only a §6 refusal ends it early, because a peer that fails verification is never retried. Without this, a first dial lost to a blip would strand the peer: accepted, but with nowhere on record to dial, because only an address §6 has proved is stored (`peers.last_addr`, below). Recording the address on acceptance instead would store an address nobody has vouched for. A forged `ACCEPTED` would then be redialled on every restart.
 
 ### Simultaneous dial
 

@@ -45,10 +45,17 @@ use crate::{connect, recv_frame, send_frame, NetError};
 /// What the public node is allowed to spend on callers it knows nothing about.
 ///
 /// The defaults: **ten requests per source IP per minute**, at most 1024
-/// distinct sources tracked, and five seconds for a whole exchange. Ten a
+/// distinct sources tracked, and twenty seconds for a whole exchange. Ten a
 /// minute is far above what a person pasting an invite generates — one profile
 /// request, one connection request, then a status poll every few seconds — and
 /// far below what a flood needs to be useful.
+///
+/// Twenty seconds because QUIC's loss recovery doubles its timer on every
+/// consecutive loss: on an 800 ms round trip with 8% loss, four losses in a
+/// row land an answer at 14.5–17.4 s and five at about 25 s (M12b, 200
+/// samples, 16.35% round-trip ping loss). Twenty fails 0.5% of those, the same
+/// as the 18.2 s the samples alone would give, and makes a request's give-up
+/// and a dial's give-up one number — `architecture.md` §6.
 ///
 /// The address is an IP, not an IP and port: a caller who reconnects gets a new
 /// port every time, so a per-port limit would limit nothing.
@@ -70,7 +77,7 @@ impl Default for Limits {
             per_source: 10,
             window: Duration::from_secs(60),
             max_sources: 1024,
-            request_timeout: Duration::from_secs(5),
+            request_timeout: Duration::from_secs(20),
         }
     }
 }

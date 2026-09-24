@@ -404,10 +404,15 @@ async fn conversations(node: &Node, failed: &Failed) -> Vec<Conversation> {
                     Phase::Handshaking => ConnState::Handshaking,
                     Phase::Reconnecting => ConnState::Reconnecting,
                 }
-            } else if trying.contains(&peer.user_id) {
-                ConnState::Connecting
+            // The failure before the stored request — M12c. The request now
+            // outlives a failed dial so the poller can dial again, and ranked
+            // above the failure it would hide the reason and put the screen
+            // back on "connecting" for ever. A retry in progress still shows,
+            // as its phase above; between retries the user reads why.
             } else if failure.is_some() {
                 ConnState::Failed
+            } else if trying.contains(&peer.user_id) {
+                ConnState::Connecting
             } else {
                 ConnState::Disconnected
             };

@@ -162,13 +162,25 @@ pub const MAX_IDLE: Duration = Duration::from_secs(20);
 /// session.
 pub const KEEP_ALIVE: Duration = Duration::from_secs(5);
 
+/// The idle limit a dialler offers: longer than the node's 20-second dial
+/// deadline, so a silent address ends in that deadline's guidance rather than
+/// quinn's bare "timed out".
+///
+/// It only rules until the peer's transport parameters arrive. From then on
+/// QUIC uses the smaller of the two offers, which is the listener's
+/// [`MAX_IDLE`], so an established session notices a dead peer exactly as
+/// quickly as before.
+pub const CONNECT_IDLE: Duration = Duration::from_secs(60);
+
 /// The transport settings both endpoints share. Every config in this crate is
 /// built from it, so the two cannot drift — a keep-alive on one side only is
 /// still a session that dies.
-fn transport_config() -> Arc<quinn::TransportConfig> {
+fn transport_config(max_idle: Duration) -> Arc<quinn::TransportConfig> {
     let mut transport = quinn::TransportConfig::default();
     transport.max_idle_timeout(Some(
-        MAX_IDLE.try_into().expect("MAX_IDLE fits in a QUIC varint"),
+        max_idle
+            .try_into()
+            .expect("idle limits fit in a QUIC varint"),
     ));
     transport.keep_alive_interval(Some(KEEP_ALIVE));
     Arc::new(transport)
@@ -193,7 +205,7 @@ pub fn server_endpoint(addr: SocketAddr, kind: NodeKind) -> Result<Endpoint, Net
     let mut config = quinn::ServerConfig::with_crypto(Arc::new(
         quinn::crypto::rustls::QuicServerConfig::try_from(crypto)?,
     ));
-    config.transport_config(transport_config());
+    config.transport_config(transport_config(MAX_IDLE));
     let endpoint = Endpoint::server(config, addr)?;
     tracing::info!(?kind, addr = %endpoint.local_addr()?, "listening");
     Ok(endpoint)
@@ -203,7 +215,7 @@ pub fn server_endpoint(addr: SocketAddr, kind: NodeKind) -> Result<Endpoint, Net
 pub fn client_endpoint(kind: NodeKind) -> Result<Endpoint, NetError> {
     let mut endpoint = Endpoint::client(SocketAddr::from((Ipv4Addr::UNSPECIFIED, 0)))?;
     let mut config = accept_any_server_cert::client_config(kind.alpn())?;
-    config.transport_config(transport_config());
+    config.transport_config(transport_config(CONNECT_IDLE));
     endpoint.set_default_client_config(config);
     tracing::info!(?kind, addr = %endpoint.local_addr()?, "dialling from");
     Ok(endpoint)

@@ -209,11 +209,12 @@ host — nothing on the host can. That is what a peer's first connection tests.
 
 ### If it will not connect
 
-A peer that cannot reach the owner's public endpoint waits 5 seconds (20 for
-the private one, after acceptance) and gets, in the selected conversation:
+A peer that cannot reach the owner's public endpoint waits 20 seconds (the
+same for the private one, after acceptance) and gets, in the selected
+conversation:
 
 ```
-! no answer from 198.51.100.7:47100 after 5s. An unreachable node and a wrong
+! no answer from 198.51.100.7:47100 after 20s. An unreachable node and a wrong
   address look the same from here, so check: ...
 ```
 

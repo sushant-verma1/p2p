@@ -96,7 +96,8 @@ ALTER TABLE peers ADD COLUMN accepted INTEGER NOT NULL DEFAULT 0;
 ///
 /// `addr` is the *public* node address the request went to, which is where the
 /// status query goes as well. The private address to dial arrives in the
-/// `Accepted` answer and is never stored: by then the dial is immediate.
+/// `Accepted` answer and is never stored: it is asked for again, with the
+/// status, each time a dial to it goes unanswered (M12c).
 ///
 /// `pending_requests.addrs` goes in the same migration. A `CONNECTION_REQUEST`
 /// no longer carries an address (§3), so the column could only ever hold what
@@ -115,8 +116,8 @@ ALTER TABLE pending_requests DROP COLUMN addrs;
 /// Where to dial a peer again — `architecture.md` §10, M10.
 ///
 /// Reconnection needs an address, and until now the only one on disk was the
-/// *public* node's in `outbound_requests`, which is deleted the moment the
-/// request is answered. This holds the private address §6 last completed a
+/// *public* node's in `outbound_requests`, which is deleted once the request
+/// has produced a session. This holds the private address §6 last completed a
 /// handshake on: the peer answered there and proved who it was, which is the
 /// only evidence this node has that the address is worth dialling again.
 ///

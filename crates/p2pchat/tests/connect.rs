@@ -306,6 +306,26 @@ async fn an_unreachable_owner_is_reported_with_what_to_check() {
     }
 }
 
+/// M12b: the dial to a silent address gets the same guidance. Its deadline
+/// and quinn's idle limit were both 20 seconds and the bare "timed out" won
+/// most races; now the deadline fires first. Runs at the real 20 seconds.
+#[tokio::test(flavor = "multi_thread")]
+async fn a_silent_address_is_dialled_into_what_to_check() {
+    let caller = requester().await;
+    let silent = std::net::UdpSocket::bind("127.0.0.1:0").expect("a socket");
+    let addr = silent.local_addr().expect("its address");
+
+    let error = tokio::time::timeout(Duration::from_secs(40), caller.node.dial(addr, None))
+        .await
+        .expect("a silence ends in an error, not a hang")
+        .expect_err("nobody answered");
+
+    let text = format!("{error:#}");
+    for needle in ["no answer from", "UDP port", "carrier-grade NAT"] {
+        assert!(text.contains(needle), "missing {needle:?} in: {text}");
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Gate 2
 // ---------------------------------------------------------------------------
@@ -733,6 +753,142 @@ async fn a_rejection_stops_the_polling_and_clears_the_acceptance() {
         0,
         "the requester kept polling a request that was answered"
     );
+}
+
+// ---------------------------------------------------------------------------
+// M12c: a first dial nobody answers
+// ---------------------------------------------------------------------------
+
+/// A host on directories the caller owns, bound and advertising where it is
+/// told — the stranding gate restarts one on the same store and port.
+async fn host_at(
+    dir: &Path,
+    public_bind: SocketAddr,
+    private_advertise: Option<SocketAddr>,
+) -> (Arc<Node>, Receiver<Event>) {
+    Node::start(Config {
+        config_dir: dir.join("config"),
+        data_dir: dir.join("data"),
+        private_bind: "127.0.0.1:0".parse().expect("a literal address"),
+        public_bind: Some(public_bind),
+        advertise: vec![ADDR.parse().expect("a literal address")],
+        private_advertise,
+        display_name: "test".to_owned(),
+    })
+    .await
+    .expect("the node starts")
+}
+
+/// M12c. The first dial after acceptance goes unanswered — here a silent
+/// advertised address, on a real link a blip — and the peer is not stranded:
+/// the request stays on file, the poller asks and dials again, and when the
+/// host comes back on the same store with its real address there is a
+/// session. The silent address is never recorded; only one §6 proved is.
+///
+/// Runs the real 20-second dial deadline once.
+#[test]
+fn an_unanswered_first_dial_is_retried_until_there_is_a_session() {
+    let dir = tempfile::tempdir().expect("a temporary directory");
+    let host_dir = dir.path().join("host");
+    let silent = std::net::UdpSocket::bind("127.0.0.1:0").expect("a socket");
+    let silent_addr = silent.local_addr().expect("its address");
+    let wait = Duration::from_secs(90);
+
+    let caller_runtime = runtime();
+    let mut caller = caller_runtime.block_on(requester());
+
+    let first = runtime();
+    let (host, host_events) = first.block_on(host_at(
+        &host_dir,
+        "127.0.0.1:0".parse().expect("a literal address"),
+        Some(silent_addr),
+    ));
+    let (host_me, public) = (host.me, host.public_addr().expect("a public endpoint"));
+
+    caller_runtime.block_on(async {
+        caller
+            .node
+            .request_connection(host_me, public)
+            .await
+            .expect("the request is sent");
+    });
+    first
+        .block_on(host.decide(caller.node.me, true))
+        .expect("the decision");
+
+    caller_runtime.block_on(async {
+        let event = tokio::time::timeout(wait, caller.session_event())
+            .await
+            .expect("the dial to the silent address ends");
+        assert!(
+            matches!(event, Some(Event::DialFailed { peer, .. }) if peer == host_me),
+            "expected the first dial to fail, got {event:?}"
+        );
+        assert_eq!(
+            caller
+                .node
+                .store
+                .outbound_requests()
+                .await
+                .expect("the store answers"),
+            vec![(host_me, public)],
+            "an unanswered dial dropped the request, so nothing will ask again"
+        );
+        assert!(
+            caller
+                .node
+                .store
+                .reconnectable()
+                .await
+                .expect("the store answers")
+                .is_empty(),
+            "an address nobody answered on was recorded"
+        );
+    });
+
+    // The host restarts on the same store and public port, now advertising
+    // where it really listens.
+    drop((host, host_events));
+    first.shutdown_timeout(Duration::from_secs(5));
+    let second = runtime();
+    let (host, _host_events) = second.block_on(host_at(&host_dir, public, None));
+    let real = host.private_advertise().expect("a private address");
+
+    caller_runtime.block_on(async {
+        let event = tokio::time::timeout(wait, caller.session_event())
+            .await
+            .expect("the poller dials again");
+        assert!(
+            matches!(event, Some(Event::Connected { peer, .. }) if peer == host_me),
+            "expected a session, got {event:?}"
+        );
+        // `Connected` is sent from inside the dial; the address is recorded
+        // after it and the row removed after that.
+        tokio::time::timeout(PATIENCE, async {
+            while !caller
+                .node
+                .store
+                .outbound_requests()
+                .await
+                .expect("the store answers")
+                .is_empty()
+            {
+                tokio::time::sleep(Duration::from_millis(50)).await;
+            }
+        })
+        .await
+        .expect("the request outlived its session");
+        assert_eq!(
+            caller
+                .node
+                .store
+                .reconnectable()
+                .await
+                .expect("the store answers"),
+            vec![(host_me, real)],
+            "the address on record is not the one §6 proved"
+        );
+    });
 }
 
 fn runtime() -> tokio::runtime::Runtime {
