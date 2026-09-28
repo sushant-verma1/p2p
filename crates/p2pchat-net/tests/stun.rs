@@ -73,7 +73,11 @@ async fn fake_server(mapped: SocketAddr) -> SocketAddr {
             let Ok(id) = buf[8..20].try_into() else {
                 break;
             };
-            if socket.send_to(&success_response(id, mapped), from).await.is_err() {
+            if socket
+                .send_to(&success_response(id, mapped), from)
+                .await
+                .is_err()
+            {
                 break;
             }
         }

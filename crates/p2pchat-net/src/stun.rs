@@ -248,7 +248,9 @@ pub async fn query(
     let mut transaction_id = [0u8; TRANSACTION_ID_LEN];
     rand::rngs::OsRng.fill_bytes(&mut transaction_id);
 
-    socket.send_to(&encode_request(transaction_id), server).await?;
+    socket
+        .send_to(&encode_request(transaction_id), server)
+        .await?;
 
     let deadline = tokio::time::Instant::now() + request_timeout;
     let mut buf = [0u8; MAX_RESPONSE];
@@ -257,12 +259,11 @@ pub async fn query(
         if remaining.is_zero() {
             return Err(StunError::Timeout);
         }
-        let (received, _from) = match tokio::time::timeout(remaining, socket.recv_from(&mut buf))
-            .await
-        {
-            Ok(result) => result?,
-            Err(_) => return Err(StunError::Timeout),
-        };
+        let (received, _from) =
+            match tokio::time::timeout(remaining, socket.recv_from(&mut buf)).await {
+                Ok(result) => result?,
+                Err(_) => return Err(StunError::Timeout),
+            };
         let datagram = &buf[..received];
 
         // Discarded, not treated as an answer: this is the whole defence
@@ -418,7 +419,10 @@ pub async fn discover(
     request_timeout: Duration,
 ) -> Report {
     let probes = probe(socket, servers, request_timeout).await;
-    let reflexive: Vec<SocketAddr> = probes.iter().filter_map(|p| p.result.ok()).collect();
+    let reflexive: Vec<SocketAddr> = probes
+        .iter()
+        .filter_map(|p| p.result.as_ref().ok().copied())
+        .collect();
     let mapping = classify(&reflexive);
 
     let no_nat = match (mapping, reflexive.first()) {
@@ -533,7 +537,10 @@ mod tests {
         msg.extend_from_slice(&0u16.to_be_bytes());
         msg.extend_from_slice(&MAGIC_COOKIE.to_be_bytes());
         msg.extend_from_slice(&id);
-        assert!(matches!(parse_response(&msg, id), Err(StunError::ServerError)));
+        assert!(matches!(
+            parse_response(&msg, id),
+            Err(StunError::ServerError)
+        ));
     }
 
     #[test]
@@ -583,7 +590,10 @@ mod tests {
         msg.extend_from_slice(&id);
         msg.extend_from_slice(&ATTR_XOR_MAPPED_ADDRESS.to_be_bytes());
         msg.extend_from_slice(&0xFFFFu16.to_be_bytes());
-        assert!(matches!(parse_response(&msg, id), Err(StunError::Malformed)));
+        assert!(matches!(
+            parse_response(&msg, id),
+            Err(StunError::Malformed)
+        ));
     }
 
     #[test]

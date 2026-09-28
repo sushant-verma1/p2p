@@ -731,12 +731,9 @@ fn unroutable(ip: IpAddr) -> Option<&'static str> {
 /// address, and reports what they agree or disagree on. Nothing it learns is
 /// used anywhere else in this process.
 async fn nat() -> Result<()> {
-    let socket = tokio::net::UdpSocket::bind(SocketAddr::new(
-        IpAddr::V4(Ipv4Addr::UNSPECIFIED),
-        0,
-    ))
-    .await
-    .context("bind a UDP socket")?;
+    let socket = tokio::net::UdpSocket::bind(SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), 0))
+        .await
+        .context("bind a UDP socket")?;
 
     let mut servers = Vec::new();
     for &(label, host) in p2pchat_net::stun::DEFAULT_SERVERS {
@@ -755,7 +752,10 @@ async fn nat() -> Result<()> {
     for probe in &report.probes {
         match &probe.result {
             Ok(addr) => println!("{:<10} {:<28} reflexive {addr}", probe.label, probe.server),
-            Err(error) => println!("{:<10} {:<28} no answer: {error}", probe.label, probe.server),
+            Err(error) => println!(
+                "{:<10} {:<28} no answer: {error}",
+                probe.label, probe.server
+            ),
         }
     }
 
