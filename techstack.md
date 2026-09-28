@@ -23,6 +23,8 @@ Both are taken with `default-features = false`. `rustls` 0.23 defaults to `aws-l
 
 `tokio`'s `io-util` and `process` features are enabled only in `p2pchat-net`'s dev-dependencies, for the two-process transport test. The library itself needs neither.
 
+`tokio`'s `net` feature is enabled in `p2pchat-net`'s own dependencies from M13 on, for the plain UDP socket STUN needs — the QUIC transport never touches `tokio::net` directly, since `quinn` owns its own socket.
+
 **A C compiler is required from M3 on.** `ring` builds C and assembly. Linux and macOS have one; on Windows the `x86_64-pc-windows-gnu` toolchain does not ship `gcc`, and the workspace does not build there without one. Building in a `rust` container is the practical route on such a machine; CI runs on Linux regardless.
 
 ## Cryptography
@@ -135,6 +137,8 @@ Recorded so these are not relitigated at 2am.
 **`snow` (Noise framework).** Would implement the handshake correctly and in about twenty lines. Rejected because implementing the handshake is the main thing being learned. Worth reading its source as a reference; worth revisiting for V0.2 if the hand-rolled version proves fragile.
 
 **`libp2p`.** Implements roughly 70% of this specification, including peer IDs as public key hashes, Noise sessions, and NAT traversal. Same objection as `snow`, larger. Genuinely the right answer for a product; wrong for this project.
+
+**STUN crates (`stun`, `stun_codec`, `webrtc`'s `stun` module) — M13.** A binding request is a 20-byte header, a magic cookie, a 96-bit transaction ID, and one TLV attribute to decode: smaller than what made `snow` worth avoiding, and the part of M13 that actually matters — cross-server agreement on the mapped port, which decides whether a peer is punchable — is product logic no such crate provides regardless. Same objection as `snow` and `libp2p`. Named honestly, though: a widely-used crate has absorbed far more hostile input than one fuzz run will throw at a fresh 150-line parser, and that is a real advantage, not an imagined one — it just does not outweigh the learning goal on a format this small and this fully specified, with M13's gate requiring the parser be fuzzed either way. That tradeoff is scored per milestone, not by precedent: M16's Kademlia is a much larger surface with subtler failure modes, and the same question may come out the other way there.
 
 **Raw TCP.** Would mean writing the reliability layer by hand. QUIC was chosen instead, which means TLS 1.3 sits underneath the custom handshake. This is redundancy, and it is a fair criticism of the stack — the channel binding in `architecture.md` §3 turns the redundancy into an asset by using the outer session to prevent relay attacks on the inner one, but it remains true that a TCP build would have taught more about reliability and less about nothing.
 

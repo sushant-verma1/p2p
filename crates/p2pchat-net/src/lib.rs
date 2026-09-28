@@ -9,6 +9,7 @@
 mod accept_any_server_cert;
 pub mod handshake;
 pub mod public;
+pub mod stun;
 
 use std::net::{Ipv4Addr, SocketAddr};
 use std::sync::Arc;

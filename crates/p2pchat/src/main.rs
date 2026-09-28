@@ -115,6 +115,13 @@ enum Command {
         /// The peer's 64-character user ID.
         peer: String,
     },
+
+    /// Query public STUN servers for this host's reflexive address and
+    /// report whether its NAT can ever be hole-punched — M13.
+    ///
+    /// Read-only: nothing here is wired into dialling, invites, or `--addr`.
+    /// That is M17 and M18.
+    Nat,
 }
 
 fn main() -> Result<()> {
@@ -157,6 +164,7 @@ fn main() -> Result<()> {
             private_advertise,
         )),
         Some(Command::History { peer }) => runtime()?.block_on(history(&peer)),
+        Some(Command::Nat) => runtime()?.block_on(nat()),
         // No subcommand: the chat itself — M9. The TUI runs on this thread
         // and the runtime is started underneath it, so `runtime()` is not
         // used here.
@@ -712,6 +720,64 @@ fn unroutable(ip: IpAddr) -> Option<&'static str> {
             }
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// NAT discovery — M13
+// ---------------------------------------------------------------------------
+
+/// `p2pchat nat` — M13. Read-only, like `check`: it binds one throwaway UDP
+/// socket, asks each of `stun::DEFAULT_SERVERS` for this host's reflexive
+/// address, and reports what they agree or disagree on. Nothing it learns is
+/// used anywhere else in this process.
+async fn nat() -> Result<()> {
+    let socket = tokio::net::UdpSocket::bind(SocketAddr::new(
+        IpAddr::V4(Ipv4Addr::UNSPECIFIED),
+        0,
+    ))
+    .await
+    .context("bind a UDP socket")?;
+
+    let mut servers = Vec::new();
+    for &(label, host) in p2pchat_net::stun::DEFAULT_SERVERS {
+        match tokio::net::lookup_host(host).await {
+            Ok(mut addrs) => match addrs.next() {
+                Some(addr) => servers.push((label, addr)),
+                None => println!("{label:<10} {host:<28} no DNS answer"),
+            },
+            Err(error) => println!("{label:<10} {host:<28} DNS lookup failed: {error}"),
+        }
+    }
+
+    let report =
+        p2pchat_net::stun::discover(&socket, &servers, p2pchat_net::stun::SERVER_TIMEOUT).await;
+
+    for probe in &report.probes {
+        match &probe.result {
+            Ok(addr) => println!("{:<10} {:<28} reflexive {addr}", probe.label, probe.server),
+            Err(error) => println!("{:<10} {:<28} no answer: {error}", probe.label, probe.server),
+        }
+    }
+
+    use p2pchat_net::stun::Mapping;
+    let (mapping, punchable) = match report.mapping {
+        Mapping::EndpointIndependent => ("endpoint-independent", true),
+        Mapping::AddressOrPortDependent => (
+            "address- or port-dependent (symmetric) - no relay means this can never be punched",
+            false,
+        ),
+        Mapping::Unknown => (
+            "unknown - fewer than two independent servers agreed, so this is not a guess",
+            false,
+        ),
+    };
+    println!("mapping    {mapping}");
+    println!("punchable  {}", if punchable { "yes" } else { "no" });
+    if report.no_nat == Some(true) {
+        println!("note       the reflexive address matches a local address: no NAT on this path");
+    }
+
+    Ok(())
 }
 
 // ---------------------------------------------------------------------------

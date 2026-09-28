@@ -1338,7 +1338,9 @@ version = "0.1.0"
 dependencies = [
  "p2pchat-core",
  "p2pchat-crypto",
+ "proptest",
  "quinn",
+ "rand 0.8.8",
  "rcgen",
  "rustls",
  "thiserror 2.0.20",

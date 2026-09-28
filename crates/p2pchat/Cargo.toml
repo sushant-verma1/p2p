@@ -16,7 +16,12 @@ toml.workspace = true
 # the composition root names quinn's types. Already a workspace dependency.
 quinn.workspace = true
 thiserror.workspace = true
-tokio.workspace = true
+# `net`, for the `nat` subcommand's own `UdpSocket` and DNS lookup — M13.
+# `p2pchat-net` already enables this feature, so Cargo's unification would
+# make it compile without this; declared anyway, since `main.rs` uses
+# `tokio::net` directly and should not depend on another crate's choice to
+# keep working.
+tokio = { workspace = true, features = ["net"] }
 tracing.workspace = true
 tracing-appender.workspace = true
 tracing-subscriber.workspace = true

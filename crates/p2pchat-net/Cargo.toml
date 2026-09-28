@@ -7,14 +7,18 @@ publish.workspace = true
 
 [dependencies]
 quinn.workspace = true
+rand.workspace = true
 rcgen.workspace = true
 rustls.workspace = true
 thiserror.workspace = true
-tokio.workspace = true
+# `net`, for the STUN module's plain `UdpSocket` — M13. Nothing else in this
+# crate uses `tokio::net`; QUIC owns its own socket via `quinn`.
+tokio = { workspace = true, features = ["net"] }
 tracing.workspace = true
 
 p2pchat-core.workspace = true
 p2pchat-crypto.workspace = true
 
 [dev-dependencies]
+proptest.workspace = true
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "process", "io-util"] }
