@@ -85,6 +85,7 @@ async fn start(dir: &Path, public: bool) -> (Arc<Node>, Receiver<Event>) {
         advertise: vec![ADDR.parse().expect("a literal address")],
         private_advertise: None,
         display_name: "test".to_owned(),
+        bootstrap: Vec::new(),
     })
     .await
     .expect("the node starts")
@@ -172,6 +173,8 @@ fn liar(answer: (RequestState, Option<SocketAddr>)) -> Liar {
             invite,
             limits: Limits::default(),
             requests,
+            members: Vec::new(),
+            dht: None,
         },
     ));
 
@@ -565,6 +568,7 @@ async fn accepting_without_an_address_is_refused_in_the_same_words() {
         advertise: Vec::new(),
         private_advertise: None,
         display_name: "test".to_owned(),
+        bootstrap: Vec::new(),
     })
     .await
     .expect("the node starts");
@@ -774,6 +778,7 @@ async fn host_at(
         advertise: vec![ADDR.parse().expect("a literal address")],
         private_advertise,
         display_name: "test".to_owned(),
+        bootstrap: Vec::new(),
     })
     .await
     .expect("the node starts")

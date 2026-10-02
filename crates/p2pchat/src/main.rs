@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 
+mod dht;
 mod logging;
 mod paths;
 
@@ -50,6 +51,13 @@ struct Cli {
     /// this in turn, F-27.
     #[arg(long = "private-addr", global = true)]
     private_addr: Option<SocketAddr>,
+
+    /// A public node to ask for a reachability dial-back, repeatable — M14.
+    /// Asked in order until one answers. None, and the node never tests and
+    /// counts itself a client. `bootstrap` in `config.toml`, and
+    /// `P2PCHAT_BOOTSTRAP` overrides both, comma-separated.
+    #[arg(long = "bootstrap", global = true)]
+    bootstrap: Vec<SocketAddr>,
 
     /// The IP both endpoints bind to. Every interface by default, or no host
     /// but this one could reach the node. This is *not* what invites
@@ -119,9 +127,37 @@ enum Command {
     /// Query public STUN servers for this host's reflexive address and
     /// report whether its NAT can ever be hole-punched — M13.
     ///
+    /// It asks from the private endpoint's own socket, bound exactly as a
+    /// node binds it, so the mapping reported is the one QUIC traffic gets
+    /// — M13a. That socket is the node's: stop a running node first.
+    ///
     /// Read-only: nothing here is wired into dialling, invites, or `--addr`.
-    /// That is M17 and M18.
-    Nat,
+    /// M17 publishes the address a dial-back observed instead; the reflexive
+    /// address is M18's.
+    Nat {
+        /// As for `node`, and the same flag the chat is launched with. Zero
+        /// asks the OS, which reports on a port no later run will reuse.
+        #[arg(long, default_value_t = 0)]
+        private_port: u16,
+    },
+
+    /// Run a DHT node and nothing else, driven over stdin and stdout — M16.
+    ///
+    /// The simulation's driver (`netem/dht.py`), as `node` is the netem
+    /// harness's. No store, no sessions, no reachability test: the harness
+    /// says who is a member. `--bootstrap` is where lookups start.
+    Dht {
+        /// A client: holds no routing state, serves nothing.
+        #[arg(long)]
+        client: bool,
+
+        #[arg(long, default_value_t = 0)]
+        private_port: u16,
+
+        /// A member's public node. Required unless `--client`.
+        #[arg(long)]
+        public_port: Option<u16>,
+    },
 }
 
 fn main() -> Result<()> {
@@ -135,7 +171,8 @@ fn main() -> Result<()> {
     let bind = bind_ip(cli.bind);
     let config_dir = paths::config_dir()?;
     let file = file_config(&config_dir);
-    let advertise = advertise(cli.addrs, file.addr);
+    let advertise = addr_list(ADDR_ENV, cli.addrs, file.addr);
+    let bootstrap = addr_list(BOOTSTRAP_ENV, cli.bootstrap, file.bootstrap);
     let private_advertise = private_advertise(cli.private_addr, file.private_addr);
 
     match cli.command {
@@ -152,6 +189,7 @@ fn main() -> Result<()> {
             name,
             advertise,
             private_advertise,
+            bootstrap,
         )),
         Some(Command::Check {
             private_port,
@@ -164,7 +202,19 @@ fn main() -> Result<()> {
             private_advertise,
         )),
         Some(Command::History { peer }) => runtime()?.block_on(history(&peer)),
-        Some(Command::Nat) => runtime()?.block_on(nat()),
+        Some(Command::Nat { private_port }) => runtime()?.block_on(nat(bind, private_port)),
+        Some(Command::Dht {
+            client,
+            private_port,
+            public_port,
+        }) => runtime()?.block_on(dht::run(
+            bind,
+            private_port,
+            (!client).then_some(public_port).flatten(),
+            client,
+            advertise,
+            bootstrap,
+        )),
         // No subcommand: the chat itself — M9. The TUI runs on this thread
         // and the runtime is started underneath it, so `runtime()` is not
         // used here.
@@ -176,6 +226,7 @@ fn main() -> Result<()> {
             advertise,
             private_advertise,
             display_name: cli.name,
+            bootstrap,
         }),
     }
 }
@@ -191,6 +242,9 @@ struct FileConfig {
     addr: Vec<SocketAddr>,
     #[serde(default)]
     private_addr: Option<SocketAddr>,
+    /// `bootstrap = ["198.51.100.1:47100"]`, the list `--bootstrap` builds.
+    #[serde(default)]
+    bootstrap: Vec<SocketAddr>,
 }
 
 /// Reads `config.toml` from the config directory, or defaults.
@@ -213,16 +267,17 @@ fn file_config(dir: &std::path::Path) -> FileConfig {
 /// F-27's `--addr` and `--private-addr`, in `techstack.md`.
 const ADDR_ENV: &str = "P2PCHAT_ADDR";
 const PRIVATE_ADDR_ENV: &str = "P2PCHAT_PRIVATE_ADDR";
+const BOOTSTRAP_ENV: &str = "P2PCHAT_BOOTSTRAP";
 
 /// Environment, then flag, then file — F-27: the override wins over both.
-fn advertise(flag: Vec<SocketAddr>, file: Vec<SocketAddr>) -> Vec<SocketAddr> {
-    if let Some(value) = env_var(ADDR_ENV) {
+fn addr_list(env: &'static str, flag: Vec<SocketAddr>, file: Vec<SocketAddr>) -> Vec<SocketAddr> {
+    if let Some(value) = env_var(env) {
         // Comma-separated, because one variable has to carry what a repeatable
         // flag carries. Any unparseable entry drops the whole override rather
         // than silently advertising a shorter list.
         match value.split(',').map(str::parse).collect() {
             Ok(addrs) => return addrs,
-            Err(_) => tracing::warn!(env = ADDR_ENV, "the override is not a list of addresses"),
+            Err(_) => tracing::warn!(env, "the override is not a list of addresses"),
         }
     }
     if !flag.is_empty() {
@@ -272,6 +327,7 @@ async fn run(
     name: String,
     addrs: Vec<SocketAddr>,
     private_advertise: Option<SocketAddr>,
+    bootstrap: Vec<SocketAddr>,
 ) -> Result<()> {
     let (node, mut events) = Node::start(Config {
         config_dir: paths::config_dir()?,
@@ -281,6 +337,7 @@ async fn run(
         advertise: addrs,
         private_advertise,
         display_name: name,
+        bootstrap,
     })
     .await?;
 
@@ -415,6 +472,11 @@ async fn run_command(node: &std::sync::Arc<Node>, verb: &str, rest: &str) -> Res
         // `connect <addr> [<user-id>]` — the user ID is the one from the
         // invite, and passing it is what makes the handshake check who
         // answered.
+        // `connect <user-id>` alone: look the peer up in the DHT and dial
+        // what its record says — M17.
+        "connect" if rest.len() == 64 && !rest.contains(':') => {
+            node.connect(user_id(rest)?).await?.to_hex()
+        }
         "connect" => {
             let (addr, expected) = match rest.split_once(char::is_whitespace) {
                 Some((addr, peer)) => (addr, Some(user_id(peer.trim())?)),
@@ -502,13 +564,35 @@ async fn run_command(node: &std::sync::Arc<Node>, verb: &str, rest: &str) -> Res
             rest.to_owned()
         }
         "sessions" => format!("{}", node.session_count().await),
+        // M14a: one dial-back through the member at `<addr>`, as
+        // `forwarded <bool> reached <bool> arrived <addr|->`. For measuring;
+        // changes no role.
+        "dialback" => match node
+            .dial_back_once(rest.parse().context("dialback <member-addr>")?)
+            .await
+        {
+            Some(answer) => format!(
+                "forwarded\t{}\treached\t{}\tarrived\t{}",
+                answer.forwarded,
+                answer.reached,
+                answer
+                    .arrived
+                    .map_or_else(|| "-".to_owned(), |addr| addr.to_string())
+            ),
+            None => bail!("the member did not answer"),
+        },
+        // M14: `member <addr>` or `client`.
+        "role" => match node.role() {
+            p2pchat::Role::Member(addr) => format!("member\t{addr}"),
+            p2pchat::Role::Client => "client".to_owned(),
+        },
         other => bail!("unknown command {other}"),
     })
 }
 
 /// 64 hex characters. Not `UserId::from_str`: a user ID has exactly one text
 /// form in this project, and it is produced by `to_hex`.
-fn user_id(text: &str) -> Result<UserId> {
+pub(crate) fn user_id(text: &str) -> Result<UserId> {
     let text = text.trim();
     if text.len() != 64 {
         bail!("a user id is 64 hex characters");
@@ -726,14 +810,20 @@ fn unroutable(ip: IpAddr) -> Option<&'static str> {
 // NAT discovery — M13
 // ---------------------------------------------------------------------------
 
-/// `p2pchat nat` — M13. Read-only, like `check`: it binds one throwaway UDP
-/// socket, asks each of `stun::DEFAULT_SERVERS` for this host's reflexive
-/// address, and reports what they agree or disagree on. Nothing it learns is
-/// used anywhere else in this process.
-async fn nat() -> Result<()> {
-    let socket = tokio::net::UdpSocket::bind(SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), 0))
-        .await
-        .context("bind a UDP socket")?;
+/// `p2pchat nat` — M13, M13a. Read-only, like `check`: it binds the private
+/// endpoint as a node would, asks each of `stun::DEFAULT_SERVERS` for that
+/// socket's reflexive address, and reports what they agree or disagree on.
+/// Nothing it learns is used anywhere else in this process.
+async fn nat(bind: IpAddr, private_port: u16) -> Result<()> {
+    use p2pchat_net::{node_endpoint, NodeKind};
+
+    // `endpoint` lives to the end of the function: dropping it would close
+    // the socket `socket` sends on.
+    let (endpoint, socket) = node_endpoint(SocketAddr::new(bind, private_port), NodeKind::Private)
+        .with_context(|| {
+            format!("bind the private endpoint on UDP {private_port}: is a node already running?")
+        })?;
+    println!("socket     {}", endpoint.local_addr()?);
 
     let mut servers = Vec::new();
     for &(label, host) in p2pchat_net::stun::DEFAULT_SERVERS {
@@ -776,8 +866,58 @@ async fn nat() -> Result<()> {
     if report.no_nat == Some(true) {
         println!("note       the reflexive address matches a local address: no NAT on this path");
     }
+    if let Some(note) = container_note(report.mapping, container()) {
+        println!("note       {note}");
+    }
 
     Ok(())
+}
+
+/// The container runtime this process is inside, if it can tell — M13b.
+///
+/// Each marker is one the runtime itself creates: Docker writes `/.dockerenv`,
+/// Podman `/run/.containerenv`, and systemd-nspawn, LXC and Podman set
+/// `container` in PID 1's environment, which a process started by `exec`
+/// usually inherits. Not finding one proves nothing, so [`container_note`]
+/// still names the case.
+fn container() -> Option<String> {
+    if std::path::Path::new("/.dockerenv").exists() {
+        return Some("Docker".to_owned());
+    }
+    if std::path::Path::new("/run/.containerenv").exists() {
+        return Some("Podman".to_owned());
+    }
+    env_var("container")
+}
+
+/// What to say about a symmetric result that may be the container's NAT
+/// rather than the network's — M13b.
+///
+/// Docker's bridge network (and Docker Desktop's VM under it) gives a
+/// container a different outside port per destination. Inside one, every
+/// network classifies as symmetric, and the result says nothing about the
+/// carrier. Someone will run this in Docker and conclude their carrier is
+/// symmetric, so the line says which NAT was measured.
+fn container_note(
+    mapping: p2pchat_net::stun::Mapping,
+    container: Option<String>,
+) -> Option<String> {
+    if mapping != p2pchat_net::stun::Mapping::AddressOrPortDependent {
+        return None;
+    }
+    Some(match container {
+        Some(runtime) => format!(
+            "this is running inside a {runtime} container, so the NAT measured is the \
+             container's own, which is symmetric whatever the network beyond it is. Run \
+             `p2pchat nat` on the host itself to classify the network (`--network host` \
+             does that only on a Linux host: Docker Desktop's host is a NATed VM)"
+        ),
+        None => "if this is running in a container or VM with NAT networking (Docker's default \
+                 bridge, Docker Desktop, WSL2's NAT mode), that NAT is the likely cause: it is \
+                 symmetric whatever the network beyond it is. Run `p2pchat nat` on the host \
+                 itself to classify the network"
+            .to_owned(),
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -822,4 +962,30 @@ fn whoami() -> Result<()> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use p2pchat_net::stun::Mapping;
+
+    /// M13b: a symmetric result from inside a detected container names the
+    /// container, and one from anywhere else still names containers as the
+    /// likely cause. Neither is said about a result that is not symmetric.
+    #[test]
+    fn a_symmetric_result_names_the_container_nat() {
+        let inside = container_note(Mapping::AddressOrPortDependent, Some("Docker".to_owned()))
+            .expect("a symmetric result is qualified");
+        assert!(inside.contains("inside a Docker container"), "{inside}");
+        assert!(inside.contains("on the host"), "{inside}");
+
+        let unknown = container_note(Mapping::AddressOrPortDependent, None)
+            .expect("a symmetric result is qualified even with no container found");
+        assert!(unknown.contains("Docker"), "{unknown}");
+        assert!(unknown.contains("likely cause"), "{unknown}");
+
+        for mapping in [Mapping::EndpointIndependent, Mapping::Unknown] {
+            assert_eq!(container_note(mapping, Some("Docker".to_owned())), None);
+        }
+    }
 }

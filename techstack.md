@@ -102,6 +102,9 @@ Every path and port has an environment override. This is not a convenience: from
 | `P2PCHAT_BIND_ADDR` | IP both endpoints bind to. Not what invites advertise — that is `--addr` | `0.0.0.0` |
 | `P2PCHAT_ADDR` | Public node addresses to advertise, comma-separated. `--addr`, and `addr` in `config.toml` | none; an invite without one is refused |
 | `P2PCHAT_PRIVATE_ADDR` | Where an accepted requester is told to dial. `--private-addr`, and `private_addr` in `config.toml` | `P2PCHAT_ADDR`'s host with the private port |
+| `P2PCHAT_BOOTSTRAP` | Public nodes asked for a reachability dial-back (M14), comma-separated. `--bootstrap`, and `bootstrap` in `config.toml` | none; the node never tests and stays a client |
+| `P2PCHAT_DHT_K`, `P2PCHAT_DHT_ALPHA`, `P2PCHAT_DHT_REPLICATION` | Kademlia's bucket size, lookup parallelism and replication factor (M16, OD-7). For the simulation's sweeps | `dht::Params::default()` |
+| `P2PCHAT_DHT_REFRESH_MS`, `P2PCHAT_DHT_RPC_TIMEOUT_MS` | Bucket refresh and liveness interval, and one DHT RPC's timeout | 15 minutes; `request_timeout`, 20 s |
 | `RUST_LOG` | Log level | `info` |
 
 The last two are also the only values in `config.toml`, read from the config directory. They are there because they are the only settings this process cannot work out for itself — an address reachable from outside is a fact about a network, not about a host — and retyping them at every launch is how a node ends up started without one. Precedence is the same as everywhere else: environment, then flag, then file. A malformed `config.toml` is logged and ignored rather than fatal; a stale config file should not be the reason a node will not start.

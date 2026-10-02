@@ -29,16 +29,21 @@ use quinn::{Connection, Endpoint, VarInt};
 use tokio::sync::{mpsc, Mutex};
 use tracing::Instrument;
 
-use p2pchat_core::wire::{ConnectionRequest, DeliveryStatus, RequestState, PROTOCOL_VERSION};
+use p2pchat_core::wire::{
+    AddressRecord, ConnectionRequest, DeliveryStatus, RequestState, PROTOCOL_VERSION,
+};
 use p2pchat_core::{MessageId, UserId};
 use p2pchat_crypto::{
-    derive_conversation_id, invite, keystore, CryptoError, Identity, SessionCipher,
+    derive_conversation_id, invite, keystore, record, CryptoError, Identity, SessionCipher,
 };
+use p2pchat_net::dht::{Dht, Params};
 use p2pchat_net::handshake::Established;
 use p2pchat_net::public::{self, Ask, Incoming, Limits, PublicNode};
-use p2pchat_net::{client_endpoint, connect, handshake, server_endpoint, NetError, NodeKind};
+use p2pchat_net::socket::StunChannel;
+use p2pchat_net::{connect, handshake, node_endpoint, server_endpoint, NetError, NodeKind};
 use p2pchat_store::{db_path, Message, Peer, PendingRequest, Store, MAX_PENDING};
 
+use crate::reach::{self, Role};
 use crate::registry::{Admit, Handle, Registry};
 use crate::session::{self, Conversation, Outgoing};
 use crate::Event;
@@ -100,6 +105,98 @@ pub fn no_answer(addr: SocketAddr, waited: Duration) -> String {
         port = addr.port()
     )
 }
+
+/// Why a dial to an address out of a peer's record failed — M17, in M12's
+/// shape.
+///
+/// M12's difficulty again: from here, silence from an address the peer has
+/// left and silence from one it is still behind look the same. What tells
+/// them apart is not the dial but the record, which the owner signed with
+/// the time it was published. So after a silent dial the DHT is asked for a
+/// newer record. One exists: the address was stale, and the newer record is
+/// the evidence. None exists: either the owner is still republishing this
+/// address — then it is current, and this is M12's unreachable owner, with
+/// M12's checklist — or it has stopped, for longer than its republish
+/// schedule and the clock skew allowed can explain, and the record is stale
+/// in the other way: the owner is gone or lost the address without being
+/// able to say so.
+#[derive(Debug, PartialEq, Eq)]
+pub enum Diagnosis {
+    /// The owner has published a newer record, at these addresses.
+    Stale { newer: Vec<SocketAddr>, seq: u64 },
+    /// No newer record, and the owner has not republished this one on
+    /// schedule: `age` seconds since it was published.
+    Abandoned { age: u64 },
+    /// No newer record, and this one is fresh: the owner stands behind the
+    /// address, so it is not stale. `age` as above.
+    Unreachable { age: u64 },
+}
+
+/// How old a record can be before its owner has missed a republish — M17.
+/// Clock skew only admits a future publication time; it never extends expiry
+/// or makes a missed republish less visible.
+pub fn overdue() -> u64 {
+    record::REPUBLISH
+}
+
+/// Diagnoses a silent dial to `dialled`'s addresses, given what a lookup for
+/// a newer record found.
+///
+/// A newer record is evidence of a move only if it says something else: a
+/// periodic republish of the same addresses is the owner standing behind
+/// them, and its age is what counts.
+pub fn diagnose(dialled: &AddressRecord, newer: Option<&AddressRecord>, now: u64) -> Diagnosis {
+    let latest = match newer {
+        Some(newer) if newer.body.addrs != dialled.body.addrs => {
+            return Diagnosis::Stale {
+                newer: newer.body.addrs.clone(),
+                seq: newer.body.seq,
+            }
+        }
+        Some(newer) => newer,
+        None => dialled,
+    };
+    let age = now.saturating_sub(latest.body.published_at);
+    if age > overdue() {
+        Diagnosis::Abandoned { age }
+    } else {
+        Diagnosis::Unreachable { age }
+    }
+}
+
+/// The one line a person gets for a [`Diagnosis`] — M12's style: what
+/// happened, and for the unreachable case, what to check.
+pub fn explain(addr: SocketAddr, waited: Duration, diagnosis: &Diagnosis) -> String {
+    match diagnosis {
+        Diagnosis::Stale { newer, seq } => format!(
+            "no answer from {addr} after {waited:?}: that address is stale. The peer has since \
+             published a newer record (seq {seq}) at {newer:?}, so it moved"
+        ),
+        Diagnosis::Abandoned { age } => format!(
+            "no answer from {addr} after {waited:?}; the DHT record may be stale: the peer last \
+             published it {age} s ago and republishes every {} s. It may be offline, or its \
+             address may have changed without it noticing. The record lapses on its own",
+            record::REPUBLISH
+        ),
+        Diagnosis::Unreachable { age } => format!(
+            "{}. No newer record: this DHT address may be stale. The peer published it {age} s \
+             ago and has not replaced it, so as far as the DHT knows it is current. A peer that \
+             changed network in the last minute may not have republished yet, and a retry would \
+             find it",
+            no_answer(addr, waited)
+        ),
+    }
+}
+
+/// No record for the peer — M17. Terminal: the peer is offline, and dialling
+/// an address nobody vouches for would be dialling blind.
+#[derive(Debug, thiserror::Error)]
+#[error(
+    "not found: the DHT holds no current record for this peer, so it is offline (a record \
+     lapses within {} s of its owner's last publish)",
+    record::LIFETIME
+)]
+pub struct NotFound;
 
 /// Where an accepted requester is told to dial — §10, M9d. An explicit
 /// address wins; otherwise the host comes from the first `--addr` and the port
@@ -297,6 +394,9 @@ pub struct Config {
     /// Ours, in our own connection requests and invites. Advisory: every peer
     /// that receives it is required to treat it as decoration.
     pub display_name: String,
+    /// Public nodes to ask for a reachability dial-back — M14. Empty runs no
+    /// test, and the node stays a [`Role::Client`], since it has shown nothing.
+    pub bootstrap: Vec<SocketAddr>,
 }
 
 pub struct Node {
@@ -307,14 +407,17 @@ pub struct Node {
     pub store: Arc<Store>,
     identity: Identity,
     display_name: String,
-    /// Dials only, on an ephemeral port. Separate from the listener because a
-    /// QUIC endpoint is one socket and the listener's is the advertised one.
-    client: Endpoint,
-    /// Asks public nodes, and only that. A QUIC endpoint carries one ALPN and
-    /// §2 separates the two protocols by ALPN, so `client` cannot be reused
-    /// here: a public node answering a private-ALPN dial rejects it.
-    asker: Endpoint,
-    private: Endpoint,
+    /// Listens, and is also where every dial and every public ask leaves from
+    /// — M13a, `architecture.md` §3. A NAT maps per socket: a dial from any
+    /// other socket would not use the mapping STUN learned, nor a hole punched
+    /// for this one. Asks offer the public ALPN per connection instead.
+    pub(crate) private: Endpoint,
+    /// STUN's side of `private`'s socket — M13b. Held although nothing asks
+    /// STUN from a running node yet: dropped, the socket still works but its
+    /// STUN answers are discarded, and whatever needs a reflexive address next
+    /// (M18; M17 publishes the address a dial-back observed) would be tempted to bind a second socket to get one — which
+    /// learns that socket's mapping, not this one's. `architecture.md` §3.
+    stun: StunChannel,
     public_addr: Option<SocketAddr>,
     /// What an accepted requester is told to dial — M9d. Checked once, at
     /// startup, so a node that cannot answer a request says so before it takes
@@ -336,6 +439,25 @@ pub struct Node {
     /// §11's commit-to-ACK window, stretched only when a test asks — see
     /// [`session::commit_pause`].
     pause: Duration,
+    /// M14's answer, and the dial-backs a test is waiting for — see [`reach`].
+    role: std::sync::Mutex<Role>,
+    pub(crate) dial_backs: reach::Pending,
+    /// Where [`reach`] keeps its last result.
+    pub(crate) data_dir: PathBuf,
+    /// The DHT — M17. `None` without a bootstrap list: nothing to join, and
+    /// a peer is redialled at the address §6 last proved, as in V0.1.
+    dht: Option<Arc<Dht>>,
+    /// The port the DHT is served on while this node is a member: the public
+    /// node's. `None` without a public node, which can never serve.
+    dht_port: Option<u16>,
+    /// Where this run's last dial-back reached this node — M17. Not the
+    /// role's address: a role restored from the last run (M14) carries the
+    /// address that run was reached at, which a restart on another port has
+    /// already made stale, and publishing it would hand out a dead address
+    /// in a fresh record.
+    observed: std::sync::Mutex<Option<SocketAddr>>,
+    /// Wakes the publisher: the addresses to publish changed.
+    republish: tokio::sync::Notify,
 }
 
 impl Node {
@@ -351,29 +473,24 @@ impl Node {
             .await
             .context("open the database")?;
 
-        let private = server_endpoint(config.private_bind, NodeKind::Private)
+        let (private, stun) = node_endpoint(config.private_bind, NodeKind::Private)
             .context("bind the private endpoint")?;
-        let client = client_endpoint(NodeKind::Private).context("bind the dialling endpoint")?;
-        let asker = client_endpoint(NodeKind::Public).context("bind the asking endpoint")?;
         let public = config
             .public_bind
             .map(|addr| server_endpoint(addr, NodeKind::Public))
             .transpose()
             .context("bind the public endpoint")?;
 
-        // M9f: where the four sockets really are, said rather than deduced,
-        // and before anything that can refuse to start. Every address bug in
-        // this project has been found by discovering where a socket actually
-        // is — and all four are here because a dial leaves from the client
-        // endpoint, not from the listener the peer was told about.
+        // M9f: where the sockets really are, said rather than deduced, and
+        // before anything that can refuse to start. Every address bug in this
+        // project has been found by discovering where a socket actually is.
+        // Dials leave from `private` too, since M13a, so there is no third.
         let private_addr = private.local_addr()?;
         let public_addr = public.as_ref().map(Endpoint::local_addr).transpose()?;
         tracing::info!(
             me = %identity.user_id(),
             private = %private_addr,
             public = ?public_addr,
-            dialling_from = %client.local_addr()?,
-            asking_from = %asker.local_addr()?,
             "endpoints bound",
         );
 
@@ -389,15 +506,33 @@ impl Node {
             return Err(p2pchat_crypto::CryptoError::InviteUnspecifiedAddr(addr).into());
         }
 
+        // M17. A client until M14's test says otherwise, like the role.
+        let dht = (!config.bootstrap.is_empty()).then(|| {
+            Dht::new(
+                identity.user_id(),
+                None,
+                private.clone(),
+                config.bootstrap.clone(),
+                Params::from_env(),
+            )
+        });
+        // The advertised port, as for the DHT driver: a forwarded port need
+        // not be the bound one.
+        let dht_port = public_addr.map(|bound| {
+            config
+                .advertise
+                .first()
+                .map_or(bound.port(), SocketAddr::port)
+        });
+
         let (events, incoming) = mpsc::channel(EVENTS);
         let node = Arc::new(Self {
             me: identity.user_id(),
             store: Arc::new(store),
             display_name: config.display_name,
-            client,
-            asker,
             public_addr,
             private: private.clone(),
+            stun,
             private_advertise,
             pollers: Mutex::new(HashSet::new()),
             reconnecting: Mutex::new(HashSet::new()),
@@ -406,6 +541,13 @@ impl Node {
             events,
             pause: session::commit_pause(),
             identity,
+            role: std::sync::Mutex::new(Role::Client),
+            dial_backs: reach::Pending::default(),
+            data_dir: config.data_dir.clone(),
+            dht,
+            dht_port,
+            observed: std::sync::Mutex::new(None),
+            republish: tokio::sync::Notify::new(),
         });
 
         // M9e: the two addresses a peer is *told* to dial, in the log of the
@@ -457,12 +599,207 @@ impl Node {
                     invite,
                     limits: Limits::default(),
                     requests,
+                    // The members it knows are the ones it bootstraps from —
+                    // M14b. Forwards are taken from these alone, and they
+                    // and the nodes a dial-back proved get the member
+                    // allowance (M16a); the routing table raises nothing.
+                    members: config.bootstrap.clone(),
+                    // M17. It answers DHT queries only while a member.
+                    dht: node.dht.clone(),
                 },
             ));
             tokio::spawn(answer_requests(Arc::clone(&node), queue));
         }
 
+        if let Some(dht) = &node.dht {
+            tokio::spawn(Arc::clone(dht).maintain());
+            tokio::spawn(publish(Arc::clone(&node), Arc::clone(dht)));
+        }
+
+        if let Some(&first) = config.bootstrap.first() {
+            node.watch_reachability(
+                config.bootstrap,
+                move || p2pchat_net::stun::local_outbound_ip(first),
+                reach::NETWORK_POLL,
+                reach::RETEST,
+            );
+        }
+
         Ok((node, incoming))
+    }
+
+    /// Whether this node can serve as a DHT member — M14. `Client` until a
+    /// test has shown otherwise.
+    pub fn role(&self) -> Role {
+        *self
+            .role
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
+
+    pub(crate) fn set_role(&self, role: Role) {
+        let mut current = self
+            .role
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if *current == role {
+            return;
+        }
+        tracing::info!(from = ?*current, to = ?role, "reachability");
+        *current = role;
+        drop(current);
+
+        // M17: serve while shown reachable, and not otherwise. A member
+        // without a public node has nowhere to serve, so stays a client.
+        if let Some(dht) = &self.dht {
+            let port = match role {
+                Role::Member(_) => self.dht_port,
+                Role::Client => None,
+            };
+            if dht.member() != port {
+                dht.set_member(port);
+                if port.is_some() {
+                    let dht = Arc::clone(dht);
+                    tokio::spawn(async move {
+                        let size = dht.join().await;
+                        tracing::info!(size, "joined the DHT as a member");
+                    });
+                }
+            }
+        }
+    }
+
+    /// What this run's test found — `None` for a client, or once the
+    /// network has changed. Republishes when a new address is found, and
+    /// not when one is lost: until the next test says where the node is now,
+    /// a record without the old address would say nothing truer, and one
+    /// carrying only the configured address may be exactly the address the
+    /// node just left.
+    pub(crate) fn set_observed(&self, addr: Option<SocketAddr>) {
+        let mut observed = self
+            .observed
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if *observed != addr {
+            *observed = addr;
+            if addr.is_some() {
+                self.republish.notify_one();
+            }
+        }
+    }
+
+    /// What this node's record says — M17: where this run's last dial-back
+    /// reached it, which a member proved dialable, then the configured
+    /// private address. Empty for a client with nothing configured: there is
+    /// nowhere to say it can be dialled.
+    ///
+    /// The observed address first because it follows the node: after a move
+    /// the next test observes the new one, and a configured address says
+    /// what was true when it was typed.
+    pub fn record_addrs(&self) -> Vec<SocketAddr> {
+        let mut addrs: Vec<SocketAddr> = self
+            .observed
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .iter()
+            .copied()
+            .collect();
+        if let Some(configured) = self.private_advertise {
+            if !addrs.contains(&configured) {
+                addrs.push(configured);
+            }
+        }
+        addrs
+    }
+
+    /// Dials `peer` wherever the DHT says it is — M17. Looks up its record,
+    /// dials each address in it, and after a silent dial works out whether
+    /// the record was stale (see [`Diagnosis`]). A stale record with a newer
+    /// one behind it is dialled again at the newer addresses. No record at
+    /// all is [`NotFound`].
+    pub async fn connect(self: &Arc<Self>, peer: UserId) -> Result<UserId> {
+        let dht = self.dht.as_ref().ok_or_else(|| {
+            anyhow!("no DHT: this node has no bootstrap list, so it can only dial an address")
+        })?;
+        let found = dht.lookup(peer, true).await;
+        let Some(record) = found.value else {
+            if found.closest.is_empty() {
+                // Nobody answered, which says nothing about the peer.
+                return Err(anyhow!(
+                    "no DHT member answered the lookup ({} asked), so whether the peer is \
+                     online is unknown; check the bootstrap list",
+                    found.rpcs
+                ));
+            }
+            return Err(NotFound.into());
+        };
+
+        let (addr, error) = match self.dial_record(&record, peer).await {
+            Ok(peer) => return Ok(peer),
+            Err((_, error)) if fatal(&error) => return Err(error),
+            Err(failed) => failed,
+        };
+        let newer = dht.lookup_newer(peer, record.body.seq).await.value;
+        let diagnosis = diagnose(&record, newer.as_ref(), invite::now());
+        let reason = explain(addr, dial_timeout(), &diagnosis);
+        tracing::warn!(%peer, %addr, seq = record.body.seq, ?diagnosis, %error, "dial from the record failed");
+        match newer {
+            Some(newer) if matches!(diagnosis, Diagnosis::Stale { .. }) => {
+                let _ = self.events.try_send(Event::DialFailed {
+                    peer,
+                    reason: reason.clone(),
+                });
+                self.dial_record(&newer, peer).await.map_err(|(_, again)| {
+                    anyhow!("{reason}; the newer address failed too: {again:#}")
+                })
+            }
+            _ => Err(anyhow!(reason)),
+        }
+    }
+
+    /// Dials each of `record`'s addresses in turn. The last failure, and the
+    /// address it was at, if none answered.
+    async fn dial_record(
+        self: &Arc<Self>,
+        record: &AddressRecord,
+        peer: UserId,
+    ) -> std::result::Result<UserId, (SocketAddr, anyhow::Error)> {
+        let mut last = None;
+        for &addr in &record.body.addrs {
+            match self.dial(addr, Some(peer)).await {
+                Ok(peer) => return Ok(peer),
+                Err(error) if fatal(&error) => return Err((addr, error)),
+                Err(error) => last = Some((addr, error)),
+            }
+        }
+        // `verify` refuses a record with no addresses, so there was one.
+        Err(last.unwrap_or_else(|| (record.body.addrs[0], anyhow!("no address"))))
+    }
+
+    /// One dial-back request to `member`, answered or not — the debug node's
+    /// `dialback`, which `netem/tail.py --dialbacks` times. Changes no role.
+    pub async fn dial_back_once(&self, member: SocketAddr) -> Option<reach::Answer> {
+        reach::ask(self, member).await
+    }
+
+    /// Runs M14's test against `bootstrap` now, whenever `network` changes,
+    /// and every `retest` — see [`reach::watch`]. [`Node::start`] calls this
+    /// with the local route to the first member as `network`; the gates call
+    /// it with a network they can change.
+    pub fn watch_reachability(
+        self: &Arc<Self>,
+        bootstrap: Vec<SocketAddr>,
+        network: impl Fn() -> Option<std::net::IpAddr> + Send + 'static,
+        poll: Duration,
+        retest: Duration,
+    ) {
+        tokio::spawn(reach::watch(
+            Arc::clone(self),
+            bootstrap,
+            network,
+            poll,
+            retest,
+        ));
     }
 
     /// The address the private endpoint is *bound* to, with the port the OS
@@ -474,6 +811,11 @@ impl Node {
     /// that question.
     pub fn private_addr(&self) -> Result<SocketAddr> {
         Ok(self.private.local_addr()?)
+    }
+
+    /// STUN over the private endpoint's own socket — M13a, M13b.
+    pub fn stun(&self) -> &StunChannel {
+        &self.stun
     }
 
     pub fn public_addr(&self) -> Option<SocketAddr> {
@@ -518,7 +860,7 @@ impl Node {
         // rather than a fast connect buying a second handshake timeout.
         let timeout = dial_timeout();
         let opened = tokio::time::timeout(timeout, async {
-            let connection = connect(&self.client, addr).await.context("dial")?;
+            let connection = connect(&self.private, addr).await.context("dial")?;
             let _handshaking = expected.map(|peer| self.report(peer, Phase::Handshaking));
             let established = handshake::initiate(&connection, &self.identity, expected)
                 .await
@@ -772,7 +1114,7 @@ impl Node {
         request: &p2pchat_core::wire::PublicRequest,
     ) -> Result<(RequestState, Option<SocketAddr>)> {
         match public::request(
-            &self.asker,
+            &self.private,
             addr,
             request,
             Limits::default().request_timeout,
@@ -780,7 +1122,10 @@ impl Node {
         .await?
         {
             p2pchat_core::wire::PublicResponse::State(state, private) => Ok((state, private)),
-            p2pchat_core::wire::PublicResponse::Profile(_) => {
+            p2pchat_core::wire::PublicResponse::Profile(_)
+            | p2pchat_core::wire::PublicResponse::DialBack { .. }
+            | p2pchat_core::wire::PublicResponse::Forwarded { .. }
+            | p2pchat_core::wire::PublicResponse::Dht(_) => {
                 Err(anyhow!("the node answered a different question"))
             }
         }
@@ -1007,7 +1352,7 @@ impl Node {
 
 /// §8 keeps `peers` and `pending_requests` in seconds and `messages` in
 /// milliseconds. One conversion, here, rather than a second clock.
-fn now_s() -> u64 {
+pub(crate) fn now_s() -> u64 {
     session::now_ms() / 1000
 }
 
@@ -1072,17 +1417,34 @@ async fn reconnect_loop(node: &Arc<Node>, peer: UserId) {
             return;
         }
 
-        let Some(addr) = last_addr(node, peer).await else {
-            // Accepted and never dialled from here, or the row is gone. §10:
-            // only the requester dials, and it has no address to dial.
-            tracing::info!("no address on record for this peer; not reconnecting");
-            return;
+        // M17: where the DHT says the peer is, which follows it when its
+        // address changes. Without a DHT, where §6 last found it.
+        let dialled = if node.dht.is_some() {
+            node.connect(peer).await
+        } else {
+            let Some(addr) = last_addr(node, peer).await else {
+                // Accepted and never dialled from here, or the row is gone.
+                // §10: only the requester dials, and it has no address.
+                tracing::info!("no address on record for this peer; not reconnecting");
+                return;
+            };
+            node.dial(addr, Some(peer)).await
         };
 
-        match node.dial(addr, Some(peer)).await {
+        match dialled {
             Ok(_) => return,
+            Err(error) if error.is::<NotFound>() => {
+                // M17 gate 3: offline is an answer, not a reason to keep
+                // dialling until the budget runs out.
+                tracing::info!(%error, "not reconnecting: the peer is offline");
+                let _ = node.events.try_send(Event::DialFailed {
+                    peer,
+                    reason: format!("{error}"),
+                });
+                return;
+            }
             Err(error) if fatal(&error) => {
-                tracing::warn!(?error, %addr, "the peer did not authenticate; not retrying");
+                tracing::warn!(?error, "the peer did not authenticate; not retrying");
                 let _ = node.events.try_send(Event::DialFailed {
                     peer,
                     reason: format!(
@@ -1091,7 +1453,53 @@ async fn reconnect_loop(node: &Arc<Node>, peer: UserId) {
                 });
                 return;
             }
-            Err(error) => tracing::debug!(?error, attempt, %addr, ?delay, "reconnect failed"),
+            Err(error) => tracing::debug!(?error, attempt, ?delay, "reconnect failed"),
+        }
+    }
+}
+
+/// How soon a publish that no member took is tried again — M17. The network
+/// check's interval: a node that starts before its bootstrap members are up
+/// should not wait a whole republish interval to be findable.
+const PUBLISH_RETRY: Duration = reach::NETWORK_POLL;
+
+/// Publishes this node's record at startup, again every
+/// `record::REPUBLISH`, and at once when its addresses change — M17.
+///
+/// `seq` is the time in milliseconds, or one more than the last, so a
+/// restarted node's first record outranks the last run's without anything
+/// kept on disk.
+async fn publish(node: Arc<Node>, dht: Arc<Dht>) {
+    let mut seq = 0;
+    loop {
+        let addrs = node.record_addrs();
+        let mut wait = Duration::from_secs(record::REPUBLISH);
+        if addrs.is_empty() {
+            tracing::info!("no record published: no dial-back has reached this node and no private address is configured");
+        } else {
+            seq = session::now_ms().max(seq + 1);
+            match record::create(&node.identity, addrs.clone(), seq, invite::now()) {
+                Ok(record) => {
+                    let started = Instant::now();
+                    let stored = dht.publish(record).await.len();
+                    // What `netem/dht.py` times gate 1 and gate 2 from.
+                    tracing::info!(
+                        seq,
+                        ?addrs,
+                        stored,
+                        elapsed_ms = started.elapsed().as_millis() as u64,
+                        "record published"
+                    );
+                    if stored == 0 {
+                        wait = PUBLISH_RETRY;
+                    }
+                }
+                Err(error) => tracing::warn!(%error, "the record could not be made"),
+            }
+        }
+        tokio::select! {
+            () = tokio::time::sleep(wait) => {}
+            () = node.republish.notified() => {}
         }
     }
 }
@@ -1167,6 +1575,13 @@ async fn accept(node: Arc<Node>, endpoint: Endpoint) {
                     return;
                 }
             };
+
+            // M14: a reachability dial-back, not a peer. Told apart by ALPN
+            // before §6 starts, so it never reaches the handshake.
+            if p2pchat_net::alpn(&connection).as_deref() == Some(p2pchat_net::DIAL_BACK_ALPN) {
+                reach::receive(&node, connection).await;
+                return;
+            }
 
             match handshake::respond(&connection, &node.identity).await {
                 // They dialled, so they are the tiebreak candidate.
@@ -1309,12 +1724,76 @@ mod tests {
         );
     }
 
+    /// M14, M14b: a dial-back answer waits for the forward, which waits for
+    /// the second member's dial. Each has to outlast the one inside it, or a
+    /// dial that would have landed is cut off and misreported.
+    #[test]
+    fn a_dial_back_fits_inside_the_request_that_asked_for_it() {
+        let limits = Limits::default();
+        assert!(
+            limits.dial_back_timeout < limits.forward_timeout,
+            "{:?} >= {:?}",
+            limits.dial_back_timeout,
+            limits.forward_timeout,
+        );
+        assert!(
+            limits.forward_timeout < limits.request_timeout,
+            "{:?} >= {:?}",
+            limits.forward_timeout,
+            limits.request_timeout,
+        );
+    }
+
     /// M12c: a request and a dial give up after the same time.
     #[test]
     fn a_request_and_a_dial_give_up_together() {
         assert_eq!(
             Limits::default().request_timeout,
             Duration::from_millis(DIAL_TIMEOUT_MS)
+        );
+    }
+
+    /// M17 gate 4's decision. The expected answers are written out, not
+    /// derived from `overdue()` (agent.md §7): a republish every 90 s makes
+    /// 90 s the edge; clock skew does not extend a record's lifetime.
+    #[test]
+    fn a_silent_dial_is_stale_only_on_evidence() {
+        let owner = Identity::generate();
+        let at = |port| vec![SocketAddr::from(([203, 0, 113, 7], port))];
+        let published = 1_700_000_000;
+        let dialled = record::create(&owner, at(1), 5, published).unwrap();
+        let newer = record::create(&owner, at(2), 6, published + 10).unwrap();
+        let republished = record::create(&owner, at(1), 7, published + 200).unwrap();
+
+        assert_eq!(
+            diagnose(&dialled, Some(&newer), published + 20),
+            Diagnosis::Stale {
+                newer: at(2),
+                seq: 6
+            }
+        );
+        assert_eq!(
+            diagnose(&dialled, None, published + 390),
+            Diagnosis::Abandoned { age: 390 }
+        );
+        assert_eq!(
+            diagnose(&dialled, None, published + 90),
+            Diagnosis::Unreachable { age: 90 }
+        );
+        assert!(explain(
+            at(1)[0],
+            Duration::from_secs(20),
+            &Diagnosis::Unreachable { age: 90 }
+        )
+        .contains("DHT address may be stale"));
+        assert_eq!(
+            diagnose(&dialled, None, published + 91),
+            Diagnosis::Abandoned { age: 91 }
+        );
+        // Newer, same address: not a move, and aged from the republish.
+        assert_eq!(
+            diagnose(&dialled, Some(&republished), published + 391),
+            Diagnosis::Abandoned { age: 191 }
         );
     }
 

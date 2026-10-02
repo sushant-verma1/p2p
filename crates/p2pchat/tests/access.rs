@@ -54,6 +54,7 @@ async fn node() -> TestNode {
         advertise: Vec::new(),
         private_advertise: None,
         display_name: "test".to_owned(),
+        bootstrap: Vec::new(),
     })
     .await
     .expect("the node starts");

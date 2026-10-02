@@ -90,9 +90,10 @@ python netem/tail.py PROFILE [--requests N] [--handshakes N] [--dials N] [--stra
 - killing the acceptor, queueing 50 messages, then the restart, resync and backoff.
 
 `tail.py` takes many samples of one thing:
-- `--requests`: time to answer a request against a reachable node. Alice restarts every 5 requests, because the public node's limit is 10 a minute, polls included.
+- `--requests`: time to answer a request against a reachable node. Alice restarts every 5 requests, because the product stranger limit is 10 a minute, polls included; the restarts are more than enough.
 - `--handshakes`: bob restarts and redials. Each dial is split into connect and §6. Each sample also waits for alice's session before bob quits (see below).
 - `--dials`: `connect` to a port nobody answers on. Records whether the error carries the guidance.
+- `--dialbacks`: M14a, M14b. Bob asks alice's public node for a reachability dial-back, and alice forwards it to carol, a third container started for this mode with the same netem profile. Three timings are recorded, each from where it happens: carol's dial from her log (what `dial_back_timeout` bounds), alice's whole forward from hers (what `forward_timeout` bounds), and bob's whole request (what `request_timeout` bounds). Measuring past the shipped limits needs a binary with those limits and the rate limits raised. M14b used `/target/bin/p2pchat-forward-wide`: dial-back 60 s, forward 80 s, request 90 s, rate limits lifted.
 - `--strand`: M12c. Each trial starts both nodes from nothing, and drops UDP to alice's private port with iptables before bob's request. Alice accepts, bob's first dial fails, the port reopens, and the trial records whether bob's poller still reaches a session and how long after the reopen.
 
 Results go to `wan-PROFILE.json` / `tail-PROFILE.json` in the current
@@ -113,3 +114,134 @@ sweep, all spurious.
 
 Timestamps are the host's `perf_counter` when each stdout line arrives through
 `docker exec`, so they include a few ms of pipe.
+
+## DHT simulation (M16)
+
+`dht.py` runs N `p2pchat dht` nodes in one privileged container, each in its
+own network namespace with its own IP, and drives them over their stdin and
+stdout. `netem` goes on each namespace's egress and `iptables` into each
+namespace's own filter table. Churn is `kill -9` of a node's process. The
+nodes are routed through the container's namespace, not bridged: see
+"Why routed" below.
+
+```sh
+docker build -t p2p-wan netem            # python3 is in the image from M16
+# the release binary, as in Setup above; then, from the repo root:
+MSYS_NO_PATHCONV=1 docker run --rm --privileged -v p2p-target:/target:ro \
+    -v "$(pwd -W)/netem:/h:ro" -v "$OUT:/out" p2p-wan python3 -u /h/dht.py selftest
+# ... dht.py gates  [--only 1,2,...] [--binary /target/bin/p2pchat-MUTANT]
+# ... dht.py trial  --k K --alpha A --replication R [--profile poor] [--kill 0.3]
+```
+
+`--n` sets the members (default 50), `--clients` the clients (3),
+`--refresh-ms` the refresh and liveness interval (30 s here, 15 min shipped),
+and `--profile` a netem profile from the table above. Results go to
+`/out/dht-SCENARIO[-TAG].json`.
+
+**Ground truth is the harness's own.** It uses the IDs the nodes print at
+startup, the harness's record of who is alive and what each node published,
+and XOR distance recomputed in Python. A table, a lookup answer or a fetched
+record is compared against that truth, and nothing a node says about the
+network is trusted.
+
+**`selftest` comes first.** It injects each fault a checker exists for and
+requires the checker to report it. It then removes the fault and requires the
+checker to pass:
+1. a node whose only bootstrap address answers nothing is reported not joined;
+2. a node that can reach only one seed keeps the network unconverged, and
+   once it is released the network converges;
+3. a record republished behind the harness's back is reported as a wrong
+   value, and once the truth is updated it is reported right;
+4. a partition is first shown to be real (no lookup crosses it); a "heal"
+   that is never applied is reported as not healed, and the real heal is
+   seen to heal;
+5. gate 4's checker: a node with refresh switched off is reported as not
+   refreshing.
+
+**Preflight.** Before any fault goes in, every namespace pings every other.
+A network that cannot carry a ping cannot carry a gate, and the run stops.
+
+### Why routed
+
+The first 50-node self-test failed its positive controls: healthy nodes were
+evicted, and RPCs timed out at exactly 20 s with processes idle. No interface,
+softnet or socket-receive counter showed a drop. `dmesg` did:
+`neighbour: arp_cache: neighbor table overflow!`. On a bridge every node ARPs
+for every other, so 50 nodes need about 2450 neighbour entries. The kernel
+caps entries across all namespaces together (`gc_thresh3`, 1024 by default).
+Inside Docker Desktop that cap cannot be raised: the sysctl is not visible
+even from PID 1's namespaces. Past the cap, sends fail with `ENOBUFS`, which
+counts only as `SndbufErrors`. Twelve nodes need 132 entries, which is why
+the smoke runs were clean. In the routed star, a node's one neighbour is the
+gateway, so 50 nodes need about 100 entries. Run over the old bridge, the
+preflight reports 519 unreachable pairs across 53 namespaces. Run over the
+star, it reports none.
+
+### Mutants
+
+`mutants.py` builds one-edit copies of the node into `/target/bin/`. The
+edits are `numeric` (XOR replaced with `|a - b|`), `noevict`, `noverify` and
+`clientjoins`. The M17 edits are `m17-norepublish` (gate 2),
+`m17-noexpiry` (gate 3), `m17-unreachable` (gate 4), and `m17-nodht` (gates
+1 and 2). `serial` is not an edit: it is `--alpha 1`.
+
+```sh
+MSYS_NO_PATHCONV=1 docker run --rm -v "$(pwd -W):/p2p:ro" -v p2p-target:/target \
+    -v p2p-cargo:/usr/local/cargo/registry p2p-wan python3 /p2p/netem/mutants.py
+```
+
+It copies the source with fresh mtimes into a clean target directory. Copies
+that kept their mtimes, sharing one target directory, once gave a result
+with exactly the shape of two builds swapped: the original failed where the
+`clientjoins` mutant should, and that mutant passed.
+
+`wide` is not a mutant but an instrument: both public-node allowances lifted
+to a million, so that `gates` measures the DHT's demand rather than what the
+limiter let through (M16a, as M14a lifted the dial-back timeout).
+
+### Demand (M16a)
+
+Every `gates` run ends with `demand`: for each (server, source IP) pair, the
+most requests in one limiter window, counted the way the limiter counts
+(a window opens at a source's first request after its last one lapsed),
+from the servers' own `admitted` and `rate limited` log lines. Split by
+who asked whom (member, seed, client) and by the phase the peak fell in. With
+`--binary /target/bin/p2pchat-wide` it is the whole demand; with the shipped
+binary, refused requests are counted too, so the refusals must fall exactly
+where the lifted run's demand exceeds the limit. That was checked before the
+numbers were used (M16a: 33 refusals at the old 30, 0 lifted).
+
+### Publish and lookup (M17)
+
+```sh
+MSYS_NO_PATHCONV=1 docker run --rm --privileged -v p2p-target:/target:ro \
+    -v "$(pwd -W)/netem:/h:ro" -v "$(pwd -W)/netem/results:/out" \
+    p2p-wan python3 -u /h/dht.py publish --profile baseline --tag baseline
+```
+
+The 50 `p2pchat dht` members are the network. The subjects are real
+`p2pchat node` processes, each in a namespace of its own and bootstrapping
+from the seeds. A subject moves by having its namespace's IP changed under
+the running process (`move`). The self-test runs first, and each of the five
+checkers must see its fault:
+
+1. **findable** (the subject's own address, from an unrelated member's
+   lookup): a node whose only bootstrap address is dead is never found; one
+   that can publish is found;
+2. **propagated**: the new address of a node that did not move is never found,
+   even after a republish, and the old one still is; after a real move the
+   new one is;
+3. **not found**: a peer that is online is not reported not found; an ID
+   nobody published is;
+4. **stale versus unreachable**: a peer at its current address that drops the
+   dialler reads as unreachable; a peer that moved reads as stale;
+5. **invite**: a rejected request has no session; an accepted one does.
+
+The gates then use fresh subjects, and OD-6's timings are taken from their
+events and logs: each publish's `elapsed_ms`, the gaps between republishes,
+the stale dial, and the time from an address change to the successful redial.
+Each run writes `netem/results/dht-publish-PROFILE.json` and its retained
+subject logs before returning. A failed self-test or gate records
+`failed_gates` in that JSON and exits non-zero. Run the profiles sequentially
+(`baseline`, `typical`, then `poor`) so every completed profile remains on
+disk if a later one fails.

@@ -1,0 +1,19 @@
+2026-10-02T01:32:14.797309Z  INFO p2pchat: p2pchat starting version="0.1.0"
+2026-10-02T01:32:14.826002Z  INFO p2pchat_net: listening kind=Private addr=0.0.0.0:47101
+2026-10-02T01:32:14.826036Z  INFO p2pchat::node: endpoints bound me=7c01 8d83 4a28 c253 private=0.0.0.0:47101 public=None
+2026-10-02T01:32:14.826072Z  INFO p2pchat::node: node started me=7c01 8d83 4a28 c253 public_advertised=[10.99.0.65:47100] private_advertised=Some(10.99.0.65:47101)
+2026-10-02T01:32:14.834812Z  INFO p2pchat::reach: dial-back test member=10.99.0.10:47100 observed=10.99.0.65:47101 forwarded=true reached=true arrived=Some(10.99.0.11:51417)
+2026-10-02T01:32:14.834845Z  INFO p2pchat::reach: reachability test role=Member(10.99.0.65:47101) reason=Reached members=3
+2026-10-02T01:32:14.834851Z  INFO p2pchat::node: reachability from=Client to=Member(10.99.0.65:47101)
+2026-10-02T01:32:14.853324Z  INFO p2pchat::node: record published seq=1790904734826 addrs=[10.99.0.65:47101] stored=8 elapsed_ms=26
+2026-10-02T01:32:14.866067Z  INFO p2pchat::node: record published seq=1790904734853 addrs=[10.99.0.65:47101] stored=8 elapsed_ms=12
+2026-10-02T01:32:15.386050Z  INFO p2pchat::node: connection request sent peer=3279 db2f 5733 faef addr=10.99.0.64:47100 state=Pending
+2026-10-02T01:32:15.386202Z DEBUG p2pchat::node: no answer to act on yet; keeping the poller peer=3279 db2f 5733 faef state=Pending
+2026-10-02T01:32:15.386299Z DEBUG polling{peer=3279 db2f 5733 faef}: p2pchat::node: polling started addr=10.99.0.64:47100 first=2s
+2026-10-02T01:32:17.387564Z DEBUG polling{peer=3279 db2f 5733 faef}: p2pchat::node: asking what became of our request peer=3279 db2f 5733 faef addr=10.99.0.64:47100
+2026-10-02T01:32:17.389876Z  INFO polling{peer=3279 db2f 5733 faef}: p2pchat::node: our connection request was rejected peer=3279 db2f 5733 faef
+2026-10-02T01:32:17.389916Z DEBUG polling{peer=3279 db2f 5733 faef}: p2pchat::node: polling stopped
+2026-10-02T01:33:44.873240Z  INFO p2pchat::node: record published seq=1790904824862 addrs=[10.99.0.65:47101] stored=8 elapsed_ms=10
+2026-10-02T01:35:14.880055Z  INFO p2pchat::node: record published seq=1790904914869 addrs=[10.99.0.65:47101] stored=8 elapsed_ms=10
+2026-10-02T01:36:44.887861Z  INFO p2pchat::node: record published seq=1790905004875 addrs=[10.99.0.65:47101] stored=8 elapsed_ms=11
+2026-10-02T01:38:14.895320Z  INFO p2pchat::node: record published seq=1790905094883 addrs=[10.99.0.65:47101] stored=8 elapsed_ms=11

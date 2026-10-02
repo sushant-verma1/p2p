@@ -6,6 +6,7 @@ pub mod handshake;
 pub mod identity;
 pub mod invite;
 pub mod keystore;
+pub mod record;
 pub mod session;
 
 pub use handshake::{Initiator, Responder, Role, Session};
@@ -89,6 +90,37 @@ pub enum CryptoError {
     /// want of an address to answer with.
     #[error("{}", invite::NO_ADDR)]
     InviteNoAddr,
+
+    // Address records — plan-v0.2.md M15. Separate variants, as for invites:
+    // a record arrives from a storage node, not from its owner, so what went
+    // wrong decides what happens next — look elsewhere, look later, or keep
+    // the record already held.
+    /// Did not decode, broke a bound in `wire`, or carries no address.
+    #[error("not a valid address record")]
+    RecordMalformed,
+
+    /// `BLAKE3(domain ‖ identity_pk) != user_id`.
+    #[error("address record user ID does not match its identity key")]
+    RecordUserId,
+
+    /// Altered after signing, or signed by someone else.
+    #[error("address record signature does not verify")]
+    RecordSignature,
+
+    /// Signed, consistent, and past `expires_at`.
+    /// Reachable only through a valid signature — see `record`.
+    #[error("address record has expired")]
+    RecordExpired,
+
+    /// Signed and consistent, but published too far in the future for the
+    /// verifier's clock-skew allowance.
+    #[error("address record publication time is too far in the future")]
+    RecordFuture,
+
+    /// Older than, or conflicting with, a record already held for the same
+    /// user: a lower `seq`, or the same `seq` with different contents.
+    #[error("address record seq {got} does not supersede the held seq {held}")]
+    RecordRolledBack { held: u64, got: u64 },
 
     #[error(transparent)]
     Core(#[from] p2pchat_core::CoreError),

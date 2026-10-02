@@ -1,0 +1,19 @@
+2026-10-02T01:59:32.380160Z  INFO p2pchat: p2pchat starting version="0.1.0"
+2026-10-02T01:59:32.393408Z  INFO p2pchat_net: listening kind=Private addr=0.0.0.0:47101
+2026-10-02T01:59:32.393434Z  INFO p2pchat::node: endpoints bound me=ba73 6c6c c118 4daf private=0.0.0.0:47101 public=None
+2026-10-02T01:59:32.393456Z  INFO p2pchat::node: node started me=ba73 6c6c c118 4daf public_advertised=[10.99.0.67:47100] private_advertised=Some(10.99.0.67:47101)
+2026-10-02T01:59:38.042819Z  INFO p2pchat::reach: dial-back test member=10.99.0.10:47100 observed=10.99.0.67:47101 forwarded=true reached=true arrived=Some(10.99.0.11:48066)
+2026-10-02T01:59:38.042847Z  INFO p2pchat::reach: reachability test role=Member(10.99.0.67:47101) reason=Reached members=3
+2026-10-02T01:59:38.042851Z  INFO p2pchat::node: reachability from=Client to=Member(10.99.0.67:47101)
+2026-10-02T01:59:39.728742Z  INFO p2pchat::node: record published seq=1790906372393 addrs=[10.99.0.67:47101] stored=8 elapsed_ms=7336
+2026-10-02T01:59:48.042114Z  INFO p2pchat::reach: the network changed; testing reachability again from=Some(10.99.0.67) to=Some(10.99.2.67)
+2026-10-02T01:59:48.042153Z  INFO p2pchat::node: reachability from=Member(10.99.0.67:47101) to=Client
+2026-10-02T01:59:48.699276Z  INFO p2pchat::node: record published seq=1790906379728 addrs=[10.99.0.67:47101] stored=8 elapsed_ms=8970
+2026-10-02T01:59:50.528831Z  INFO p2pchat::reach: dial-back test member=10.99.0.10:47100 observed=10.99.2.67:47101 forwarded=true reached=true arrived=Some(10.99.0.11:48175)
+2026-10-02T01:59:50.528854Z  INFO p2pchat::reach: reachability test role=Member(10.99.2.67:47101) reason=Reached members=3
+2026-10-02T01:59:50.528871Z  INFO p2pchat::node: reachability from=Client to=Member(10.99.2.67:47101)
+2026-10-02T01:59:59.732611Z  INFO p2pchat::node: record published seq=1790906390529 addrs=[10.99.2.67:47101, 10.99.0.67:47101] stored=8 elapsed_ms=9203
+2026-10-02T02:00:08.220034Z  INFO p2pchat_net::handshake: session established peer=7930 7346 5ae6 2643
+2026-10-02T02:00:08.220431Z  INFO p2pchat::node: session established peer=7930 7346 5ae6 2643 initiator=7930 7346 5ae6 2643
+2026-10-02T02:00:08.220587Z  INFO p2pchat::session: resync sent peer=7930 7346 5ae6 2643 have_through=0
+2026-10-02T02:00:08.220609Z  INFO p2pchat::session: resync received; retransmitting what the peer is missing peer=7930 7346 5ae6 2643 have_through=0 count=0

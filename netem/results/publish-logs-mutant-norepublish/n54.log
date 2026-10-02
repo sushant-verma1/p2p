@@ -1,0 +1,459 @@
+2026-10-02T01:04:12.623816Z  INFO p2pchat: p2pchat starting version="0.1.0"
+2026-10-02T01:04:12.637193Z  INFO p2pchat_net: listening kind=Private addr=0.0.0.0:47101
+2026-10-02T01:04:12.637720Z  INFO p2pchat_net: listening kind=Public addr=0.0.0.0:47100
+2026-10-02T01:04:12.637745Z  INFO p2pchat::node: endpoints bound me=b89d 7224 ee6f c562 private=0.0.0.0:47101 public=Some(0.0.0.0:47100)
+2026-10-02T01:04:12.637826Z  INFO p2pchat::node: node started me=b89d 7224 ee6f c562 public_advertised=[10.99.0.64:47100] private_advertised=Some(10.99.0.64:47101)
+2026-10-02T01:04:12.638470Z  INFO p2pchat_net::public: public node listening owner=b89d 7224 ee6f c562
+2026-10-02T01:04:12.644529Z  INFO p2pchat::reach: dial-back test member=10.99.0.10:47100 observed=10.99.0.64:47101 forwarded=true reached=true arrived=Some(10.99.0.11:49635)
+2026-10-02T01:04:12.644557Z  INFO p2pchat::reach: reachability test role=Member(10.99.0.64:47101) reason=Reached members=3
+2026-10-02T01:04:12.644562Z  INFO p2pchat::node: reachability from=Client to=Member(10.99.0.64:47101)
+2026-10-02T01:04:12.653700Z  INFO p2pchat::node: record published seq=1790903052638 addrs=[10.99.0.64:47101] stored=8 elapsed_ms=15
+2026-10-02T01:04:12.660832Z DEBUG p2pchat_net::dht: bucket refreshed bucket=0
+2026-10-02T01:04:12.660893Z DEBUG p2pchat_net::dht: bucket refreshed bucket=1
+2026-10-02T01:04:12.660896Z DEBUG p2pchat_net::dht: bucket refreshed bucket=2
+2026-10-02T01:04:12.660897Z DEBUG p2pchat_net::dht: bucket refreshed bucket=3
+2026-10-02T01:04:12.660898Z DEBUG p2pchat_net::dht: bucket refreshed bucket=4
+2026-10-02T01:04:12.660899Z DEBUG p2pchat_net::dht: bucket refreshed bucket=5
+2026-10-02T01:04:12.697540Z  INFO p2pchat::node: record published seq=1790903052653 addrs=[10.99.0.64:47101] stored=8 elapsed_ms=43
+2026-10-02T01:04:12.738270Z DEBUG p2pchat_net::public: admitted source=10.99.0.28 member=false
+2026-10-02T01:04:12.739070Z DEBUG p2pchat_net::dht: dht request source=10.99.0.28 kind="find_value"
+2026-10-02T01:04:12.752192Z DEBUG p2pchat_net::public: admitted source=10.99.0.66 member=false
+2026-10-02T01:04:12.752868Z DEBUG p2pchat_net::public: admitted source=10.99.0.29 member=false
+2026-10-02T01:04:12.753498Z DEBUG p2pchat_net::dht: dht request source=10.99.0.66 kind="find_node"
+2026-10-02T01:04:12.754263Z DEBUG p2pchat_net::dht: dht request source=10.99.0.29 kind="find_value"
+2026-10-02T01:04:12.761210Z DEBUG p2pchat_net::public: admitted source=10.99.0.21 member=false
+2026-10-02T01:04:12.762108Z DEBUG p2pchat_net::dht: dht request source=10.99.0.21 kind="find_node"
+2026-10-02T01:04:12.767933Z DEBUG p2pchat_net::public: admitted source=10.99.0.66 member=false
+2026-10-02T01:04:12.768991Z DEBUG p2pchat_net::dht: dht request source=10.99.0.66 kind="find_node"
+2026-10-02T01:04:13.010911Z DEBUG p2pchat_net::public: admitted source=10.99.0.52 member=false
+2026-10-02T01:04:13.012311Z DEBUG p2pchat_net::dht: dht request source=10.99.0.52 kind="find_node"
+2026-10-02T01:04:13.257700Z DEBUG p2pchat_net::public: admitted source=10.99.0.65 member=false
+2026-10-02T01:04:13.258630Z  INFO p2pchat_net::public: connection request received caller=3aff b54a 5cce 7b5c
+2026-10-02T01:04:13.466487Z DEBUG p2pchat_net::public: admitted source=10.99.0.54 member=false
+2026-10-02T01:04:13.468157Z DEBUG p2pchat_net::dht: dht request source=10.99.0.54 kind="find_node"
+2026-10-02T01:04:13.552623Z DEBUG p2pchat_net::public: admitted source=10.99.0.20 member=false
+2026-10-02T01:04:13.557015Z DEBUG p2pchat_net::dht: dht request source=10.99.0.20 kind="find_node"
+2026-10-02T01:04:13.663139Z DEBUG p2pchat_net::public: admitted source=10.99.0.55 member=false
+2026-10-02T01:04:13.663934Z DEBUG p2pchat_net::dht: dht request source=10.99.0.55 kind="find_node"
+2026-10-02T01:04:13.670603Z DEBUG p2pchat_net::public: admitted source=10.99.0.55 member=false
+2026-10-02T01:04:13.671555Z DEBUG p2pchat_net::dht: dht request source=10.99.0.55 kind="find_node"
+2026-10-02T01:04:13.686755Z  INFO p2pchat::node: joined the DHT as a member size=46
+2026-10-02T01:04:14.539422Z DEBUG p2pchat_net::public: admitted source=10.99.0.59 member=false
+2026-10-02T01:04:14.540570Z DEBUG p2pchat_net::public: admitted source=10.99.0.59 member=false
+2026-10-02T01:04:14.543237Z DEBUG p2pchat_net::dht: dht request source=10.99.0.59 kind="find_node"
+2026-10-02T01:04:14.543494Z DEBUG p2pchat_net::dht: dht request source=10.99.0.59 kind="find_node"
+2026-10-02T01:04:14.545029Z DEBUG p2pchat_net::public: admitted source=10.99.0.59 member=false
+2026-10-02T01:04:14.545706Z DEBUG p2pchat_net::public: admitted source=10.99.0.59 member=false
+2026-10-02T01:04:14.545736Z DEBUG p2pchat_net::public: admitted source=10.99.0.59 member=false
+2026-10-02T01:04:14.547456Z DEBUG p2pchat_net::dht: dht request source=10.99.0.59 kind="find_node"
+2026-10-02T01:04:14.548173Z DEBUG p2pchat_net::dht: dht request source=10.99.0.59 kind="find_node"
+2026-10-02T01:04:14.548612Z DEBUG p2pchat_net::dht: dht request source=10.99.0.59 kind="find_node"
+2026-10-02T01:04:14.745727Z DEBUG p2pchat_net::public: admitted source=10.99.0.30 member=false
+2026-10-02T01:04:14.748219Z DEBUG p2pchat_net::dht: dht request source=10.99.0.30 kind="find_node"
+2026-10-02T01:04:14.955228Z DEBUG p2pchat_net::public: admitted source=10.99.0.31 member=false
+2026-10-02T01:04:14.956712Z DEBUG p2pchat_net::dht: dht request source=10.99.0.31 kind="find_node"
+2026-10-02T01:04:15.261072Z DEBUG p2pchat_net::public: admitted source=10.99.0.65 member=false
+2026-10-02T01:04:15.295150Z DEBUG p2pchat_net::public: admitted source=10.99.0.28 member=false
+2026-10-02T01:04:15.296199Z DEBUG p2pchat_net::dht: dht request source=10.99.0.28 kind="find_node"
+2026-10-02T01:04:17.255271Z DEBUG p2pchat_net::public: admitted source=10.99.0.37 member=false
+2026-10-02T01:04:17.256750Z DEBUG p2pchat_net::dht: dht request source=10.99.0.37 kind="find_node"
+2026-10-02T01:04:17.268581Z DEBUG p2pchat_net::public: admitted source=10.99.0.37 member=false
+2026-10-02T01:04:17.271163Z DEBUG p2pchat_net::dht: dht request source=10.99.0.37 kind="find_node"
+2026-10-02T01:04:17.570191Z DEBUG p2pchat_net::public: admitted source=10.99.0.43 member=false
+2026-10-02T01:04:17.572414Z DEBUG p2pchat_net::dht: dht request source=10.99.0.43 kind="find_node"
+2026-10-02T01:04:18.206005Z DEBUG p2pchat_net::public: admitted source=10.99.0.46 member=false
+2026-10-02T01:04:18.206580Z DEBUG p2pchat_net::public: admitted source=10.99.0.46 member=false
+2026-10-02T01:04:18.207475Z DEBUG p2pchat_net::dht: dht request source=10.99.0.46 kind="find_node"
+2026-10-02T01:04:18.207545Z DEBUG p2pchat_net::dht: dht request source=10.99.0.46 kind="find_node"
+2026-10-02T01:04:18.520156Z DEBUG p2pchat_net::public: admitted source=10.99.0.13 member=false
+2026-10-02T01:04:18.521277Z DEBUG p2pchat_net::dht: dht request source=10.99.0.13 kind="find_node"
+2026-10-02T01:04:18.528698Z DEBUG p2pchat_net::public: admitted source=10.99.0.13 member=false
+2026-10-02T01:04:18.530722Z DEBUG p2pchat_net::dht: dht request source=10.99.0.13 kind="find_node"
+2026-10-02T01:04:18.949275Z DEBUG p2pchat_net::public: admitted source=10.99.0.15 member=false
+2026-10-02T01:04:18.950277Z DEBUG p2pchat_net::dht: dht request source=10.99.0.15 kind="find_node"
+2026-10-02T01:04:19.018154Z DEBUG p2pchat_net::public: admitted source=10.99.0.45 member=false
+2026-10-02T01:04:19.022807Z DEBUG p2pchat_net::dht: dht request source=10.99.0.45 kind="find_node"
+2026-10-02T01:04:19.459083Z DEBUG p2pchat_net::public: admitted source=10.99.0.47 member=false
+2026-10-02T01:04:19.459745Z DEBUG p2pchat_net::dht: dht request source=10.99.0.47 kind="find_node"
+2026-10-02T01:04:19.506606Z DEBUG p2pchat_net::public: admitted source=10.99.0.11 member=true
+2026-10-02T01:04:19.507797Z DEBUG p2pchat_net::dht: dht request source=10.99.0.11 kind="find_node"
+2026-10-02T01:04:19.515365Z DEBUG p2pchat_net::public: admitted source=10.99.0.11 member=true
+2026-10-02T01:04:19.517105Z DEBUG p2pchat_net::dht: dht request source=10.99.0.11 kind="find_node"
+2026-10-02T01:04:20.261251Z DEBUG p2pchat_net::public: admitted source=10.99.0.21 member=false
+2026-10-02T01:04:20.262563Z DEBUG p2pchat_net::dht: dht request source=10.99.0.21 kind="find_node"
+2026-10-02T01:04:20.731174Z DEBUG p2pchat_net::public: admitted source=10.99.0.53 member=false
+2026-10-02T01:04:20.732147Z DEBUG p2pchat_net::dht: dht request source=10.99.0.53 kind="find_node"
+2026-10-02T01:04:21.167804Z DEBUG p2pchat_net::public: admitted source=10.99.0.55 member=false
+2026-10-02T01:04:21.168649Z DEBUG p2pchat_net::dht: dht request source=10.99.0.55 kind="find_node"
+2026-10-02T01:04:21.378495Z DEBUG p2pchat_net::public: admitted source=10.99.0.26 member=false
+2026-10-02T01:04:21.379610Z DEBUG p2pchat_net::dht: dht request source=10.99.0.26 kind="find_node"
+2026-10-02T01:04:22.245394Z DEBUG p2pchat_net::public: admitted source=10.99.0.30 member=false
+2026-10-02T01:04:22.246335Z DEBUG p2pchat_net::dht: dht request source=10.99.0.30 kind="find_node"
+2026-10-02T01:04:22.917838Z DEBUG p2pchat_net::public: admitted source=10.99.0.33 member=false
+2026-10-02T01:04:22.919007Z DEBUG p2pchat_net::dht: dht request source=10.99.0.33 kind="find_node"
+2026-10-02T01:04:26.449410Z DEBUG p2pchat_net::public: admitted source=10.99.0.15 member=false
+2026-10-02T01:04:26.450258Z DEBUG p2pchat_net::dht: dht request source=10.99.0.15 kind="find_node"
+2026-10-02T01:04:26.675274Z DEBUG p2pchat_net::public: admitted source=10.99.0.16 member=false
+2026-10-02T01:04:26.675832Z DEBUG p2pchat_net::public: admitted source=10.99.0.16 member=false
+2026-10-02T01:04:26.677238Z DEBUG p2pchat_net::dht: dht request source=10.99.0.16 kind="find_node"
+2026-10-02T01:04:26.677319Z DEBUG p2pchat_net::dht: dht request source=10.99.0.16 kind="find_node"
+2026-10-02T01:04:26.677467Z DEBUG p2pchat_net::public: admitted source=10.99.0.16 member=false
+2026-10-02T01:04:26.679214Z DEBUG p2pchat_net::dht: dht request source=10.99.0.16 kind="find_node"
+2026-10-02T01:04:27.010158Z DEBUG p2pchat_net::public: admitted source=10.99.0.11 member=true
+2026-10-02T01:04:27.011230Z DEBUG p2pchat_net::dht: dht request source=10.99.0.11 kind="find_node"
+2026-10-02T01:04:27.760537Z DEBUG p2pchat_net::public: admitted source=10.99.0.21 member=false
+2026-10-02T01:04:27.761323Z DEBUG p2pchat_net::dht: dht request source=10.99.0.21 kind="find_node"
+2026-10-02T01:04:27.904218Z DEBUG p2pchat_net::public: admitted source=10.99.0.56 member=false
+2026-10-02T01:04:27.905013Z DEBUG p2pchat_net::dht: dht request source=10.99.0.56 kind="find_node"
+2026-10-02T01:04:28.884119Z DEBUG p2pchat_net::public: admitted source=10.99.0.26 member=false
+2026-10-02T01:04:28.887163Z DEBUG p2pchat_net::dht: dht request source=10.99.0.26 kind="find_node"
+2026-10-02T01:04:28.887797Z DEBUG p2pchat_net::public: admitted source=10.99.0.26 member=false
+2026-10-02T01:04:28.888147Z DEBUG p2pchat_net::public: admitted source=10.99.0.26 member=false
+2026-10-02T01:04:28.890003Z DEBUG p2pchat_net::dht: dht request source=10.99.0.26 kind="find_node"
+2026-10-02T01:04:28.890123Z DEBUG p2pchat_net::dht: dht request source=10.99.0.26 kind="find_node"
+2026-10-02T01:04:29.224034Z DEBUG p2pchat_net::public: admitted source=10.99.0.23 member=false
+2026-10-02T01:04:29.226695Z DEBUG p2pchat_net::public: admitted source=10.99.0.23 member=false
+2026-10-02T01:04:29.228299Z DEBUG p2pchat_net::dht: dht request source=10.99.0.23 kind="find_node"
+2026-10-02T01:04:29.229744Z DEBUG p2pchat_net::dht: dht request source=10.99.0.23 kind="find_node"
+2026-10-02T01:04:29.515806Z DEBUG p2pchat_net::public: admitted source=10.99.0.29 member=false
+2026-10-02T01:04:29.516519Z DEBUG p2pchat_net::public: admitted source=10.99.0.29 member=false
+2026-10-02T01:04:29.518161Z DEBUG p2pchat_net::dht: dht request source=10.99.0.29 kind="find_node"
+2026-10-02T01:04:29.518293Z DEBUG p2pchat_net::dht: dht request source=10.99.0.29 kind="find_node"
+2026-10-02T01:04:29.520655Z DEBUG p2pchat_net::public: admitted source=10.99.0.29 member=false
+2026-10-02T01:04:29.522205Z DEBUG p2pchat_net::dht: dht request source=10.99.0.29 kind="find_node"
+2026-10-02T01:04:30.403045Z DEBUG p2pchat_net::public: admitted source=10.99.0.33 member=false
+2026-10-02T01:04:30.404226Z DEBUG p2pchat_net::dht: dht request source=10.99.0.33 kind="find_node"
+2026-10-02T01:04:31.596937Z DEBUG p2pchat_net::public: admitted source=10.99.0.34 member=false
+2026-10-02T01:04:31.598118Z DEBUG p2pchat_net::dht: dht request source=10.99.0.34 kind="find_node"
+2026-10-02T01:04:33.503668Z DEBUG p2pchat_net::public: admitted source=10.99.0.12 member=true
+2026-10-02T01:04:33.508912Z DEBUG p2pchat_net::dht: dht request source=10.99.0.12 kind="find_node"
+2026-10-02T01:04:33.531060Z DEBUG p2pchat_net::public: admitted source=10.99.0.12 member=true
+2026-10-02T01:04:33.535859Z DEBUG p2pchat_net::dht: dht request source=10.99.0.12 kind="find_node"
+2026-10-02T01:04:33.542978Z DEBUG p2pchat_net::public: admitted source=10.99.0.13 member=false
+2026-10-02T01:04:33.544655Z DEBUG p2pchat_net::dht: dht request source=10.99.0.13 kind="find_node"
+2026-10-02T01:04:34.171652Z DEBUG p2pchat_net::public: admitted source=10.99.0.16 member=false
+2026-10-02T01:04:34.172868Z DEBUG p2pchat_net::dht: dht request source=10.99.0.16 kind="find_node"
+2026-10-02T01:04:34.513425Z DEBUG p2pchat_net::public: admitted source=10.99.0.11 member=true
+2026-10-02T01:04:34.514269Z DEBUG p2pchat_net::dht: dht request source=10.99.0.11 kind="find_node"
+2026-10-02T01:04:34.838963Z DEBUG p2pchat_net::public: admitted source=10.99.0.19 member=false
+2026-10-02T01:04:34.843860Z DEBUG p2pchat_net::dht: dht request source=10.99.0.19 kind="find_node"
+2026-10-02T01:04:34.867122Z DEBUG p2pchat_net::public: admitted source=10.99.0.49 member=false
+2026-10-02T01:04:34.868204Z DEBUG p2pchat_net::public: admitted source=10.99.0.49 member=false
+2026-10-02T01:04:34.868601Z DEBUG p2pchat_net::dht: dht request source=10.99.0.49 kind="find_node"
+2026-10-02T01:04:34.869865Z DEBUG p2pchat_net::dht: dht request source=10.99.0.49 kind="find_node"
+2026-10-02T01:04:34.870043Z DEBUG p2pchat_net::public: admitted source=10.99.0.49 member=false
+2026-10-02T01:04:34.872831Z DEBUG p2pchat_net::dht: dht request source=10.99.0.49 kind="find_node"
+2026-10-02T01:04:35.286776Z DEBUG p2pchat_net::public: admitted source=10.99.0.51 member=false
+2026-10-02T01:04:35.287236Z DEBUG p2pchat_net::public: admitted source=10.99.0.51 member=false
+2026-10-02T01:04:35.288022Z DEBUG p2pchat_net::dht: dht request source=10.99.0.51 kind="find_node"
+2026-10-02T01:04:35.288622Z DEBUG p2pchat_net::dht: dht request source=10.99.0.51 kind="find_node"
+2026-10-02T01:04:35.403778Z DEBUG p2pchat_net::public: admitted source=10.99.0.56 member=false
+2026-10-02T01:04:35.404974Z DEBUG p2pchat_net::dht: dht request source=10.99.0.56 kind="find_node"
+2026-10-02T01:04:35.406008Z DEBUG p2pchat_net::public: admitted source=10.99.0.56 member=false
+2026-10-02T01:04:35.407358Z DEBUG p2pchat_net::dht: dht request source=10.99.0.56 kind="find_node"
+2026-10-02T01:04:35.729005Z DEBUG p2pchat_net::public: admitted source=10.99.0.53 member=false
+2026-10-02T01:04:35.731771Z DEBUG p2pchat_net::dht: dht request source=10.99.0.53 kind="find_node"
+2026-10-02T01:04:35.741786Z DEBUG p2pchat_net::public: admitted source=10.99.0.53 member=false
+2026-10-02T01:04:35.742576Z DEBUG p2pchat_net::public: admitted source=10.99.0.53 member=false
+2026-10-02T01:04:35.742589Z DEBUG p2pchat_net::public: admitted source=10.99.0.53 member=false
+2026-10-02T01:04:35.743767Z DEBUG p2pchat_net::dht: dht request source=10.99.0.53 kind="find_node"
+2026-10-02T01:04:35.743882Z DEBUG p2pchat_net::dht: dht request source=10.99.0.53 kind="find_node"
+2026-10-02T01:04:35.744340Z DEBUG p2pchat_net::dht: dht request source=10.99.0.53 kind="find_node"
+2026-10-02T01:04:36.147957Z DEBUG p2pchat_net::public: admitted source=10.99.0.25 member=false
+2026-10-02T01:04:36.148681Z DEBUG p2pchat_net::dht: dht request source=10.99.0.25 kind="find_node"
+2026-10-02T01:04:37.019470Z DEBUG p2pchat_net::public: admitted source=10.99.0.29 member=false
+2026-10-02T01:04:37.020590Z DEBUG p2pchat_net::dht: dht request source=10.99.0.29 kind="find_node"
+2026-10-02T01:04:37.245293Z DEBUG p2pchat_net::public: admitted source=10.99.0.30 member=false
+2026-10-02T01:04:37.246807Z DEBUG p2pchat_net::dht: dht request source=10.99.0.30 kind="find_node"
+2026-10-02T01:04:37.247977Z DEBUG p2pchat_net::public: admitted source=10.99.0.30 member=false
+2026-10-02T01:04:37.249046Z DEBUG p2pchat_net::dht: dht request source=10.99.0.30 kind="find_node"
+2026-10-02T01:04:37.805067Z DEBUG p2pchat_net::public: admitted source=10.99.0.28 member=false
+2026-10-02T01:04:37.806266Z DEBUG p2pchat_net::public: admitted source=10.99.0.28 member=false
+2026-10-02T01:04:37.808902Z DEBUG p2pchat_net::dht: dht request source=10.99.0.28 kind="find_node"
+2026-10-02T01:04:37.809061Z DEBUG p2pchat_net::dht: dht request source=10.99.0.28 kind="find_node"
+2026-10-02T01:04:37.810404Z DEBUG p2pchat_net::public: admitted source=10.99.0.28 member=false
+2026-10-02T01:04:37.812254Z DEBUG p2pchat_net::dht: dht request source=10.99.0.28 kind="find_node"
+2026-10-02T01:04:38.974193Z DEBUG p2pchat_net::public: admitted source=10.99.0.38 member=false
+2026-10-02T01:04:39.423212Z DEBUG p2pchat_net::public: admitted source=10.99.0.40 member=false
+2026-10-02T01:04:39.427771Z DEBUG p2pchat_net::dht: dht request source=10.99.0.40 kind="find_node"
+2026-10-02T01:04:39.975792Z DEBUG p2pchat_net::dht: dht request source=10.99.0.38 kind="find_node"
+2026-10-02T01:04:40.704975Z DEBUG p2pchat_net::public: admitted source=10.99.0.46 member=false
+2026-10-02T01:04:40.705979Z DEBUG p2pchat_net::public: admitted source=10.99.0.46 member=false
+2026-10-02T01:04:40.708216Z DEBUG p2pchat_net::dht: dht request source=10.99.0.46 kind="find_node"
+2026-10-02T01:04:40.708441Z DEBUG p2pchat_net::dht: dht request source=10.99.0.46 kind="find_node"
+2026-10-02T01:04:40.711122Z DEBUG p2pchat_net::public: admitted source=10.99.0.46 member=false
+2026-10-02T01:04:40.711439Z DEBUG p2pchat_net::public: admitted source=10.99.0.46 member=false
+2026-10-02T01:04:40.714499Z DEBUG p2pchat_net::dht: dht request source=10.99.0.46 kind="find_node"
+2026-10-02T01:04:40.714643Z DEBUG p2pchat_net::dht: dht request source=10.99.0.46 kind="find_node"
+2026-10-02T01:04:41.234521Z DEBUG p2pchat_net::public: admitted source=10.99.0.14 member=false
+2026-10-02T01:04:41.236361Z DEBUG p2pchat_net::dht: dht request source=10.99.0.14 kind="find_node"
+2026-10-02T01:04:41.445360Z DEBUG p2pchat_net::public: admitted source=10.99.0.15 member=false
+2026-10-02T01:04:41.447650Z DEBUG p2pchat_net::dht: dht request source=10.99.0.15 kind="find_node"
+2026-10-02T01:04:41.882922Z DEBUG p2pchat_net::public: admitted source=10.99.0.17 member=false
+2026-10-02T01:04:41.884099Z DEBUG p2pchat_net::public: admitted source=10.99.0.17 member=false
+2026-10-02T01:04:41.886313Z DEBUG p2pchat_net::public: admitted source=10.99.0.17 member=false
+2026-10-02T01:04:41.888842Z DEBUG p2pchat_net::dht: dht request source=10.99.0.17 kind="find_node"
+2026-10-02T01:04:41.888980Z DEBUG p2pchat_net::dht: dht request source=10.99.0.17 kind="find_node"
+2026-10-02T01:04:41.889105Z DEBUG p2pchat_net::dht: dht request source=10.99.0.17 kind="find_node"
+2026-10-02T01:04:41.890990Z DEBUG p2pchat_net::public: admitted source=10.99.0.17 member=false
+2026-10-02T01:04:41.895763Z DEBUG p2pchat_net::dht: dht request source=10.99.0.17 kind="find_node"
+2026-10-02T01:04:42.121527Z DEBUG p2pchat_net::public: admitted source=10.99.0.18 member=false
+2026-10-02T01:04:42.125116Z DEBUG p2pchat_net::dht: dht request source=10.99.0.18 kind="find_node"
+2026-10-02T01:04:42.351229Z DEBUG p2pchat_net::public: admitted source=10.99.0.49 member=false
+2026-10-02T01:04:42.353059Z DEBUG p2pchat_net::dht: dht request source=10.99.0.49 kind="find_node"
+2026-10-02T01:04:42.359600Z DEBUG p2pchat_net::public: admitted source=10.99.0.49 member=false
+2026-10-02T01:04:42.360835Z DEBUG p2pchat_net::dht: dht request source=10.99.0.49 kind="find_node"
+2026-10-02T01:04:42.573099Z DEBUG p2pchat_net::public: admitted source=10.99.0.50 member=false
+2026-10-02T01:04:42.576965Z DEBUG p2pchat_net::dht: dht request source=10.99.0.50 kind="find_node"
+2026-10-02T01:04:42.759548Z DEBUG p2pchat_net::public: admitted source=10.99.0.21 member=false
+2026-10-02T01:04:42.759815Z DEBUG p2pchat_net::public: admitted source=10.99.0.21 member=false
+2026-10-02T01:04:42.760158Z DEBUG p2pchat_net::public: admitted source=10.99.0.21 member=false
+2026-10-02T01:04:42.760701Z DEBUG p2pchat_net::public: admitted source=10.99.0.21 member=false
+2026-10-02T01:04:42.761486Z DEBUG p2pchat_net::public: admitted source=10.99.0.21 member=false
+2026-10-02T01:04:42.761755Z DEBUG p2pchat_net::public: admitted source=10.99.0.21 member=false
+2026-10-02T01:04:42.762653Z DEBUG p2pchat_net::dht: dht request source=10.99.0.21 kind="find_node"
+2026-10-02T01:04:42.762926Z DEBUG p2pchat_net::dht: dht request source=10.99.0.21 kind="find_node"
+2026-10-02T01:04:42.763117Z DEBUG p2pchat_net::dht: dht request source=10.99.0.21 kind="find_node"
+2026-10-02T01:04:42.763349Z DEBUG p2pchat_net::dht: dht request source=10.99.0.21 kind="find_node"
+2026-10-02T01:04:42.763566Z DEBUG p2pchat_net::dht: dht request source=10.99.0.21 kind="find_node"
+2026-10-02T01:04:42.763652Z DEBUG p2pchat_net::public: admitted source=10.99.0.21 member=false
+2026-10-02T01:04:42.764059Z DEBUG p2pchat_net::dht: dht request source=10.99.0.21 kind="find_node"
+2026-10-02T01:04:42.766633Z DEBUG p2pchat_net::dht: dht request source=10.99.0.21 kind="find_node"
+2026-10-02T01:04:42.785357Z DEBUG p2pchat_net::public: admitted source=10.99.0.51 member=false
+2026-10-02T01:04:42.785670Z DEBUG p2pchat_net::public: admitted source=10.99.0.51 member=false
+2026-10-02T01:04:42.785963Z DEBUG p2pchat_net::public: admitted source=10.99.0.51 member=false
+2026-10-02T01:04:42.789549Z DEBUG p2pchat_net::dht: dht request source=10.99.0.51 kind="find_node"
+2026-10-02T01:04:42.790871Z DEBUG p2pchat_net::dht: dht request source=10.99.0.51 kind="find_node"
+2026-10-02T01:04:42.791671Z DEBUG p2pchat_net::dht: dht request source=10.99.0.51 kind="find_node"
+2026-10-02T01:04:42.796569Z DEBUG p2pchat_net::public: admitted source=10.99.0.51 member=false
+2026-10-02T01:04:42.799211Z DEBUG p2pchat_net::dht: dht request source=10.99.0.51 kind="find_node"
+2026-10-02T01:04:42.810462Z DEBUG p2pchat_net::public: admitted source=10.99.0.51 member=false
+2026-10-02T01:04:42.811933Z DEBUG p2pchat_net::dht: dht request source=10.99.0.51 kind="find_node"
+2026-10-02T01:04:42.907895Z DEBUG p2pchat_net::public: admitted source=10.99.0.56 member=false
+2026-10-02T01:04:42.908210Z DEBUG p2pchat_net::public: admitted source=10.99.0.56 member=false
+2026-10-02T01:04:42.910673Z DEBUG p2pchat_net::dht: dht request source=10.99.0.56 kind="find_node"
+2026-10-02T01:04:42.910865Z DEBUG p2pchat_net::dht: dht request source=10.99.0.56 kind="find_node"
+2026-10-02T01:04:43.332455Z DEBUG p2pchat_net::public: admitted source=10.99.0.58 member=false
+2026-10-02T01:04:43.333210Z DEBUG p2pchat_net::public: admitted source=10.99.0.58 member=false
+2026-10-02T01:04:43.333722Z DEBUG p2pchat_net::dht: dht request source=10.99.0.58 kind="ping"
+2026-10-02T01:04:43.335395Z DEBUG p2pchat_net::dht: dht request source=10.99.0.58 kind="find_node"
+2026-10-02T01:04:43.358696Z DEBUG p2pchat_net::public: admitted source=10.99.0.58 member=false
+2026-10-02T01:04:43.360353Z DEBUG p2pchat_net::dht: dht request source=10.99.0.58 kind="find_node"
+2026-10-02T01:04:43.678349Z DEBUG p2pchat_net::public: admitted source=10.99.0.55 member=false
+2026-10-02T01:04:43.680061Z DEBUG p2pchat_net::public: admitted source=10.99.0.55 member=false
+2026-10-02T01:04:43.681003Z DEBUG p2pchat_net::dht: dht request source=10.99.0.55 kind="find_node"
+2026-10-02T01:04:43.682657Z DEBUG p2pchat_net::dht: dht request source=10.99.0.55 kind="find_node"
+2026-10-02T01:04:43.684297Z DEBUG p2pchat_net::public: admitted source=10.99.0.55 member=false
+2026-10-02T01:04:43.685669Z DEBUG p2pchat_net::dht: dht request source=10.99.0.55 kind="find_node"
+2026-10-02T01:04:43.873053Z DEBUG p2pchat_net::public: admitted source=10.99.0.26 member=false
+2026-10-02T01:04:43.873976Z DEBUG p2pchat_net::dht: dht request source=10.99.0.26 kind="find_node"
+2026-10-02T01:04:43.994473Z DEBUG p2pchat_net::public: admitted source=10.99.0.22 member=false
+2026-10-02T01:04:43.995092Z DEBUG p2pchat_net::public: admitted source=10.99.0.22 member=false
+2026-10-02T01:04:43.995753Z DEBUG p2pchat_net::public: admitted source=10.99.0.22 member=false
+2026-10-02T01:04:43.996050Z DEBUG p2pchat_net::public: admitted source=10.99.0.22 member=false
+2026-10-02T01:04:43.998493Z DEBUG p2pchat_net::public: admitted source=10.99.0.22 member=false
+2026-10-02T01:04:43.999005Z DEBUG p2pchat_net::dht: dht request source=10.99.0.22 kind="find_node"
+2026-10-02T01:04:43.999479Z DEBUG p2pchat_net::dht: dht request source=10.99.0.22 kind="find_node"
+2026-10-02T01:04:43.999522Z DEBUG p2pchat_net::public: admitted source=10.99.0.22 member=false
+2026-10-02T01:04:43.999960Z DEBUG p2pchat_net::public: admitted source=10.99.0.22 member=false
+2026-10-02T01:04:44.000469Z DEBUG p2pchat_net::public: admitted source=10.99.0.22 member=false
+2026-10-02T01:04:44.002291Z DEBUG p2pchat_net::public: admitted source=10.99.0.22 member=false
+2026-10-02T01:04:44.002660Z DEBUG p2pchat_net::dht: dht request source=10.99.0.22 kind="ping"
+2026-10-02T01:04:44.002754Z DEBUG p2pchat_net::dht: dht request source=10.99.0.22 kind="find_node"
+2026-10-02T01:04:44.004751Z DEBUG p2pchat_net::public: admitted source=10.99.0.22 member=false
+2026-10-02T01:04:44.004784Z DEBUG p2pchat_net::public: rate limited source=10.99.0.22 member=false
+2026-10-02T01:04:44.004848Z DEBUG p2pchat_net::dht: dht request source=10.99.0.22 kind="find_node"
+2026-10-02T01:04:44.004916Z DEBUG p2pchat_net::dht: dht request source=10.99.0.22 kind="find_node"
+2026-10-02T01:04:44.004985Z DEBUG p2pchat_net::dht: dht request source=10.99.0.22 kind="find_node"
+2026-10-02T01:04:44.007612Z DEBUG p2pchat_net::dht: dht request source=10.99.0.22 kind="find_node"
+2026-10-02T01:04:44.106324Z DEBUG p2pchat_net::public: admitted source=10.99.0.57 member=false
+2026-10-02T01:04:44.109329Z DEBUG p2pchat_net::dht: dht request source=10.99.0.57 kind="find_node"
+2026-10-02T01:04:44.536280Z DEBUG p2pchat_net::public: admitted source=10.99.0.59 member=false
+2026-10-02T01:04:44.540641Z DEBUG p2pchat_net::dht: dht request source=10.99.0.59 kind="find_node"
+2026-10-02T01:04:44.820671Z DEBUG p2pchat_net::public: admitted source=10.99.0.62 member=false
+2026-10-02T01:04:44.821530Z DEBUG p2pchat_net::dht: dht request source=10.99.0.62 kind="find_node"
+2026-10-02T01:04:44.826573Z DEBUG p2pchat_net::public: admitted source=10.99.0.62 member=false
+2026-10-02T01:04:44.827747Z DEBUG p2pchat_net::dht: dht request source=10.99.0.62 kind="store"
+2026-10-02T01:04:44.999777Z DEBUG p2pchat_net::dht: dht request source=10.99.0.22 kind="find_node"
+2026-10-02T01:04:45.003041Z DEBUG p2pchat_net::dht: dht request source=10.99.0.22 kind="find_node"
+2026-10-02T01:04:45.285578Z DEBUG p2pchat_net::public: admitted source=10.99.0.28 member=false
+2026-10-02T01:04:45.286418Z DEBUG p2pchat_net::dht: dht request source=10.99.0.28 kind="find_node"
+2026-10-02T01:04:46.709172Z DEBUG p2pchat_net::public: admitted source=10.99.0.39 member=false
+2026-10-02T01:04:46.709995Z DEBUG p2pchat_net::dht: dht request source=10.99.0.39 kind="find_node"
+2026-10-02T01:04:47.049133Z DEBUG p2pchat_net::public: admitted source=10.99.0.36 member=false
+2026-10-02T01:04:47.052395Z DEBUG p2pchat_net::dht: dht request source=10.99.0.36 kind="find_node"
+2026-10-02T01:04:47.595990Z DEBUG p2pchat_net::public: admitted source=10.99.0.43 member=false
+2026-10-02T01:04:47.597663Z DEBUG p2pchat_net::dht: dht request source=10.99.0.43 kind="find_node"
+2026-10-02T01:04:48.125391Z DEBUG p2pchat_net::public: admitted source=10.99.0.41 member=false
+2026-10-02T01:04:48.127270Z DEBUG p2pchat_net::dht: dht request source=10.99.0.41 kind="ping"
+2026-10-02T01:04:48.128875Z DEBUG p2pchat_net::public: admitted source=10.99.0.41 member=false
+2026-10-02T01:04:48.130719Z DEBUG p2pchat_net::dht: dht request source=10.99.0.41 kind="find_node"
+2026-10-02T01:04:48.204300Z DEBUG p2pchat_net::public: admitted source=10.99.0.46 member=false
+2026-10-02T01:04:48.204688Z DEBUG p2pchat_net::public: admitted source=10.99.0.46 member=false
+2026-10-02T01:04:48.205640Z DEBUG p2pchat_net::dht: dht request source=10.99.0.46 kind="find_node"
+2026-10-02T01:04:48.205843Z DEBUG p2pchat_net::dht: dht request source=10.99.0.46 kind="find_node"
+2026-10-02T01:04:48.350737Z DEBUG p2pchat_net::public: admitted source=10.99.0.42 member=false
+2026-10-02T01:04:48.351741Z DEBUG p2pchat_net::dht: dht request source=10.99.0.42 kind="find_node"
+2026-10-02T01:04:48.515962Z DEBUG p2pchat_net::public: admitted source=10.99.0.13 member=false
+2026-10-02T01:04:48.517161Z DEBUG p2pchat_net::dht: dht request source=10.99.0.13 kind="find_node"
+2026-10-02T01:04:49.489363Z DEBUG p2pchat_net::public: admitted source=10.99.0.10 member=true
+2026-10-02T01:04:49.491679Z DEBUG p2pchat_net::dht: dht request source=10.99.0.10 kind="find_node"
+2026-10-02T01:04:49.507662Z DEBUG p2pchat_net::public: admitted source=10.99.0.11 member=true
+2026-10-02T01:04:49.508701Z DEBUG p2pchat_net::dht: dht request source=10.99.0.11 kind="find_node"
+2026-10-02T01:04:49.683369Z DEBUG p2pchat_net::public: admitted source=10.99.0.48 member=false
+2026-10-02T01:04:49.685208Z DEBUG p2pchat_net::dht: dht request source=10.99.0.48 kind="find_node"
+2026-10-02T01:04:50.137672Z DEBUG p2pchat_net::dht: bucket refreshed bucket=0
+2026-10-02T01:04:50.137700Z DEBUG p2pchat_net::dht: bucket refreshed bucket=1
+2026-10-02T01:04:50.137702Z DEBUG p2pchat_net::dht: bucket refreshed bucket=2
+2026-10-02T01:04:50.137703Z DEBUG p2pchat_net::dht: bucket refreshed bucket=3
+2026-10-02T01:04:50.137704Z DEBUG p2pchat_net::dht: bucket refreshed bucket=4
+2026-10-02T01:04:50.137705Z DEBUG p2pchat_net::dht: bucket refreshed bucket=5
+2026-10-02T01:04:50.259611Z DEBUG p2pchat_net::public: rate limited source=10.99.0.21 member=false
+2026-10-02T01:04:50.259831Z DEBUG p2pchat_net::public: rate limited source=10.99.0.21 member=false
+2026-10-02T01:04:50.511217Z DEBUG p2pchat_net::public: admitted source=10.99.0.52 member=false
+2026-10-02T01:04:50.512331Z DEBUG p2pchat_net::dht: dht request source=10.99.0.52 kind="find_node"
+2026-10-02T01:04:50.730586Z DEBUG p2pchat_net::public: admitted source=10.99.0.53 member=false
+2026-10-02T01:04:50.731748Z DEBUG p2pchat_net::dht: dht request source=10.99.0.53 kind="find_node"
+2026-10-02T01:04:50.971353Z DEBUG p2pchat_net::public: admitted source=10.99.0.54 member=false
+2026-10-02T01:04:50.973981Z DEBUG p2pchat_net::dht: dht request source=10.99.0.54 kind="find_node"
+2026-10-02T01:04:51.050377Z DEBUG p2pchat_net::public: admitted source=10.99.0.20 member=false
+2026-10-02T01:04:51.053702Z DEBUG p2pchat_net::dht: dht request source=10.99.0.20 kind="find_node"
+2026-10-02T01:04:51.160989Z DEBUG p2pchat_net::public: admitted source=10.99.0.55 member=false
+2026-10-02T01:04:51.162584Z DEBUG p2pchat_net::dht: dht request source=10.99.0.55 kind="find_node"
+2026-10-02T01:04:52.036608Z DEBUG p2pchat_net::public: admitted source=10.99.0.59 member=false
+2026-10-02T01:04:52.038331Z DEBUG p2pchat_net::public: admitted source=10.99.0.59 member=false
+2026-10-02T01:04:52.040352Z DEBUG p2pchat_net::dht: dht request source=10.99.0.59 kind="find_node"
+2026-10-02T01:04:52.040487Z DEBUG p2pchat_net::dht: dht request source=10.99.0.59 kind="find_node"
+2026-10-02T01:04:52.042211Z DEBUG p2pchat_net::public: admitted source=10.99.0.59 member=false
+2026-10-02T01:04:52.042224Z DEBUG p2pchat_net::public: admitted source=10.99.0.59 member=false
+2026-10-02T01:04:52.045265Z DEBUG p2pchat_net::public: rate limited source=10.99.0.59 member=false
+2026-10-02T01:04:52.045816Z DEBUG p2pchat_net::dht: dht request source=10.99.0.59 kind="find_node"
+2026-10-02T01:04:52.045857Z DEBUG p2pchat_net::dht: dht request source=10.99.0.59 kind="find_node"
+2026-10-02T01:04:52.243732Z DEBUG p2pchat_net::public: admitted source=10.99.0.30 member=false
+2026-10-02T01:04:52.245357Z DEBUG p2pchat_net::dht: dht request source=10.99.0.30 kind="find_node"
+2026-10-02T01:04:52.253107Z DEBUG p2pchat_net::public: admitted source=10.99.0.30 member=false
+2026-10-02T01:04:52.254995Z DEBUG p2pchat_net::dht: dht request source=10.99.0.30 kind="find_node"
+2026-10-02T01:04:52.453537Z DEBUG p2pchat_net::public: admitted source=10.99.0.31 member=false
+2026-10-02T01:04:52.455333Z DEBUG p2pchat_net::dht: dht request source=10.99.0.31 kind="find_node"
+2026-10-02T01:04:52.789285Z DEBUG p2pchat_net::public: admitted source=10.99.0.28 member=false
+2026-10-02T01:04:52.790566Z DEBUG p2pchat_net::dht: dht request source=10.99.0.28 kind="find_node"
+2026-10-02T01:04:54.749896Z DEBUG p2pchat_net::public: admitted source=10.99.0.37 member=false
+2026-10-02T01:04:54.752335Z DEBUG p2pchat_net::dht: dht request source=10.99.0.37 kind="find_node"
+2026-10-02T01:04:56.024032Z DEBUG p2pchat_net::public: admitted source=10.99.0.13 member=false
+2026-10-02T01:04:56.024860Z DEBUG p2pchat_net::dht: dht request source=10.99.0.13 kind="find_node"
+2026-10-02T01:04:56.447659Z DEBUG p2pchat_net::public: admitted source=10.99.0.15 member=false
+2026-10-02T01:04:56.448664Z DEBUG p2pchat_net::dht: dht request source=10.99.0.15 kind="find_node"
+2026-10-02T01:04:56.516311Z DEBUG p2pchat_net::public: admitted source=10.99.0.45 member=false
+2026-10-02T01:04:56.519402Z DEBUG p2pchat_net::dht: dht request source=10.99.0.45 kind="find_node"
+2026-10-02T01:04:56.673136Z DEBUG p2pchat_net::public: admitted source=10.99.0.16 member=false
+2026-10-02T01:04:56.674769Z DEBUG p2pchat_net::dht: dht request source=10.99.0.16 kind="find_node"
+2026-10-02T01:04:56.683522Z DEBUG p2pchat_net::public: admitted source=10.99.0.16 member=false
+2026-10-02T01:04:56.684023Z DEBUG p2pchat_net::public: admitted source=10.99.0.16 member=false
+2026-10-02T01:04:56.691754Z DEBUG p2pchat_net::dht: dht request source=10.99.0.16 kind="find_node"
+2026-10-02T01:04:56.696729Z DEBUG p2pchat_net::dht: dht request source=10.99.0.16 kind="find_node"
+2026-10-02T01:04:56.938955Z DEBUG p2pchat_net::public: admitted source=10.99.0.47 member=false
+2026-10-02T01:04:56.940550Z DEBUG p2pchat_net::dht: dht request source=10.99.0.47 kind="find_node"
+2026-10-02T01:04:57.004657Z DEBUG p2pchat_net::public: admitted source=10.99.0.11 member=true
+2026-10-02T01:04:57.006201Z DEBUG p2pchat_net::dht: dht request source=10.99.0.11 kind="find_node"
+2026-10-02T01:04:57.014987Z DEBUG p2pchat_net::public: admitted source=10.99.0.11 member=true
+2026-10-02T01:04:57.018990Z DEBUG p2pchat_net::dht: dht request source=10.99.0.11 kind="find_node"
+2026-10-02T01:04:57.759315Z DEBUG p2pchat_net::public: rate limited source=10.99.0.21 member=false
+2026-10-02T01:04:57.759481Z DEBUG p2pchat_net::public: rate limited source=10.99.0.21 member=false
+2026-10-02T01:04:58.666547Z DEBUG p2pchat_net::public: admitted source=10.99.0.55 member=false
+2026-10-02T01:04:58.667266Z DEBUG p2pchat_net::dht: dht request source=10.99.0.55 kind="find_node"
+2026-10-02T01:04:58.877146Z DEBUG p2pchat_net::public: admitted source=10.99.0.26 member=false
+2026-10-02T01:04:58.878023Z DEBUG p2pchat_net::dht: dht request source=10.99.0.26 kind="find_node"
+2026-10-02T01:04:59.742955Z DEBUG p2pchat_net::public: admitted source=10.99.0.30 member=false
+2026-10-02T01:04:59.743804Z DEBUG p2pchat_net::dht: dht request source=10.99.0.30 kind="find_node"
+2026-10-02T01:05:03.527398Z DEBUG p2pchat_net::public: admitted source=10.99.0.13 member=false
+2026-10-02T01:05:03.530615Z DEBUG p2pchat_net::dht: dht request source=10.99.0.13 kind="find_node"
+2026-10-02T01:05:03.946812Z DEBUG p2pchat_net::public: admitted source=10.99.0.15 member=false
+2026-10-02T01:05:03.948588Z DEBUG p2pchat_net::dht: dht request source=10.99.0.15 kind="find_node"
+2026-10-02T01:05:04.507559Z DEBUG p2pchat_net::public: admitted source=10.99.0.11 member=true
+2026-10-02T01:05:04.509124Z DEBUG p2pchat_net::dht: dht request source=10.99.0.11 kind="find_node"
+2026-10-02T01:05:04.853910Z DEBUG p2pchat_net::public: admitted source=10.99.0.49 member=false
+2026-10-02T01:05:04.854646Z DEBUG p2pchat_net::dht: dht request source=10.99.0.49 kind="find_node"
+2026-10-02T01:05:05.402058Z DEBUG p2pchat_net::public: admitted source=10.99.0.56 member=false
+2026-10-02T01:05:05.403700Z DEBUG p2pchat_net::public: admitted source=10.99.0.56 member=false
+2026-10-02T01:05:05.404562Z DEBUG p2pchat_net::dht: dht request source=10.99.0.56 kind="find_node"
+2026-10-02T01:05:05.405706Z DEBUG p2pchat_net::dht: dht request source=10.99.0.56 kind="find_node"
+2026-10-02T01:05:05.406443Z DEBUG p2pchat_net::public: admitted source=10.99.0.56 member=false
+2026-10-02T01:05:05.408280Z DEBUG p2pchat_net::dht: dht request source=10.99.0.56 kind="find_node"
+2026-10-02T01:05:06.392096Z DEBUG p2pchat_net::public: admitted source=10.99.0.26 member=false
+2026-10-02T01:05:06.392905Z DEBUG p2pchat_net::public: admitted source=10.99.0.26 member=false
+2026-10-02T01:05:06.395003Z DEBUG p2pchat_net::dht: dht request source=10.99.0.26 kind="find_node"
+2026-10-02T01:05:06.396754Z DEBUG p2pchat_net::dht: dht request source=10.99.0.26 kind="find_node"
+2026-10-02T01:05:06.397382Z DEBUG p2pchat_net::public: admitted source=10.99.0.26 member=false
+2026-10-02T01:05:06.403390Z DEBUG p2pchat_net::dht: dht request source=10.99.0.26 kind="find_node"
+2026-10-02T01:05:06.716930Z DEBUG p2pchat_net::public: admitted source=10.99.0.23 member=false
+2026-10-02T01:05:06.728763Z DEBUG p2pchat_net::dht: dht request source=10.99.0.23 kind="find_node"
+2026-10-02T01:05:06.731911Z DEBUG p2pchat_net::public: admitted source=10.99.0.23 member=false
+2026-10-02T01:05:06.737747Z DEBUG p2pchat_net::dht: dht request source=10.99.0.23 kind="find_node"
+2026-10-02T01:05:07.013102Z DEBUG p2pchat_net::public: admitted source=10.99.0.29 member=false
+2026-10-02T01:05:07.015226Z DEBUG p2pchat_net::public: admitted source=10.99.0.29 member=false
+2026-10-02T01:05:07.015598Z DEBUG p2pchat_net::dht: dht request source=10.99.0.29 kind="find_node"
+2026-10-02T01:05:07.016227Z DEBUG p2pchat_net::dht: dht request source=10.99.0.29 kind="find_node"
+2026-10-02T01:05:07.017388Z DEBUG p2pchat_net::public: admitted source=10.99.0.29 member=false
+2026-10-02T01:05:07.018252Z DEBUG p2pchat_net::dht: dht request source=10.99.0.29 kind="find_node"
+2026-10-02T01:05:07.900566Z DEBUG p2pchat_net::public: admitted source=10.99.0.33 member=false
+2026-10-02T01:05:07.901935Z DEBUG p2pchat_net::dht: dht request source=10.99.0.33 kind="find_node"
+2026-10-02T01:05:09.088188Z DEBUG p2pchat_net::public: admitted source=10.99.0.34 member=false
+2026-10-02T01:05:09.089553Z DEBUG p2pchat_net::dht: dht request source=10.99.0.34 kind="find_node"
+2026-10-02T01:05:10.999304Z DEBUG p2pchat_net::public: admitted source=10.99.0.12 member=true
+2026-10-02T01:05:11.004895Z DEBUG p2pchat_net::dht: dht request source=10.99.0.12 kind="find_node"
+2026-10-02T01:05:11.665103Z DEBUG p2pchat_net::public: admitted source=10.99.0.16 member=false
+2026-10-02T01:05:11.666861Z DEBUG p2pchat_net::dht: dht request source=10.99.0.16 kind="find_node"
+2026-10-02T01:05:12.007243Z DEBUG p2pchat_net::public: admitted source=10.99.0.11 member=true
+2026-10-02T01:05:12.009499Z DEBUG p2pchat_net::dht: dht request source=10.99.0.11 kind="find_node"
+2026-10-02T01:05:12.334842Z DEBUG p2pchat_net::public: admitted source=10.99.0.19 member=false
+2026-10-02T01:05:12.340819Z DEBUG p2pchat_net::dht: dht request source=10.99.0.19 kind="find_node"
+2026-10-02T01:05:12.363605Z DEBUG p2pchat_net::public: admitted source=10.99.0.49 member=false
+2026-10-02T01:05:12.364426Z DEBUG p2pchat_net::dht: dht request source=10.99.0.49 kind="find_node"
+2026-10-02T01:05:12.364840Z DEBUG p2pchat_net::public: admitted source=10.99.0.49 member=false
+2026-10-02T01:05:12.366427Z DEBUG p2pchat_net::dht: dht request source=10.99.0.49 kind="find_node"
+2026-10-02T01:05:12.783292Z DEBUG p2pchat_net::public: admitted source=10.99.0.51 member=false
+2026-10-02T01:05:12.784081Z DEBUG p2pchat_net::public: admitted source=10.99.0.51 member=false
+2026-10-02T01:05:12.784847Z DEBUG p2pchat_net::dht: dht request source=10.99.0.51 kind="find_node"
+2026-10-02T01:05:12.784893Z DEBUG p2pchat_net::dht: dht request source=10.99.0.51 kind="find_node"
+2026-10-02T01:05:12.902248Z DEBUG p2pchat_net::public: admitted source=10.99.0.56 member=false
+2026-10-02T01:05:12.903509Z DEBUG p2pchat_net::dht: dht request source=10.99.0.56 kind="find_node"
+2026-10-02T01:05:12.903530Z DEBUG p2pchat_net::public: admitted source=10.99.0.56 member=false
+2026-10-02T01:05:12.908106Z DEBUG p2pchat_net::dht: dht request source=10.99.0.56 kind="find_node"
+2026-10-02T01:05:13.223682Z DEBUG p2pchat_net::public: admitted source=10.99.0.53 member=false
+2026-10-02T01:05:13.225763Z DEBUG p2pchat_net::dht: dht request source=10.99.0.53 kind="find_node"
+2026-10-02T01:05:13.236630Z DEBUG p2pchat_net::public: admitted source=10.99.0.53 member=false
+2026-10-02T01:05:13.237508Z DEBUG p2pchat_net::dht: dht request source=10.99.0.53 kind="find_node"
+2026-10-02T01:05:13.238154Z DEBUG p2pchat_net::public: admitted source=10.99.0.53 member=false
+2026-10-02T01:05:13.239261Z DEBUG p2pchat_net::dht: dht request source=10.99.0.53 kind="find_node"
+2026-10-02T01:05:13.257246Z DEBUG p2pchat_net::public: admitted source=10.99.0.66 member=false
+2026-10-02T01:05:13.258130Z  INFO p2pchat_net::public: connection request received caller=f080 d2e2 fd91 2be5
+2026-10-02T01:05:13.633781Z DEBUG p2pchat_net::public: admitted source=10.99.0.25 member=false
+2026-10-02T01:05:13.635705Z DEBUG p2pchat_net::dht: dht request source=10.99.0.25 kind="find_node"
+2026-10-02T01:05:13.668589Z DEBUG p2pchat_net::public: admitted source=10.99.0.55 member=false
+2026-10-02T01:05:13.668602Z DEBUG p2pchat_net::public: admitted source=10.99.0.55 member=false
+2026-10-02T01:05:13.669486Z DEBUG p2pchat_net::dht: dht request source=10.99.0.55 kind="find_node"
+2026-10-02T01:05:13.669646Z DEBUG p2pchat_net::dht: dht request source=10.99.0.55 kind="find_node"
+2026-10-02T01:05:13.872581Z DEBUG p2pchat_net::public: admitted source=10.99.0.26 member=false
+2026-10-02T01:05:13.874507Z DEBUG p2pchat_net::dht: dht request source=10.99.0.26 kind="find_node"
+2026-10-02T01:05:14.516806Z DEBUG p2pchat_net::public: admitted source=10.99.0.29 member=false
+2026-10-02T01:05:14.517708Z DEBUG p2pchat_net::dht: dht request source=10.99.0.29 kind="find_node"
+2026-10-02T01:05:14.525449Z DEBUG p2pchat_net::public: admitted source=10.99.0.29 member=false
+2026-10-02T01:05:14.526926Z DEBUG p2pchat_net::dht: dht request source=10.99.0.29 kind="find_node"
+2026-10-02T01:05:14.535076Z DEBUG p2pchat_net::public: rate limited source=10.99.0.59 member=false
+2026-10-02T01:05:14.741748Z DEBUG p2pchat_net::public: admitted source=10.99.0.30 member=false
+2026-10-02T01:05:14.743666Z DEBUG p2pchat_net::dht: dht request source=10.99.0.30 kind="find_node"
+2026-10-02T01:05:14.744203Z DEBUG p2pchat_net::public: admitted source=10.99.0.30 member=false
+2026-10-02T01:05:14.745961Z DEBUG p2pchat_net::dht: dht request source=10.99.0.30 kind="find_node"
+2026-10-02T01:05:15.260680Z DEBUG p2pchat_net::public: admitted source=10.99.0.66 member=false
+2026-10-02T01:05:15.263361Z  INFO p2pchat_net::handshake: session established peer=f080 d2e2 fd91 2be5
+2026-10-02T01:05:15.263775Z  INFO p2pchat::node: session established peer=f080 d2e2 fd91 2be5 initiator=f080 d2e2 fd91 2be5
+2026-10-02T01:05:15.263992Z  INFO p2pchat::session: resync sent peer=f080 d2e2 fd91 2be5 have_through=0
+2026-10-02T01:05:15.264070Z  INFO p2pchat::session: resync received; retransmitting what the peer is missing peer=f080 d2e2 fd91 2be5 have_through=0 count=0
+2026-10-02T01:05:15.292324Z DEBUG p2pchat_net::public: admitted source=10.99.0.28 member=false
+2026-10-02T01:05:15.296383Z DEBUG p2pchat_net::dht: dht request source=10.99.0.28 kind="find_node"
+2026-10-02T01:05:15.306267Z DEBUG p2pchat_net::public: admitted source=10.99.0.28 member=false
+2026-10-02T01:05:15.315535Z DEBUG p2pchat_net::public: admitted source=10.99.0.28 member=false
+2026-10-02T01:05:15.315736Z DEBUG p2pchat_net::dht: dht request source=10.99.0.28 kind="find_node"
+2026-10-02T01:05:15.315821Z DEBUG p2pchat_net::public: admitted source=10.99.0.28 member=false
+2026-10-02T01:05:15.318363Z DEBUG p2pchat_net::dht: dht request source=10.99.0.28 kind="find_node"
+2026-10-02T01:05:15.318761Z DEBUG p2pchat_net::dht: dht request source=10.99.0.28 kind="find_node"

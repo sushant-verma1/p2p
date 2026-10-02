@@ -11,11 +11,13 @@
 #![forbid(unsafe_code)]
 
 pub mod node;
+pub mod reach;
 pub mod registry;
 pub mod session;
 pub mod ui;
 
 pub use node::{Config, Node};
+pub use reach::Role;
 
 use p2pchat_core::wire::{DeliveryStatus, RequestState};
 use p2pchat_core::{MessageId, MsgSeq, UserId};

@@ -1286,6 +1286,7 @@ dependencies = [
  "p2pchat-net",
  "p2pchat-store",
  "p2pchat-tui",
+ "postcard",
  "quinn",
  "ratatui",
  "rexpect",

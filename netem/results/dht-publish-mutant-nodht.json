@@ -1,0 +1,40 @@
+{
+ "profile": "baseline",
+ "selftest": {
+  "1_findable": {
+   "fault_findable_after_s": null,
+   "control_findable_after_s": null,
+   "detected": false
+  }
+ },
+ "gates": {},
+ "converged_after_s": 0.0,
+ "selftest_all_detected": false,
+ "gate_assertions": {},
+ "failed_gates": [
+  "1_findable"
+ ],
+ "pass": false,
+ "args": {
+  "scenario": "publish",
+  "n": 50,
+  "clients": 3,
+  "profile": "baseline",
+  "k": null,
+  "alpha": null,
+  "replication": null,
+  "rpc_timeout_ms": null,
+  "refresh_ms": 30000,
+  "converge_s": 120,
+  "gets": 4,
+  "finds": 2,
+  "kill": 0.3,
+  "only": null,
+  "binary": "/target/bin/p2pchat-m17-nodht",
+  "env": [],
+  "findable_s": 30,
+  "out": "/out",
+  "tag": "mutant-nodht",
+  "selftest_only": true
+ }
+}

@@ -7,8 +7,10 @@
 #![forbid(unsafe_code)]
 
 mod accept_any_server_cert;
+pub mod dht;
 pub mod handshake;
 pub mod public;
+pub mod socket;
 pub mod stun;
 
 use std::net::{Ipv4Addr, SocketAddr};
@@ -86,6 +88,14 @@ impl NodeKind {
     }
 }
 
+/// The ALPN a reachability dial-back offers — M14, `architecture.md` §3.
+///
+/// Its own protocol rather than either endpoint's, so a dial-back reaching a
+/// private endpoint is told apart before §6 is started on it, and cannot be
+/// mistaken for a peer. The private endpoint accepts it because that is where
+/// a node asks from, and so where the dial-back is sent.
+pub const DIAL_BACK_ALPN: &[u8] = b"p2pchat-dialback/1";
+
 #[derive(Debug, Error)]
 pub enum NetError {
     #[error("connection closed")]
@@ -101,6 +111,10 @@ pub enum NetError {
     /// inside the timeout is not owed a task.
     #[error("public request timed out")]
     RequestTimeout,
+
+    /// A public node answered with a response to a different request.
+    #[error("the node answered a different question")]
+    WrongAnswer,
 
     /// `architecture.md` §3. Only reachable if the connection negotiated no
     /// TLS exporter at all, which QUIC does not permit.
@@ -187,12 +201,22 @@ fn transport_config(max_idle: Duration) -> Arc<quinn::TransportConfig> {
     Arc::new(transport)
 }
 
-/// A listening endpoint with a fresh self-signed certificate.
+/// A listening endpoint with a fresh self-signed certificate, over a socket
+/// this process binds and keeps — M13a, `architecture.md` §3 — and the STUN
+/// side of that same socket.
+///
+/// The endpoint also dials, offering `kind`'s ALPN by default; [`connect_as`]
+/// offers the other. A node dials from here and nowhere else, so that what
+/// STUN learns about this socket, and any hole punched from it, is true of
+/// its QUIC traffic.
 ///
 /// The certificate is generated per run and carries no identity meaning
 /// whatsoever — `architecture.md` §3, agent.md §3 invariant 11. Pass port 0 to
 /// let the OS choose, which is what the tests do.
-pub fn server_endpoint(addr: SocketAddr, kind: NodeKind) -> Result<Endpoint, NetError> {
+pub fn node_endpoint(
+    addr: SocketAddr,
+    kind: NodeKind,
+) -> Result<(Endpoint, socket::StunChannel), NetError> {
     let certified = rcgen::generate_simple_self_signed(vec!["p2pchat".to_owned()])?;
     let cert = certified.cert.der().clone();
     let key = rustls::pki_types::PrivatePkcs8KeyDer::from(certified.key_pair.serialize_der());
@@ -201,34 +225,88 @@ pub fn server_endpoint(addr: SocketAddr, kind: NodeKind) -> Result<Endpoint, Net
         .with_protocol_versions(&[&rustls::version::TLS13])?
         .with_no_client_auth()
         .with_single_cert(vec![cert], key.into())?;
-    crypto.alpn_protocols = vec![kind.alpn().to_vec()];
+    crypto.alpn_protocols = match kind {
+        NodeKind::Public => vec![kind.alpn().to_vec()],
+        NodeKind::Private => vec![kind.alpn().to_vec(), DIAL_BACK_ALPN.to_vec()],
+    };
 
     let mut config = quinn::ServerConfig::with_crypto(Arc::new(
         quinn::crypto::rustls::QuicServerConfig::try_from(crypto)?,
     ));
     config.transport_config(transport_config(MAX_IDLE));
-    let endpoint = Endpoint::server(config, addr)?;
+
+    let (socket, stun) = socket::bind(addr)?;
+    let mut endpoint_config = quinn::EndpointConfig::default();
+    // The STUN demux depends on this — see `socket`. A greased packet has
+    // the fixed bit clear and looks, by its first byte, like STUN.
+    endpoint_config.grease_quic_bit(false);
+    let mut endpoint = Endpoint::new_with_abstract_socket(
+        endpoint_config,
+        Some(config),
+        socket,
+        Arc::new(quinn::TokioRuntime),
+    )?;
+    endpoint.set_default_client_config(client_config(kind)?);
     tracing::info!(?kind, addr = %endpoint.local_addr()?, "listening");
-    Ok(endpoint)
+    Ok((endpoint, stun))
 }
 
-/// An endpoint that only dials, on an ephemeral port.
+/// [`node_endpoint`] without its STUN side, which then drops what STUN it
+/// receives rather than hand it to quinn.
+pub fn server_endpoint(addr: SocketAddr, kind: NodeKind) -> Result<Endpoint, NetError> {
+    Ok(node_endpoint(addr, kind)?.0)
+}
+
+/// An endpoint that only dials, on an ephemeral port quinn binds.
+///
+/// Not for a node — [`node_endpoint`] says why. It stands in for a peer
+/// elsewhere in the tests.
 pub fn client_endpoint(kind: NodeKind) -> Result<Endpoint, NetError> {
     let mut endpoint = Endpoint::client(SocketAddr::from((Ipv4Addr::UNSPECIFIED, 0)))?;
-    let mut config = accept_any_server_cert::client_config(kind.alpn())?;
-    config.transport_config(transport_config(CONNECT_IDLE));
-    endpoint.set_default_client_config(config);
+    endpoint.set_default_client_config(client_config(kind)?);
     tracing::info!(?kind, addr = %endpoint.local_addr()?, "dialling from");
     Ok(endpoint)
 }
 
+fn client_config(kind: NodeKind) -> Result<quinn::ClientConfig, NetError> {
+    client_config_offering(kind.alpn())
+}
+
+fn client_config_offering(alpn: &[u8]) -> Result<quinn::ClientConfig, NetError> {
+    let mut config = accept_any_server_cert::client_config(alpn)?;
+    config.transport_config(transport_config(CONNECT_IDLE));
+    Ok(config)
+}
+
 /// Required by TLS and meaningless here: the certificate is not checked
 /// against it, and identity comes from §6.
-const SERVER_NAME: &str = "p2pchat";
+pub(crate) const SERVER_NAME: &str = "p2pchat";
 
 /// Dial `addr`, offering the endpoint's ALPN.
 pub async fn connect(endpoint: &Endpoint, addr: SocketAddr) -> Result<Connection, NetError> {
     Ok(endpoint.connect(addr, SERVER_NAME)?.await?)
+}
+
+/// Dial `addr` offering `kind`'s ALPN, whatever the endpoint's own is — how a
+/// node asks a public node from its private endpoint's socket.
+pub async fn connect_as(
+    endpoint: &Endpoint,
+    kind: NodeKind,
+    addr: SocketAddr,
+) -> Result<Connection, NetError> {
+    Ok(endpoint
+        .connect_with(client_config(kind)?, addr, SERVER_NAME)?
+        .await?)
+}
+
+/// The ALPN `connection` negotiated — how an endpoint that accepts two
+/// protocols tells them apart.
+pub fn alpn(connection: &Connection) -> Option<Vec<u8>> {
+    connection
+        .handshake_data()?
+        .downcast::<quinn::crypto::rustls::HandshakeData>()
+        .ok()?
+        .protocol
 }
 
 /// The 32 bytes both sides mix into the §6 transcript.

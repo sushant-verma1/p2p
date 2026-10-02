@@ -5,6 +5,10 @@
 //! maps outbound sessions, and reports both. Nothing here is wired into
 //! dialling, invites, or address advertisement — that is M17 and M18.
 //!
+//! On a node it runs over the QUIC endpoint's own socket, through
+//! [`crate::socket::StunChannel`] — M13a. The mapping it reports is then the
+//! one quinn's traffic actually gets, which is the only one worth knowing.
+//!
 //! **Every byte [`parse_response`] touches arrives from a UDP socket with no
 //! transport-level authentication under it.** That makes it attacker-controlled
 //! in the same sense `architecture.md` §12 means it: bound every length before
@@ -18,6 +22,8 @@
 //! see [`query`]. `techstack.md` records why this is hand-rolled rather than a
 //! crate.
 
+use std::future::Future;
+use std::io;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::time::Duration;
 
@@ -95,6 +101,15 @@ fn claimed_transaction_id(datagram: &[u8]) -> Option<[u8; TRANSACTION_ID_LEN]> {
     let mut id = [0u8; TRANSACTION_ID_LEN];
     id.copy_from_slice(&header[8..20]);
     Some(id)
+}
+
+/// Whether a datagram arriving on a socket shared with QUIC is STUN's — M13a,
+/// [`crate::socket`]. The first two bits are zero in every STUN message and
+/// set to `01` in every QUIC packet quinn will accept, so this cannot claim a
+/// QUIC packet; the cookie narrows it further to what [`query`] could use.
+pub(crate) fn is_stun(datagram: &[u8]) -> bool {
+    datagram.first().is_some_and(|first| first & 0xC0 == 0)
+        && claimed_transaction_id(datagram).is_some()
 }
 
 /// Parses a Binding Success Response already known to carry `expected`'s
@@ -230,6 +245,30 @@ fn decode_address(
 // Querying a server
 // ---------------------------------------------------------------------------
 
+/// What [`query`] needs from a socket: a plain `tokio` `UdpSocket`, or a
+/// node's QUIC socket through [`crate::socket::StunChannel`].
+pub trait Datagrams: Sync {
+    fn send_to(
+        &self,
+        datagram: &[u8],
+        to: SocketAddr,
+    ) -> impl Future<Output = io::Result<()>> + Send;
+    fn recv_from(
+        &self,
+        buf: &mut [u8],
+    ) -> impl Future<Output = io::Result<(usize, SocketAddr)>> + Send;
+}
+
+impl Datagrams for UdpSocket {
+    async fn send_to(&self, datagram: &[u8], to: SocketAddr) -> io::Result<()> {
+        UdpSocket::send_to(self, datagram, to).await.map(drop)
+    }
+
+    async fn recv_from(&self, buf: &mut [u8]) -> io::Result<(usize, SocketAddr)> {
+        UdpSocket::recv_from(self, buf).await
+    }
+}
+
 /// Sends one Binding Request to `server` on `socket` and returns the mapped
 /// address, or the reason none arrived.
 ///
@@ -241,7 +280,7 @@ fn decode_address(
 /// between this node and an off-path attacker who spoofs a reply: treat it
 /// with the same weight `agent.md` §3 gives the handshake's transcript check.
 pub async fn query(
-    socket: &UdpSocket,
+    socket: &impl Datagrams,
     server: SocketAddr,
     request_timeout: Duration,
 ) -> Result<SocketAddr, StunError> {
@@ -366,7 +405,7 @@ pub struct Probe {
 /// replies. STUN is a handful of round trips; there is nothing here worth
 /// that risk to save.
 pub async fn probe(
-    socket: &UdpSocket,
+    socket: &impl Datagrams,
     servers: &[(&'static str, SocketAddr)],
     request_timeout: Duration,
 ) -> Vec<Probe> {
@@ -388,7 +427,7 @@ pub async fn probe(
 ///
 /// `None` if that lookup itself fails, which happens on a host with no route
 /// at all — folded into "unknown" by [`discover`], never into a NAT guess.
-fn local_outbound_ip(probe_target: SocketAddr) -> Option<IpAddr> {
+pub fn local_outbound_ip(probe_target: SocketAddr) -> Option<IpAddr> {
     let bind: SocketAddr = match probe_target {
         SocketAddr::V4(_) => (Ipv4Addr::UNSPECIFIED, 0).into(),
         SocketAddr::V6(_) => (Ipv6Addr::UNSPECIFIED, 0).into(),
@@ -414,7 +453,7 @@ pub struct Report {
 /// the classification from [`classify`], plus the no-NAT check requirement 3
 /// asks for.
 pub async fn discover(
-    socket: &UdpSocket,
+    socket: &impl Datagrams,
     servers: &[(&'static str, SocketAddr)],
     request_timeout: Duration,
 ) -> Report {

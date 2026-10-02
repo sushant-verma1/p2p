@@ -1,0 +1,15 @@
+2026-10-02T01:04:12.654050Z  INFO p2pchat: p2pchat starting version="0.1.0"
+2026-10-02T01:04:12.692345Z  INFO p2pchat_net: listening kind=Private addr=0.0.0.0:47101
+2026-10-02T01:04:12.692382Z  INFO p2pchat::node: endpoints bound me=3aff b54a 5cce 7b5c private=0.0.0.0:47101 public=None
+2026-10-02T01:04:12.692413Z  INFO p2pchat::node: node started me=3aff b54a 5cce 7b5c public_advertised=[10.99.0.65:47100] private_advertised=Some(10.99.0.65:47101)
+2026-10-02T01:04:12.707993Z  INFO p2pchat::reach: dial-back test member=10.99.0.10:47100 observed=10.99.0.65:47101 forwarded=true reached=true arrived=Some(10.99.0.11:57553)
+2026-10-02T01:04:12.708015Z  INFO p2pchat::reach: reachability test role=Member(10.99.0.65:47101) reason=Reached members=3
+2026-10-02T01:04:12.708020Z  INFO p2pchat::node: reachability from=Client to=Member(10.99.0.65:47101)
+2026-10-02T01:04:12.716352Z  INFO p2pchat::node: record published seq=1790903052693 addrs=[10.99.0.65:47101] stored=8 elapsed_ms=23
+2026-10-02T01:04:12.731668Z  INFO p2pchat::node: record published seq=1790903052716 addrs=[10.99.0.65:47101] stored=8 elapsed_ms=15
+2026-10-02T01:04:13.259133Z  INFO p2pchat::node: connection request sent peer=b89d 7224 ee6f c562 addr=10.99.0.64:47100 state=Pending
+2026-10-02T01:04:13.259294Z DEBUG p2pchat::node: no answer to act on yet; keeping the poller peer=b89d 7224 ee6f c562 state=Pending
+2026-10-02T01:04:13.259396Z DEBUG polling{peer=b89d 7224 ee6f c562}: p2pchat::node: polling started addr=10.99.0.64:47100 first=2s
+2026-10-02T01:04:15.260360Z DEBUG polling{peer=b89d 7224 ee6f c562}: p2pchat::node: asking what became of our request peer=b89d 7224 ee6f c562 addr=10.99.0.64:47100
+2026-10-02T01:04:15.263177Z  INFO polling{peer=b89d 7224 ee6f c562}: p2pchat::node: our connection request was rejected peer=b89d 7224 ee6f c562
+2026-10-02T01:04:15.263253Z DEBUG polling{peer=b89d 7224 ee6f c562}: p2pchat::node: polling stopped

@@ -1,0 +1,54 @@
+{
+ "profile": "baseline",
+ "selftest": {
+  "1_findable": {
+   "fault_findable_after_s": null,
+   "control_findable_after_s": 0.54,
+   "detected": true
+  },
+  "2_propagated": {
+   "fault_new_found_after_s": null,
+   "fault_old_still_found": true,
+   "control_old_seq": 1790903579249,
+   "control_new_found_after_s": 0.0,
+   "detected": true
+  },
+  "4_stale": {
+   "fault_firewalled_read_as": "unreachable",
+   "fault_answer": "no answer from 10.99.0.61:47101 after 20s. An unreachable node and a wrong address look the same from here, so check: that 10.99.0.61:47101 is what `p2pchat check` on the owner's machine lists as advertised; that UDP port 47101 is open inbound on the owner's firewall and cloud security group (QUIC i",
+   "control_moved_read_as": "other",
+   "control_reasons": [],
+   "detected": false
+  }
+ },
+ "gates": {},
+ "converged_after_s": 30.3,
+ "selftest_all_detected": false,
+ "gate_assertions": {},
+ "failed_gates": [
+  "4_stale"
+ ],
+ "pass": false,
+ "args": {
+  "scenario": "publish",
+  "n": 50,
+  "clients": 3,
+  "profile": "baseline",
+  "k": null,
+  "alpha": null,
+  "replication": null,
+  "rpc_timeout_ms": null,
+  "refresh_ms": 30000,
+  "converge_s": 120,
+  "gets": 4,
+  "finds": 2,
+  "kill": 0.3,
+  "only": null,
+  "binary": "/target/bin/p2pchat-m17-unreachable",
+  "env": [],
+  "findable_s": 30,
+  "out": "/out",
+  "tag": "mutant-unreachable",
+  "selftest_only": true
+ }
+}

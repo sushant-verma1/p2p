@@ -1,0 +1,41 @@
+2026-10-02T01:03:46.029329Z  INFO p2pchat: p2pchat starting version="0.1.0"
+2026-10-02T01:03:46.040096Z  INFO p2pchat_net: listening kind=Private addr=0.0.0.0:47101
+2026-10-02T01:03:46.040120Z  INFO p2pchat::node: endpoints bound me=2f8e 5c5d 33d2 daf5 private=0.0.0.0:47101 public=None
+2026-10-02T01:03:46.040144Z  INFO p2pchat::node: node started me=2f8e 5c5d 33d2 daf5 public_advertised=[10.99.0.62:47100] private_advertised=Some(10.99.0.62:47101)
+2026-10-02T01:03:46.044889Z  INFO p2pchat::reach: dial-back test member=10.99.0.10:47100 observed=10.99.0.62:47101 forwarded=true reached=true arrived=Some(10.99.0.11:46041)
+2026-10-02T01:03:46.044907Z  INFO p2pchat::reach: reachability test role=Member(10.99.0.62:47101) reason=Reached members=3
+2026-10-02T01:03:46.044911Z  INFO p2pchat::node: reachability from=Client to=Member(10.99.0.62:47101)
+2026-10-02T01:03:46.052046Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.62:47101] stored=8 elapsed_ms=11
+2026-10-02T01:03:46.064212Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.62:47101] stored=8 elapsed_ms=12
+2026-10-02T01:05:16.071880Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.62:47101] stored=0 elapsed_ms=11
+2026-10-02T01:05:26.084848Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.62:47101] stored=0 elapsed_ms=12
+2026-10-02T01:05:36.097144Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.62:47101] stored=0 elapsed_ms=11
+2026-10-02T01:05:46.111833Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.62:47101] stored=0 elapsed_ms=14
+2026-10-02T01:05:51.671511Z  WARN p2pchat::node: dial from the record failed peer=b00f 0375 defe 31d6 addr=10.99.0.63:47101 seq=1 diagnosis=Abandoned { age: 125 } error=no answer from 10.99.0.63:47101 after 20s. An unreachable node and a wrong address look the same from here, so check: that 10.99.0.63:47101 is what `p2pchat check` on the owner's machine lists as advertised; that UDP port 47101 is open inbound on the owner's firewall and cloud security group (QUIC is UDP, a TCP rule does nothing); and that the owner is not behind carrier-grade NAT (a 100.64.x.x WAN address on their router) - if they are, nobody can reach them, and their node needs a VPS, a LAN or a forwarded port
+2026-10-02T01:05:56.123611Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.62:47101] stored=0 elapsed_ms=10
+2026-10-02T01:06:06.142478Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.62:47101] stored=0 elapsed_ms=17
+2026-10-02T01:06:16.152648Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.62:47101] stored=0 elapsed_ms=10
+2026-10-02T01:06:26.166519Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.62:47101] stored=0 elapsed_ms=12
+2026-10-02T01:06:36.178943Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.62:47101] stored=0 elapsed_ms=11
+2026-10-02T01:06:46.191880Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.62:47101] stored=0 elapsed_ms=13
+2026-10-02T01:06:56.204942Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.62:47101] stored=0 elapsed_ms=11
+2026-10-02T01:07:06.216298Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.62:47101] stored=0 elapsed_ms=9
+2026-10-02T01:07:16.226659Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.62:47101] stored=0 elapsed_ms=10
+2026-10-02T01:07:26.246587Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.62:47101] stored=0 elapsed_ms=19
+2026-10-02T01:07:36.257750Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.62:47101] stored=0 elapsed_ms=10
+2026-10-02T01:07:46.267263Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.62:47101] stored=0 elapsed_ms=9
+2026-10-02T01:07:56.279198Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.62:47101] stored=0 elapsed_ms=10
+2026-10-02T01:08:06.290548Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.62:47101] stored=0 elapsed_ms=10
+2026-10-02T01:08:16.303748Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.62:47101] stored=0 elapsed_ms=14
+2026-10-02T01:08:26.315427Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.62:47101] stored=0 elapsed_ms=10
+2026-10-02T01:08:36.327648Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.62:47101] stored=0 elapsed_ms=11
+2026-10-02T01:08:46.337038Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.62:47101] stored=0 elapsed_ms=10
+2026-10-02T01:08:56.348865Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.62:47101] stored=0 elapsed_ms=11
+2026-10-02T01:09:06.359389Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.62:47101] stored=0 elapsed_ms=9
+2026-10-02T01:09:16.369622Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.62:47101] stored=0 elapsed_ms=11
+2026-10-02T01:09:26.381483Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.62:47101] stored=0 elapsed_ms=10
+2026-10-02T01:09:36.395210Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.62:47101] stored=0 elapsed_ms=12
+2026-10-02T01:09:46.405424Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.62:47101] stored=0 elapsed_ms=11
+2026-10-02T01:09:56.416707Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.62:47101] stored=0 elapsed_ms=10
+2026-10-02T01:10:06.427074Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.62:47101] stored=0 elapsed_ms=9
+2026-10-02T01:10:16.437629Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.62:47101] stored=0 elapsed_ms=10

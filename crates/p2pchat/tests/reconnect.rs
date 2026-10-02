@@ -100,6 +100,7 @@ fn start(dir: &Path, private: SocketAddr) -> Peer {
             advertise: Vec::new(),
             private_advertise: None,
             display_name: "test".to_owned(),
+            bootstrap: Vec::new(),
         }))
         .expect("the node starts");
 

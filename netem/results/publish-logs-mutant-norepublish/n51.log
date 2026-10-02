@@ -1,0 +1,43 @@
+2026-10-02T01:03:15.975844Z  INFO p2pchat: p2pchat starting version="0.1.0"
+2026-10-02T01:03:16.007915Z  INFO p2pchat_net: listening kind=Private addr=0.0.0.0:47101
+2026-10-02T01:03:16.007929Z  INFO p2pchat::node: endpoints bound me=8284 19f9 2a23 49d9 private=0.0.0.0:47101 public=None
+2026-10-02T01:03:16.007954Z  INFO p2pchat::node: node started me=8284 19f9 2a23 49d9 public_advertised=[10.99.0.61:47100] private_advertised=Some(10.99.0.61:47101)
+2026-10-02T01:03:16.018198Z  INFO p2pchat::reach: dial-back test member=10.99.0.10:47100 observed=10.99.0.61:47101 forwarded=true reached=true arrived=Some(10.99.0.11:51806)
+2026-10-02T01:03:16.018229Z  INFO p2pchat::reach: reachability test role=Member(10.99.0.61:47101) reason=Reached members=3
+2026-10-02T01:03:16.018235Z  INFO p2pchat::node: reachability from=Client to=Member(10.99.0.61:47101)
+2026-10-02T01:03:16.027870Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=8 elapsed_ms=19
+2026-10-02T01:03:16.039123Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=8 elapsed_ms=11
+2026-10-02T01:04:46.048310Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=12
+2026-10-02T01:04:56.062454Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=12
+2026-10-02T01:05:06.089778Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=26
+2026-10-02T01:05:16.102249Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=12
+2026-10-02T01:05:26.115568Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=12
+2026-10-02T01:05:36.127894Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=10
+2026-10-02T01:05:46.138228Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=11
+2026-10-02T01:05:56.149843Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=10
+2026-10-02T01:06:06.163772Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=13
+2026-10-02T01:06:16.173510Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=10
+2026-10-02T01:06:26.184959Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=9
+2026-10-02T01:06:36.196508Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=10
+2026-10-02T01:06:46.211431Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=14
+2026-10-02T01:06:56.231727Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=18
+2026-10-02T01:07:06.243066Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=10
+2026-10-02T01:07:16.253734Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=11
+2026-10-02T01:07:26.265536Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=11
+2026-10-02T01:07:36.277047Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=10
+2026-10-02T01:07:46.286252Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=9
+2026-10-02T01:07:56.297827Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=9
+2026-10-02T01:08:06.309167Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=9
+2026-10-02T01:08:16.318167Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=9
+2026-10-02T01:08:26.329460Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=9
+2026-10-02T01:08:36.340231Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=10
+2026-10-02T01:08:46.350302Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=10
+2026-10-02T01:08:56.361910Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=10
+2026-10-02T01:09:06.373271Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=10
+2026-10-02T01:09:16.388706Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=15
+2026-10-02T01:09:26.398653Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=9
+2026-10-02T01:09:36.410705Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=11
+2026-10-02T01:09:46.421941Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=12
+2026-10-02T01:09:56.432250Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=9
+2026-10-02T01:10:06.442853Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=9
+2026-10-02T01:10:16.458306Z  INFO p2pchat::node: record published seq=1 addrs=[10.99.0.61:47101] stored=0 elapsed_ms=15

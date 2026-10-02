@@ -13,10 +13,14 @@
 //! stays partly simulated, and M13's report says so rather than claiming it
 //! met.
 
+use std::collections::HashSet;
 use std::net::{Ipv4Addr, SocketAddr};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
-use p2pchat_net::stun::{self, Mapping};
+use p2pchat_crypto::Identity;
+use p2pchat_net::stun::{self, Datagrams, Mapping};
+use p2pchat_net::{client_endpoint, connect, handshake, node_endpoint, server_endpoint, NodeKind};
 use tokio::net::UdpSocket;
 
 const PATIENCE: Duration = Duration::from_secs(5);
@@ -183,4 +187,173 @@ async fn an_unreachable_server_is_skipped_not_fatal() {
 
     assert!(report.probes[1].result.is_err());
     assert_eq!(report.mapping, Mapping::EndpointIndependent);
+}
+
+// ---------------------------------------------------------------------------
+// M13a: STUN on the QUIC endpoint's own socket
+// ---------------------------------------------------------------------------
+
+/// Long enough to be sure nothing more is coming, on loopback.
+const QUIET: Duration = Duration::from_millis(500);
+
+fn loopback() -> SocketAddr {
+    SocketAddr::from((Ipv4Addr::LOCALHOST, 0))
+}
+
+/// A Binding Request with no attributes, encoded here rather than by the
+/// module under test.
+fn binding_request(transaction_id: [u8; 12]) -> Vec<u8> {
+    let mut msg = vec![0x00, 0x01, 0x00, 0x00];
+    msg.extend_from_slice(&MAGIC_COOKIE.to_be_bytes());
+    msg.extend_from_slice(&transaction_id);
+    msg
+}
+
+/// A STUN server that answers with the address the request really came from —
+/// a genuine reflexive address, which on loopback is the socket itself.
+async fn echo_server() -> SocketAddr {
+    let socket = loopback_socket().await;
+    let addr = socket.local_addr().unwrap();
+    tokio::spawn(async move {
+        let mut buf = [0u8; 1500];
+        while let Ok((_, from)) = socket.recv_from(&mut buf).await {
+            let id = buf[8..20].try_into().unwrap();
+            if socket
+                .send_to(&success_response(id, from), from)
+                .await
+                .is_err()
+            {
+                break;
+            }
+        }
+    });
+    addr
+}
+
+/// A peer dials `addr` and both sides run §6 to the end.
+async fn full_handshake(endpoint: &quinn::Endpoint, addr: SocketAddr) {
+    let responder = Identity::generate();
+    let initiator = Identity::generate();
+    let dialler = client_endpoint(NodeKind::Private).unwrap();
+    let accept = async {
+        let connection = endpoint.accept().await.unwrap().await.unwrap();
+        handshake::respond(&connection, &responder).await
+    };
+    let dial = async {
+        let connection = connect(&dialler, addr).await.unwrap();
+        handshake::initiate(&connection, &initiator, None).await
+    };
+    let (accepted, dialled) = tokio::join!(accept, dial);
+    accepted.expect("the responder finishes §6");
+    dialled.expect("the initiator finishes §6");
+}
+
+/// M13a gate 1: QUIC and then §6 complete on the node's socket while STUN
+/// queries go out and come back on that same port, one after another for as
+/// long as the handshake takes — so at least one is in flight across it.
+#[tokio::test]
+async fn a_full_handshake_completes_while_stun_is_in_flight_on_the_same_port() {
+    let (endpoint, socket) = node_endpoint(loopback(), NodeKind::Private).unwrap();
+    let addr = endpoint.local_addr().unwrap();
+    let server = echo_server().await;
+    let done = AtomicBool::new(false);
+
+    let handshake = async {
+        full_handshake(&endpoint, addr).await;
+        done.store(true, Ordering::SeqCst);
+    };
+    let queries = async {
+        let mut answered = 0;
+        while !done.load(Ordering::SeqCst) {
+            let reflexive = stun::query(&socket, server, PATIENCE)
+                .await
+                .expect("STUN answered on the QUIC socket");
+            assert_eq!(reflexive.port(), addr.port());
+            answered += 1;
+        }
+        answered
+    };
+
+    let ((), answered) = tokio::time::timeout(PATIENCE, async { tokio::join!(handshake, queries) })
+        .await
+        .expect("the handshake or STUN hung on the shared socket");
+    assert!(answered >= 1);
+}
+
+/// M13a gate 2, both directions, with real QUIC going both ways across the
+/// socket: sixteen STUN requests are sent first, so their answers land in
+/// the middle of it.
+///
+/// - QUIC never reaches STUN: every datagram STUN's side receives is from
+///   the STUN server and answers one of our requests.
+/// - STUN never reaches quinn: all sixteen answers reach STUN's side, and
+///   the demux routes each datagram exactly one way. The unit tests in
+///   `socket.rs` check that at the bytes quinn is handed.
+#[tokio::test]
+async fn quic_never_reaches_stun_and_stun_never_reaches_quinn() {
+    let (endpoint, socket) = node_endpoint(loopback(), NodeKind::Private).unwrap();
+    let addr = endpoint.local_addr().unwrap();
+    let server = echo_server().await;
+
+    let ids: Vec<[u8; 12]> = (0..16u8).map(|i| [i; 12]).collect();
+    for id in &ids {
+        socket.send_to(&binding_request(*id), server).await.unwrap();
+    }
+
+    tokio::time::timeout(PATIENCE, async {
+        // In: a peer dials the node.
+        full_handshake(&endpoint, addr).await;
+        // Out: the node dials a peer, from the same socket.
+        let peer = server_endpoint(loopback(), NodeKind::Private).unwrap();
+        let accepted = async { peer.accept().await.unwrap().await.unwrap() };
+        let (_, dialled) = tokio::join!(accepted, connect(&endpoint, peer.local_addr().unwrap()));
+        dialled.expect("the node's outbound QUIC completes");
+    })
+    .await
+    .expect("QUIC hung on the shared socket");
+
+    let mut answered = HashSet::new();
+    let mut buf = [0u8; 1500];
+    while let Ok(received) = tokio::time::timeout(QUIET, socket.recv_from(&mut buf)).await {
+        let (len, from) = received.unwrap();
+        assert_eq!(from, server, "a datagram from {from} reached STUN");
+        let id: [u8; 12] = buf[8..20].try_into().unwrap();
+        assert!(
+            len >= 20 && ids.contains(&id),
+            "STUN got something it never asked for"
+        );
+        assert!(answered.insert(id), "one answer reached STUN twice");
+    }
+    assert_eq!(answered.len(), ids.len(), "a STUN answer went to quinn");
+}
+
+/// M13a gate 3: what STUN reports is the socket quinn uses. The reflexive
+/// port is the endpoint's local port, it holds across repeated queries, and
+/// a QUIC peer the endpoint dials sees exactly that address.
+#[tokio::test]
+async fn the_mapping_reported_is_the_mapping_of_the_quic_socket() {
+    let (endpoint, socket) = node_endpoint(loopback(), NodeKind::Private).unwrap();
+    let local = endpoint.local_addr().unwrap();
+    let one = echo_server().await;
+    let two = echo_server().await;
+
+    let first = stun::query(&socket, one, PATIENCE).await.unwrap();
+    assert_eq!(first.port(), local.port());
+    for _ in 0..5 {
+        assert_eq!(stun::query(&socket, one, PATIENCE).await.unwrap(), first);
+    }
+
+    let report = stun::discover(&socket, &[("one", one), ("two", two)], PATIENCE).await;
+    assert_eq!(report.mapping, Mapping::EndpointIndependent);
+    assert_eq!(report.no_nat, Some(true));
+
+    let peer = server_endpoint(loopback(), NodeKind::Private).unwrap();
+    let _connecting = endpoint
+        .connect(peer.local_addr().unwrap(), "p2pchat")
+        .unwrap();
+    let incoming = tokio::time::timeout(PATIENCE, peer.accept())
+        .await
+        .expect("the dial arrived")
+        .unwrap();
+    assert_eq!(incoming.remote_address(), first);
 }

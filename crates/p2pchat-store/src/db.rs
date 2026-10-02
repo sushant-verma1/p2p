@@ -10,6 +10,7 @@ use crate::{schema, StoreError};
 pub const FILE_NAME: &str = "p2pchat.db";
 
 /// Group and other permissions, in any combination, disqualify the file.
+#[cfg(unix)]
 const FORBIDDEN_BITS: u32 = 0o077;
 
 /// Whether this platform can verify the database file's permissions.
@@ -91,6 +92,7 @@ fn create_private(path: &Path) -> Result<(), StoreError> {
 }
 
 /// `true` if a Unix mode denies all access to group and other.
+#[cfg(unix)]
 pub(crate) fn mode_is_private(mode: u32) -> bool {
     mode & FORBIDDEN_BITS == 0
 }
@@ -129,6 +131,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[cfg(unix)]
     fn only_owner_only_modes_are_private() {
         assert!(mode_is_private(0o600));
         for mode in [0o644, 0o660, 0o606, 0o666, 0o777] {

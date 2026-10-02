@@ -1,0 +1,22 @@
+2026-10-02T01:33:17.428833Z  INFO p2pchat: p2pchat starting version="0.1.0"
+2026-10-02T01:33:17.447015Z  INFO p2pchat_net: listening kind=Private addr=0.0.0.0:47101
+2026-10-02T01:33:17.447041Z  INFO p2pchat::node: endpoints bound me=ba3b 07d5 8ccf b084 private=0.0.0.0:47101 public=None
+2026-10-02T01:33:17.447065Z  INFO p2pchat::node: node started me=ba3b 07d5 8ccf b084 public_advertised=[10.99.0.68:47100] private_advertised=Some(10.99.0.68:47101)
+2026-10-02T01:33:17.456208Z  INFO p2pchat::reach: dial-back test member=10.99.0.10:47100 observed=10.99.0.68:47101 forwarded=true reached=true arrived=Some(10.99.0.11:41578)
+2026-10-02T01:33:17.456244Z  INFO p2pchat::reach: reachability test role=Member(10.99.0.68:47101) reason=Reached members=3
+2026-10-02T01:33:17.456249Z  INFO p2pchat::node: reachability from=Client to=Member(10.99.0.68:47101)
+2026-10-02T01:33:17.459603Z  INFO p2pchat::node: record published seq=1790904797447 addrs=[10.99.0.68:47101] stored=8 elapsed_ms=12
+2026-10-02T01:33:17.470251Z  INFO p2pchat::node: record published seq=1790904797459 addrs=[10.99.0.68:47101] stored=8 elapsed_ms=10
+2026-10-02T01:33:17.964263Z  INFO p2pchat::node: connection request sent peer=3279 db2f 5733 faef addr=10.99.0.64:47100 state=Pending
+2026-10-02T01:33:17.964421Z DEBUG p2pchat::node: no answer to act on yet; keeping the poller peer=3279 db2f 5733 faef state=Pending
+2026-10-02T01:33:17.964529Z DEBUG polling{peer=3279 db2f 5733 faef}: p2pchat::node: polling started addr=10.99.0.64:47100 first=2s
+2026-10-02T01:33:19.965344Z DEBUG polling{peer=3279 db2f 5733 faef}: p2pchat::node: asking what became of our request peer=3279 db2f 5733 faef addr=10.99.0.64:47100
+2026-10-02T01:33:19.966835Z  INFO polling{peer=3279 db2f 5733 faef}: p2pchat::node: accepted; dialling the peer privately peer=3279 db2f 5733 faef addr=10.99.0.64:47101
+2026-10-02T01:33:19.969165Z  INFO polling{peer=3279 db2f 5733 faef}: p2pchat_net::handshake: session established peer=3279 db2f 5733 faef
+2026-10-02T01:33:19.969608Z  INFO polling{peer=3279 db2f 5733 faef}: p2pchat::node: session established peer=3279 db2f 5733 faef initiator=ba3b 07d5 8ccf b084
+2026-10-02T01:33:19.969797Z  INFO p2pchat::session: resync sent peer=3279 db2f 5733 faef have_through=0
+2026-10-02T01:33:19.970166Z DEBUG polling{peer=3279 db2f 5733 faef}: p2pchat::node: polling stopped
+2026-10-02T01:33:19.970368Z  INFO p2pchat::session: resync received; retransmitting what the peer is missing peer=3279 db2f 5733 faef have_through=0 count=0
+2026-10-02T01:34:47.476236Z  INFO p2pchat::node: record published seq=1790904887466 addrs=[10.99.0.68:47101] stored=8 elapsed_ms=10
+2026-10-02T01:36:17.482826Z  INFO p2pchat::node: record published seq=1790904977471 addrs=[10.99.0.68:47101] stored=8 elapsed_ms=10
+2026-10-02T01:37:47.489434Z  INFO p2pchat::node: record published seq=1790905067479 addrs=[10.99.0.68:47101] stored=8 elapsed_ms=10

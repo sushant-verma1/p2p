@@ -54,6 +54,7 @@ fn start(runtime: &Runtime, dir: &std::path::Path) -> (Arc<Node>, Receiver<Event
             advertise: Vec::new(),
             private_advertise: None,
             display_name: "test".to_owned(),
+            bootstrap: Vec::new(),
         }))
         .expect("the node starts");
     (node, events, private)

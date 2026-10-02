@@ -1,4 +1,4 @@
-# THREAT_MODEL.md — V0.1
+# THREAT_MODEL.md — V0.1, and V0.2 as it lands
 
 What this protects against, and — at greater length, because it is the more
 useful half — what it does not.
@@ -283,3 +283,76 @@ The properties in §2 are load-bearing on a small number of specific lines, and
 `architecture.md` §12 lists the slips that would silently remove each of them.
 That list is a review checklist, not prose — if you are auditing this, start
 there.
+
+---
+
+## 12. V0.2 exposure: forwarded dial-back (M14b)
+
+To learn whether it can serve as a DHT member, a node asks a member, A, to have it dialled back. A hands the dial-back to a second member, B, which dials the address A saw the request come from (`architecture.md` §3). **B cannot verify that address.** A member that lies can therefore point B at a third party. This is new in V0.2, and it is accepted rather than solved.
+
+What bounds it:
+
+- **Only members can aim B.** B ignores forwards from IPs outside its member list, and a requester never supplies an address: A takes it from the connection. So an attacker has to run a member, and it has to be one that B lists.
+- **No amplification.** One forward produces one dial, and the dial is a single QUIC Initial, which is smaller than the forward. The target sees one connection attempt, with ALPN `p2pchat-dialback/1`, and no payload unless it completes a QUIC handshake.
+- **Rate limits.** At most 2 dial-backs a minute from any one member to any one target IP, whoever forwards, and at most 30 a minute performed for any one forwarding member. Both are configurable (`public::Limits`).
+
+What it still allows: a malicious member can make B send a few QUIC Initials a minute to an address of its choosing, from B's IP. That can trip a target's intrusion alarms against B, and it associates B's IP with traffic B did not choose. It cannot flood anyone, and it cannot make B send anything but a connection attempt.
+
+Why not the alternative: members dialling back from a second IP of their own would keep "dial only where the connection came from" intact, but every member would need two IPs. That is a deployment tax on the volunteers the network depends on.
+
+## 13. V0.2 exposure: the DHT (M16)
+
+A member's public node now answers `PING`, `FIND_NODE`, `FIND_VALUE` and
+`STORE` from anyone (`architecture.md` §3, "DHT"). What M16 does and does not
+defend, stated no more strongly than the simulation shows:
+
+**Records are not trusted anywhere.** A record that fails M15 is not stored,
+is not served, and is not accepted by the asker. That covers a forged
+signature, a user ID the key does not hash to, an expired record, and a
+rolled-back `seq`. A valid record for a different user is not accepted as the
+answer either. Gate 7 checks this by reading every member's store directly,
+and the `noverify` mutant fails it.
+
+**Nobody's address is put into a routing table on their behalf.** A member
+is entered at the IP its connection came from. The sender names only the
+port.
+
+**Bounded.** Every collection that grows from network input has a cap
+(`architecture.md` §3). Nothing is keyed by a `HashMap` over user IDs.
+
+**Not defended, M20's to write up:** IDs cost one key generation each, so
+anyone can place as many members as they like near a target and censor or
+eclipse its lookups (Sybil). Nothing limits contacts per IP yet. Anyone can
+send one request naming itself a member and, if a bucket has room, be held.
+
+**Rate allowance (M16a).** Being held no longer raises anything. The member
+allowance (30 a minute) goes to configured members and to IPs that passed a
+forwarded dial-back this node forwarded or dialled; an unproven source stays
+at 10. That 3× difference makes proof matter while preserving the stranger
+flood bound. The 50-node simulation's 30-second refresh uses an explicit
+harness-only 40/60 override after seeding its controlled members as proven;
+it cannot set a product default. A lying forwarding member can still raise a
+requester only at the member it asked, and only for the proof lifetime.
+
+## 14. V0.2 exposure: published records (M17)
+
+**Where a node can be dialled privately is public.** Its record carries the
+address its last dial-back reached and its configured private address, and
+anyone who knows its user ID can look them up while it is online. In V0.1
+only a requester the user had accepted was told that address. §10's access
+control, not obscurity, still decides who gets a session: an unaccepted
+dialler completes §6 and is closed. This is the presence change plan-v0.2 §3
+names, and M20 writes it up in full.
+
+**Records cannot be forged or rolled back** (M15, §13). A lookup takes the
+first record that verifies, so a replica still holding an older one can
+answer first. A dial that fails on it asks for a newer record before saying
+anything, so the old record costs a stale dial, not a wrong diagnosis. A
+storage node can withhold records: that is the censorship §13 leaves to M20.
+
+**"Stale" is a claim a record makes, not the network.** A newer record with
+different addresses is signed by the owner, so the stale diagnosis cannot be
+forged by anyone else. An old record, or the lack of a newer one, can be
+arranged by whoever answers the lookup. The worst that does is make a dial
+read as unreachable, or a live peer as not found. The dialler then stops
+trying, which an eclipse attacker could already make happen.

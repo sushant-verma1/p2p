@@ -1,0 +1,47 @@
+{
+ "profile": "baseline",
+ "selftest": {
+  "1_findable": {
+   "fault_findable_after_s": null,
+   "control_findable_after_s": 0.56,
+   "detected": true
+  },
+  "2_propagated": {
+   "fault_new_found_after_s": null,
+   "fault_old_still_found": true,
+   "control_old_seq": 1,
+   "control_new_found_after_s": null,
+   "detected": false
+  }
+ },
+ "gates": {},
+ "converged_after_s": 26.3,
+ "selftest_all_detected": false,
+ "gate_assertions": {},
+ "failed_gates": [
+  "2_propagated"
+ ],
+ "pass": false,
+ "args": {
+  "scenario": "publish",
+  "n": 50,
+  "clients": 3,
+  "profile": "baseline",
+  "k": null,
+  "alpha": null,
+  "replication": null,
+  "rpc_timeout_ms": null,
+  "refresh_ms": 30000,
+  "converge_s": 120,
+  "gets": 4,
+  "finds": 2,
+  "kill": 0.3,
+  "only": null,
+  "binary": "/target/bin/p2pchat-m17-norepublish",
+  "env": [],
+  "findable_s": 30,
+  "out": "/out",
+  "tag": "mutant-norepublish",
+  "selftest_only": true
+ }
+}

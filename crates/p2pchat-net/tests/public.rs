@@ -102,6 +102,8 @@ fn start(limits: Limits) -> Node {
             invite: invite.clone(),
             limits,
             requests: tx,
+            members: Vec::new(),
+            dht: None,
         },
     ));
 

@@ -87,6 +87,7 @@ fn screen_with(runtime: &Runtime, public: bool, tweak: impl FnOnce(&mut Config))
         advertise: vec![advertise],
         private_advertise: None,
         display_name: "test".to_owned(),
+        bootstrap: Vec::new(),
     };
 
     tweak(&mut config);

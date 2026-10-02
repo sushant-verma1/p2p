@@ -184,6 +184,26 @@ prop_compose! {
 }
 
 prop_compose! {
+    fn address_record_body()(
+        version in any::<u8>(),
+        user_id in user_id(),
+        identity_pk in bytes32(),
+        addrs in addrs(),
+        seq in any::<u64>(),
+        published_at in any::<u64>(),
+        expires_at in any::<u64>(),
+    ) -> AddressRecordBody {
+        AddressRecordBody { version, user_id, identity_pk, addrs, seq, published_at, expires_at }
+    }
+}
+
+prop_compose! {
+    fn address_record()(body in address_record_body(), sig in signature()) -> AddressRecord {
+        AddressRecord { body, sig }
+    }
+}
+
+prop_compose! {
     fn profile_request()(version in any::<u8>(), user_id in user_id()) -> ProfileRequest {
         ProfileRequest { version, user_id }
     }
@@ -213,11 +233,60 @@ prop_compose! {
     }
 }
 
+fn contact() -> impl Strategy<Value = Contact> {
+    (user_id(), addr())
+        .prop_filter("a contact's address is never unspecified", |(_, a)| {
+            !a.ip().is_unspecified()
+        })
+        .prop_map(|(id, addr)| Contact { id, addr })
+}
+
+fn dht_request() -> impl Strategy<Value = DhtRequest> {
+    let member = (user_id(), any::<u16>()).prop_map(|(id, port)| Member { id, port });
+    let query = prop_oneof![
+        Just(DhtQuery::Ping),
+        user_id().prop_map(DhtQuery::FindNode),
+        user_id().prop_map(DhtQuery::FindValue),
+        address_record().prop_map(|r| DhtQuery::Store(Box::new(r))),
+    ];
+    (any::<u8>(), prop::option::of(member), query).prop_map(|(version, from, query)| DhtRequest {
+        version,
+        from,
+        query,
+    })
+}
+
+fn dht_response() -> impl Strategy<Value = DhtResponse> {
+    let answer = prop_oneof![
+        Just(DhtAnswer::Pong),
+        prop::collection::vec(contact(), 0..=MAX_CONTACTS).prop_map(DhtAnswer::Nodes),
+        address_record().prop_map(|r| DhtAnswer::Value(Box::new(r))),
+        any::<bool>().prop_map(DhtAnswer::Stored),
+    ];
+    (user_id(), answer).prop_map(|(id, answer)| DhtResponse { id, answer })
+}
+
 fn public_request() -> impl Strategy<Value = PublicRequest> {
     prop_oneof![
         profile_request().prop_map(PublicRequest::Profile),
         connection_request().prop_map(PublicRequest::Connection),
         connection_status().prop_map(PublicRequest::Status),
+        (any::<u8>(), any::<[u8; DIAL_BACK_NONCE_LEN]>()).prop_map(|(version, nonce)| {
+            PublicRequest::DialBack(DialBackRequest { version, nonce })
+        }),
+        (any::<u8>(), any::<[u8; DIAL_BACK_NONCE_LEN]>(), addr())
+            .prop_filter(
+                "a forwarded target is never unspecified",
+                |(_, _, target)| { !target.ip().is_unspecified() }
+            )
+            .prop_map(|(version, nonce, target)| {
+                PublicRequest::ForwardDialBack(ForwardDialBack {
+                    version,
+                    nonce,
+                    target,
+                })
+            }),
+        dht_request().prop_map(PublicRequest::Dht),
     ]
 }
 
@@ -248,6 +317,15 @@ fn public_response() -> impl Strategy<Value = PublicResponse> {
             }
             .prop_map(move |addr| PublicResponse::State(state, addr))
         }),
+        (addr(), any::<bool>(), any::<bool>()).prop_map(|(observed, forwarded, reached)| {
+            PublicResponse::DialBack {
+                observed,
+                forwarded,
+                reached,
+            }
+        }),
+        any::<bool>().prop_map(|reached| PublicResponse::Forwarded { reached }),
+        dht_response().prop_map(PublicResponse::Dht),
     ]
 }
 
@@ -312,6 +390,12 @@ wire_type!(t_ack, Ack, ack());
 wire_type!(t_resync, Resync, resync());
 wire_type!(t_invite_body, InviteBody, invite_body());
 wire_type!(t_invite, Invite, invite());
+wire_type!(
+    t_address_record_body,
+    AddressRecordBody,
+    address_record_body()
+);
+wire_type!(t_address_record, AddressRecord, address_record());
 wire_type!(t_profile_request, ProfileRequest, profile_request());
 wire_type!(
     t_connection_request,
@@ -321,6 +405,41 @@ wire_type!(
 wire_type!(t_connection_status, ConnectionStatus, connection_status());
 wire_type!(t_public_request, PublicRequest, public_request());
 wire_type!(t_public_response, PublicResponse, public_response());
+wire_type!(t_dht_request, DhtRequest, dht_request());
+wire_type!(t_dht_response, DhtResponse, dht_response());
+
+/// M16: a DHT answer names at most `MAX_CONTACTS` contacts, none of them
+/// undialable, however it arrives — a peer does not size our shortlist.
+#[test]
+fn a_dht_answer_is_bounded() {
+    let c = Contact {
+        id: UserId::from_bytes([1; 32]),
+        addr: SocketAddr::from(([203, 0, 113, 7], 47100)),
+    };
+    let answer = |contacts: Vec<Contact>| {
+        postcard::to_stdvec(&PublicResponse::Dht(DhtResponse {
+            id: UserId::from_bytes([2; 32]),
+            answer: DhtAnswer::Nodes(contacts),
+        }))
+        .unwrap()
+    };
+    assert!(decode::<PublicResponse>(&answer(vec![c; MAX_CONTACTS])).is_ok());
+    assert!(matches!(
+        decode::<PublicResponse>(&answer(vec![c; MAX_CONTACTS + 1])),
+        Err(CoreError::FieldTooLong {
+            field: "contacts",
+            ..
+        })
+    ));
+    let nowhere = Contact {
+        addr: SocketAddr::from(([0, 0, 0, 0], 47100)),
+        ..c
+    };
+    assert!(matches!(
+        decode::<PublicResponse>(&answer(vec![nowhere])),
+        Err(CoreError::MisplacedAddr)
+    ));
+}
 
 // ---------------------------------------------------------------------------
 // Gate 2, the part that matters most

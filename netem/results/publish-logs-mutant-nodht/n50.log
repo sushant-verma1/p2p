@@ -1,0 +1,6 @@
+2026-10-02T01:11:01.598909Z  INFO p2pchat: p2pchat starting version="0.1.0"
+2026-10-02T01:11:01.611443Z  INFO p2pchat_net: listening kind=Private addr=0.0.0.0:47101
+2026-10-02T01:11:01.611471Z  INFO p2pchat::node: endpoints bound me=7d76 153b 9901 d838 private=0.0.0.0:47101 public=None
+2026-10-02T01:11:01.611483Z  INFO p2pchat::node: node started me=7d76 153b 9901 d838 public_advertised=[10.99.0.60:47100] private_advertised=Some(10.99.0.60:47101)
+2026-10-02T01:11:21.612061Z DEBUG p2pchat::reach: the member did not answer member=10.99.250.250:47100 error=public request timed out
+2026-10-02T01:11:21.612091Z  INFO p2pchat::reach: reachability test role=Client reason=NoMemberAnswered members=1

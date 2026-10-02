@@ -1,15 +1,17 @@
 """Many samples of the tight timeouts under one profile — see README.md.
 
-    python tail.py PROFILE [--requests N] [--handshakes N] [--dials N] [--strand N]
+    python tail.py PROFILE [--requests N] [--handshakes N] [--dials N] [--strand N] [--dialbacks N]
 
 requests    connection requests to a reachable public node; time to answer
 handshakes  bob restarts and redials an accepted alice; connect/§6 split
 dials       `connect` to a port where nothing answers; the error text
 strand      the first dial after acceptance blocked by iptables, then unblocked
+dialbacks   M14b dial-back requests to alice's public node, forwarded to carol;
+            carol's dial, alice's forward and bob's request, each timed
 """
-import argparse, json, time
-from wan import (A, B, PROFILES, Node, acceptor_settles, containers, ip, log, netem, phase_split,
-                 ping, read_log, stats, docker)
+import argparse, json, re, time
+from wan import (A, B, IMAGE, NET, PROFILES, Node, acceptor_settles, containers, ip, log, netem,
+                 phase_split, ping, read_log, stats, docker)
 
 ap = argparse.ArgumentParser()
 ap.add_argument("profile", choices=PROFILES)
@@ -17,6 +19,7 @@ ap.add_argument("--requests", type=int, default=100)
 ap.add_argument("--handshakes", type=int, default=100)
 ap.add_argument("--dials", type=int, default=0)
 ap.add_argument("--strand", type=int, default=0)
+ap.add_argument("--dialbacks", type=int, default=0)
 args = ap.parse_args()
 name = args.profile
 
@@ -32,7 +35,7 @@ bob = Node(B, ["node", "--name", "bob"])
 
 req = []
 for i in range(args.requests):
-    if i and i % 5 == 0:  # the public node's limiter is 10 a minute, polls included
+    if i and i % 5 == 0:  # the public node's limiter was 10 a minute, polls included (40 since M16a)
         alice.quit()
         alice = Node(A, alice_args)
     t, ans = bob.call(f"request {a_ip}:47100 {alice.me}", 60)
@@ -128,6 +131,63 @@ if strand:
                    "reopen_to_session": stats([s["reopen_to_session"] for s in strand]),
                    "samples": strand}
     log("strand", {k: v for k, v in R["strand"].items() if k != "samples"})
+
+# M14a, M14b: bob asks alice's public node for a dial-back, over and over.
+# Since M14b alice forwards it to carol, a third container, and carol dials bob.
+# Three timings, each from where it happens:
+# - carol's log: her dial alone, which `dial_back_timeout` bounds;
+# - alice's log: the whole forward (reach carol, carol dials, carol answers),
+#   which `forward_timeout` bounds;
+# - bob's call: the whole request, which the requester's `request_timeout`
+#   bounds.
+# Measuring past the shipped limits needs a binary built with them raised
+# (README, P2PCHAT_BIN), rate limits included, or the members refuse.
+db = []
+C = A.replace("alice", "carol")
+if args.dialbacks:
+    docker("rm", "-f", C)
+    docker("run", "-d", "--name", C, "--cap-add=NET_ADMIN", "--network", NET,
+           "-v", "p2p-target:/target:ro", IMAGE, "sleep", "infinity", check=True)
+    if PROFILES[name]:
+        docker("exec", C, "tc", "qdisc", "add", "dev", "eth0", "root", "netem",
+               *PROFILES[name].split(), check=True)
+    c_ip = ip(C)
+    alice.quit()
+    alice = Node(A, ["--addr", f"{a_ip}:47100", "--bootstrap", f"{c_ip}:47100", "node",
+                     "--public-port", "47100", "--private-port", "47101", "--name", "alice"])
+    carol = Node(C, ["--addr", f"{c_ip}:47100", "--bootstrap", f"{a_ip}:47100", "node",
+                     "--public-port", "47100", "--private-port", "47101", "--name", "carol"])
+for i in range(args.dialbacks):
+    t, ans = bob.call(f"dialback {a_ip}:47100", 180)
+    s = {"s": t, "ok": bool(ans and ans.startswith("ok")),
+         "forwarded": bool(ans and "forwarded\ttrue" in ans),
+         "arrived": bool(ans and "arrived\t-" not in ans), "answer": (ans or "")[:120]}
+    db.append(s)
+    if not (s["ok"] and s["forwarded"] and s["arrived"]):
+        log("dialback", i, s)
+if db:
+    def timed(ctr, pattern):
+        return [(int(re.search(r"elapsed_ms=(\d+)", l).group(1)) / 1000, "reached=true" in l)
+                for l in read_log(ctr, pattern)]
+    # Alice's own reachability test asks carol too; only bob's are counted.
+    b_ip = ip(B)
+    forward = timed(A, rf"dial-back from={b_ip}:.*elapsed_ms=")
+    dial = timed(C, rf"forwarded dial-back .*target={b_ip}:.*elapsed_ms=")
+    R["dialbacks"] = {"n": len(db), "answered": sum(d["ok"] for d in db),
+                      "forwarded": sum(d["forwarded"] for d in db),
+                      "arrived": sum(d["arrived"] for d in db),
+                      "dial": stats([e for e, r in dial if r]),
+                      "dial_not_reached": sorted(round(e, 3) for e, r in dial if not r),
+                      "forward": stats([e for e, r in forward if r]),
+                      "request": stats([d["s"] for d in db if d["ok"] and d["arrived"]]),
+                      "dial_sorted": sorted(round(e, 3) for e, r in dial if r),
+                      "forward_sorted": sorted(round(e, 3) for e, r in forward if r),
+                      "request_sorted": sorted(round(d["s"], 3) for d in db if d["ok"] and d["arrived"]),
+                      "samples": db}
+    log("dialbacks", {k: v for k, v in R["dialbacks"].items()
+                      if k not in ("samples",) and not k.endswith("_sorted")})
+    carol.quit()
+    docker("rm", "-f", C)
 
 # Before the containers go: the logs are the only place a quiet failure shows.
 R["warnings"] = {c: read_log(c, r" (WARN|ERROR) ") for c in (A, B)}

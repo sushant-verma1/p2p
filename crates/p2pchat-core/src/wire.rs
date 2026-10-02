@@ -331,6 +331,46 @@ impl WireType for Invite {
 }
 
 // ---------------------------------------------------------------------------
+// Address record — plan-v0.2.md M15
+// ---------------------------------------------------------------------------
+
+/// The signed part of an [`AddressRecord`]: every field but the signature.
+///
+/// Self-certifying, like the invite: `user_id` must be `BLAKE3(identity_pk)`
+/// and the signature must verify under `identity_pk`, so whoever stores or
+/// forwards a record is never trusted for it. `seq` is the owner's counter;
+/// a higher one supersedes a lower one, which is what stops a stale record
+/// being replayed to send a peer to an old address.
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+pub struct AddressRecordBody {
+    pub version: u8,
+    pub user_id: UserId,
+    pub identity_pk: [u8; 32],
+    pub addrs: Vec<SocketAddr>,
+    pub seq: u64,
+    pub published_at: u64,
+    pub expires_at: u64,
+}
+
+impl WireType for AddressRecordBody {
+    fn validate(&self) -> Result<(), CoreError> {
+        bound("addrs", self.addrs.len(), MAX_ADDRS)
+    }
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+pub struct AddressRecord {
+    pub body: AddressRecordBody,
+    pub sig: Signature,
+}
+
+impl WireType for AddressRecord {
+    fn validate(&self) -> Result<(), CoreError> {
+        self.body.validate()
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Public node — architecture.md §3
 // ---------------------------------------------------------------------------
 
@@ -378,6 +418,143 @@ pub struct ConnectionStatus {
 
 impl WireType for ConnectionStatus {}
 
+/// Length of a [`DialBackRequest`] nonce.
+pub const DIAL_BACK_NONCE_LEN: usize = 16;
+
+/// "Have me dialled back, and tell me whether it worked" — M14, M14b,
+/// `architecture.md` §3.
+///
+/// It carries **no address**, and that is the security property: the asked
+/// member takes the address from the connection, which QUIC's handshake has
+/// already shown answers, and hands that to a second member to dial. A field
+/// naming where to dial would be one careless line away from a reflector that
+/// dials whatever an attacker writes into it.
+///
+/// `nonce` is what the dial-back delivers, so the requester can tell its own
+/// dial-back from any other connection that happens to arrive.
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
+pub struct DialBackRequest {
+    pub version: u8,
+    pub nonce: [u8; DIAL_BACK_NONCE_LEN],
+}
+
+impl WireType for DialBackRequest {}
+
+/// "Dial this address back for me" — M14b, from one member to another.
+///
+/// `target` is where the forwarding member saw a `DialBackRequest` come from,
+/// and nothing else: the forwarder writes it from its own connection, never
+/// from the request. The receiving member cannot check that, so it accepts
+/// this only from members it already knows, and rate-limits it per target and
+/// per forwarder — `architecture.md` §3.
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
+pub struct ForwardDialBack {
+    pub version: u8,
+    pub nonce: [u8; DIAL_BACK_NONCE_LEN],
+    pub target: SocketAddr,
+}
+
+impl WireType for ForwardDialBack {
+    fn validate(&self) -> Result<(), CoreError> {
+        if self.target.ip().is_unspecified() {
+            return Err(CoreError::MisplacedAddr);
+        }
+        Ok(())
+    }
+}
+
+// ---------------------------------------------------------------------------
+// DHT — plan-v0.2.md M16
+// ---------------------------------------------------------------------------
+
+/// Contacts in one DHT answer. It bounds the answer, and so the largest `k` a
+/// node may use (`p2pchat_net::dht::Params`).
+pub const MAX_CONTACTS: usize = 32;
+
+/// A DHT member: its ID, which is its user ID, and where its public node
+/// listens.
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
+pub struct Contact {
+    pub id: UserId,
+    pub addr: SocketAddr,
+}
+
+/// Who is asking, when the asker is a member: its ID and its public node's
+/// port. The IP is the connection's, never the asker's word, so a member
+/// cannot put someone else's address into a routing table — the rule
+/// `DialBackRequest` follows. A client sends none, and so is never added.
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
+pub struct Member {
+    pub id: UserId,
+    pub port: u16,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+pub enum DhtQuery {
+    /// The liveness check. Answered with `Pong` and the answerer's ID, so
+    /// that an address now held by a different node does not count.
+    Ping,
+    /// The contacts closest to this ID that the answerer holds.
+    FindNode(UserId),
+    /// The record stored under this key, or the closest contacts if none.
+    FindValue(UserId),
+    /// Boxed because a record dwarfs the other variants; `postcard` writes a
+    /// `Box<T>` as a `T`.
+    Store(Box<AddressRecord>),
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+pub struct DhtRequest {
+    pub version: u8,
+    pub from: Option<Member>,
+    pub query: DhtQuery,
+}
+
+impl WireType for DhtRequest {
+    fn validate(&self) -> Result<(), CoreError> {
+        match &self.query {
+            DhtQuery::Store(record) => record.validate(),
+            _ => Ok(()),
+        }
+    }
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+pub enum DhtAnswer {
+    Pong,
+    Nodes(Vec<Contact>),
+    /// Unverified here: the asker checks it, as it checks everything a
+    /// storage node hands over.
+    Value(Box<AddressRecord>),
+    Stored(bool),
+}
+
+/// `id` is the answerer's own claim, for an asker that dialled an address
+/// without knowing who was there: a bootstrap address, or a contact that may
+/// have been replaced.
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+pub struct DhtResponse {
+    pub id: UserId,
+    pub answer: DhtAnswer,
+}
+
+impl WireType for DhtResponse {
+    fn validate(&self) -> Result<(), CoreError> {
+        match &self.answer {
+            DhtAnswer::Nodes(contacts) => {
+                bound("contacts", contacts.len(), MAX_CONTACTS)?;
+                // A contact nobody can dial is an answer that wastes an RPC.
+                if contacts.iter().any(|c| c.addr.ip().is_unspecified()) {
+                    return Err(CoreError::MisplacedAddr);
+                }
+                Ok(())
+            }
+            DhtAnswer::Value(record) => record.validate(),
+            DhtAnswer::Pong | DhtAnswer::Stored(_) => Ok(()),
+        }
+    }
+}
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub enum RequestState {
     Pending,
@@ -387,13 +564,19 @@ pub enum RequestState {
     Unknown,
 }
 
-/// The public node answers these three and nothing else — `architecture.md`
+/// The public node answers these six and nothing else — `architecture.md`
 /// §3. A closed enum is what makes "and nothing else" structural.
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub enum PublicRequest {
     Profile(ProfileRequest),
     Connection(ConnectionRequest),
     Status(ConnectionStatus),
+    /// M14. Appended, so the three V0.1 variants keep their tags.
+    DialBack(DialBackRequest),
+    /// M14b. Member to member only.
+    ForwardDialBack(ForwardDialBack),
+    /// M16. Answered only by a member.
+    Dht(DhtRequest),
 }
 
 impl WireType for PublicRequest {
@@ -402,6 +585,9 @@ impl WireType for PublicRequest {
             Self::Profile(r) => r.validate(),
             Self::Connection(r) => r.validate(),
             Self::Status(r) => r.validate(),
+            Self::DialBack(r) => r.validate(),
+            Self::ForwardDialBack(r) => r.validate(),
+            Self::Dht(r) => r.validate(),
         }
     }
 }
@@ -423,6 +609,23 @@ pub enum PublicResponse {
     /// so an address attached to any other state is a malformed response
     /// rather than something a caller has to remember to ignore.
     State(RequestState, Option<SocketAddr>),
+    /// The answer to a [`DialBackRequest`], sent once the dial-back is over —
+    /// M14, M14b. `observed` is where the request came from and so where the
+    /// dial-back went. `forwarded` is false when the asked member found no
+    /// second member to dial, which makes the test inconclusive. `reached` is
+    /// the second member's claim, passed on, that the requester took the call.
+    /// Claims only: the requester believes the dial-back it saw arrive.
+    DialBack {
+        observed: SocketAddr,
+        forwarded: bool,
+        reached: bool,
+    },
+    /// The answer to a [`ForwardDialBack`]: whether the target took the call.
+    Forwarded {
+        reached: bool,
+    },
+    /// M16.
+    Dht(DhtResponse),
 }
 
 impl WireType for PublicResponse {
@@ -434,6 +637,8 @@ impl WireType for PublicResponse {
                 Ok(())
             }
             Self::State(..) => Err(CoreError::MisplacedAddr),
+            Self::DialBack { .. } | Self::Forwarded { .. } => Ok(()),
+            Self::Dht(r) => r.validate(),
         }
     }
 }

@@ -11,8 +11,8 @@ rand.workspace = true
 rcgen.workspace = true
 rustls.workspace = true
 thiserror.workspace = true
-# `net`, for the STUN module's plain `UdpSocket` — M13. Nothing else in this
-# crate uses `tokio::net`; QUIC owns its own socket via `quinn`.
+# `net`, for the STUN module's plain `UdpSocket` — M13 and its tests. The
+# node's own sockets are bound with `std::net` and handed to quinn — M13a.
 tokio = { workspace = true, features = ["net"] }
 tracing.workspace = true
 

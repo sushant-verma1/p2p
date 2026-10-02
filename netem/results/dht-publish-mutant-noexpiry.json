@@ -1,0 +1,71 @@
+{
+ "profile": "baseline",
+ "selftest": {
+  "1_findable": {
+   "fault_findable_after_s": null,
+   "control_findable_after_s": 0.54,
+   "detected": true
+  },
+  "2_propagated": {
+   "fault_new_found_after_s": null,
+   "fault_old_still_found": true,
+   "control_old_seq": 1790903972145,
+   "control_new_found_after_s": 0.0,
+   "detected": true
+  },
+  "4_stale": {
+   "fault_firewalled_read_as": "unreachable",
+   "fault_answer": "no answer from 10.99.0.61:47101 after 20s. An unreachable node and a wrong address look the same from here, so check: that 10.99.0.61:47101 is what `p2pchat check` on the owner's machine lists as advertised; that UDP port 47101 is open inbound on the owner's firewall and cloud security group (QUIC i",
+   "control_moved_read_as": "stale",
+   "control_reasons": [
+    "no answer from 10.99.0.63:47101 after 20s: that address is stale. The peer has since published a newer record (seq 1790904082147) at [10.99.2.63:47101, 10.99.0.63:47101], so it moved"
+   ],
+   "detected": true
+  },
+  "3_not_found": {
+   "fault_online_reported_not_found": false,
+   "fault_answer": "76badc630a7852984d66e11941c06fdc95f73823a8cb239605401f8cb8ad71d2",
+   "control_ghost_reported_not_found": true,
+   "control_answer": "not found: the DHT holds no current record for this peer, so it is offline (a record lapses within 180 s of its owner's last publish)",
+   "control_seconds": 0.01,
+   "detected": true
+  },
+  "3_offline_after_expiry": {
+   "fault_offline_reported_not_found": false,
+   "fault_answer": "no answer from 10.99.0.61:47101 after 20s; the DHT record may be stale: the peer last published it 288 s ago and republishes every 90 s. It may be offline, or its address may have changed without it n",
+   "after_offline_s": 20.01,
+   "control_online_reported_not_found": false,
+   "detected": false
+  }
+ },
+ "gates": {},
+ "converged_after_s": 28.3,
+ "selftest_all_detected": false,
+ "gate_assertions": {},
+ "failed_gates": [
+  "3_offline_after_expiry"
+ ],
+ "pass": false,
+ "args": {
+  "scenario": "publish",
+  "n": 50,
+  "clients": 3,
+  "profile": "baseline",
+  "k": null,
+  "alpha": null,
+  "replication": null,
+  "rpc_timeout_ms": null,
+  "refresh_ms": 30000,
+  "converge_s": 120,
+  "gets": 4,
+  "finds": 2,
+  "kill": 0.3,
+  "only": null,
+  "binary": "/target/bin/p2pchat-m17-noexpiry",
+  "env": [],
+  "findable_s": 30,
+  "out": "/out",
+  "tag": "mutant-noexpiry",
+  "selftest_only": true
+ }
+}

@@ -1,0 +1,14 @@
+2026-10-02T01:12:59.168208Z  INFO p2pchat: p2pchat starting version="0.1.0"
+2026-10-02T01:12:59.181477Z  INFO p2pchat_net: listening kind=Private addr=0.0.0.0:47101
+2026-10-02T01:12:59.181504Z  INFO p2pchat::node: endpoints bound me=d644 30a1 1a50 1e79 private=0.0.0.0:47101 public=None
+2026-10-02T01:12:59.181557Z  INFO p2pchat::node: node started me=d644 30a1 1a50 1e79 public_advertised=[10.99.0.62:47100] private_advertised=Some(10.99.0.62:47101)
+2026-10-02T01:12:59.186909Z  INFO p2pchat::reach: dial-back test member=10.99.0.10:47100 observed=10.99.0.62:47101 forwarded=true reached=true arrived=Some(10.99.0.11:54344)
+2026-10-02T01:12:59.186926Z  INFO p2pchat::reach: reachability test role=Member(10.99.0.62:47101) reason=Reached members=3
+2026-10-02T01:12:59.186930Z  INFO p2pchat::node: reachability from=Client to=Member(10.99.0.62:47101)
+2026-10-02T01:12:59.194397Z  INFO p2pchat::node: record published seq=1790903579181 addrs=[10.99.0.62:47101] stored=8 elapsed_ms=12
+2026-10-02T01:12:59.208521Z  INFO p2pchat::node: record published seq=1790903579194 addrs=[10.99.0.62:47101] stored=8 elapsed_ms=14
+2026-10-02T01:14:29.217714Z  INFO p2pchat::node: record published seq=1790903669205 addrs=[10.99.0.62:47101] stored=8 elapsed_ms=11
+2026-10-02T01:15:04.843592Z  WARN p2pchat::node: dial from the record failed peer=a05c 6362 acb8 5275 addr=10.99.0.63:47101 seq=1790903669260 diagnosis=Unreachable { age: 35 } error=no answer from 10.99.0.63:47101 after 20s. An unreachable node and a wrong address look the same from here, so check: that 10.99.0.63:47101 is what `p2pchat check` on the owner's machine lists as advertised; that UDP port 47101 is open inbound on the owner's firewall and cloud security group (QUIC is UDP, a TCP rule does nothing); and that the owner is not behind carrier-grade NAT (a 100.64.x.x WAN address on their router) - if they are, nobody can reach them, and their node needs a VPS, a LAN or a forwarded port
+2026-10-02T01:15:59.223692Z  INFO p2pchat::node: record published seq=1790903759213 addrs=[10.99.0.62:47101] stored=8 elapsed_ms=10
+2026-10-02T01:17:29.231336Z  INFO p2pchat::node: record published seq=1790903849220 addrs=[10.99.0.62:47101] stored=8 elapsed_ms=10
+2026-10-02T01:17:55.878800Z  WARN p2pchat::node: dial from the record failed peer=605e 7830 1687 9086 addr=10.99.0.61:47101 seq=1790903819186 diagnosis=Unreachable { age: 56 } error=no answer from 10.99.0.61:47101 after 20s. An unreachable node and a wrong address look the same from here, so check: that 10.99.0.61:47101 is what `p2pchat check` on the owner's machine lists as advertised; that UDP port 47101 is open inbound on the owner's firewall and cloud security group (QUIC is UDP, a TCP rule does nothing); and that the owner is not behind carrier-grade NAT (a 100.64.x.x WAN address on their router) - if they are, nobody can reach them, and their node needs a VPS, a LAN or a forwarded port
