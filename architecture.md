@@ -137,6 +137,15 @@ Every node with a bootstrap list runs the DHT: as a member while M14's test says
 
 **Connecting** to an accepted peer is a lookup of its user ID, then a dial to each address in its record in order. The reconnect loop (§10) does the same on every attempt when the node has a DHT, so it follows a peer that moved. No record is `NotFound`, which is terminal: the peer is offline, and the loop reports it and stops rather than dialling an address nobody vouches for.
 
+A dialling node with no public endpoint is a **client**, so its DHT traffic
+uses the stranger allowance (10 requests/source/minute), not the 30/minute
+allowance reserved for a configured or dial-back-proven member. During a stale
+dial, newer-record probes start every **1 s**, each has a **3 s** lookup
+budget, and at most four overlap; a new tick never cancels an older probe. An
+empty lookup with a refused/failed RPC is uncertain, never “no newer record.”
+The measured post-STORE latency bound is maximum probe-start gap (1 s) +
+lookup budget (3 s) + connect-and-handshake p99 for the applicable profile.
+
 **Stale or unreachable.** A silent dial to an address from a record looks the same whether the peer has left that address or is still behind it. That is M12's difficulty, and it is not solved at the dial. What tells the cases apart is the record, which the owner signed with the time it was published. After a silent dial the node asks the DHT for a record newer than the one it dialled (`Dht::lookup_newer`, which skips replicas still holding the old one). A newer record with different addresses means the address was **stale**. The dial is reported so, and the newer addresses are dialled. A newer record with the same addresses is only a republish. With no newer record, the DHT-sourced address **may still be stale**: inside `REPUBLISH` it may be a current unreachable peer or a move not yet republished; after it, the owner missed an expected republish and may be offline or moved without knowing it. The failure message says that uncertainty before giving M12's unreachable checklist. The stale reading still needs the owner's republish to land inside the dialler's silent dial, `DIAL_TIMEOUT_MS` (20 s).
 
 **OD-6.** `record::LIFETIME` is 180 s and `REPUBLISH` half that, 90 s. The 600 s bound comes from §10's existing, chosen reconnect budget: a peer that goes offline must become not found before that loop gives up. Expiry is strict: a record stops verifying at `LIFETIME` after its last publication. The 300 s skew allowance applies only when a signed `published_at` is in the verifier's future; it never extends expiry. An attempt waits at most the 30 s backoff cap plus 20% jitter (36 s) and then dials each address for the 20 s dial deadline, 40 s for two addresses. Thus `LIFETIME + 36 + 40 ≤ 600`; 180 leaves 344 s of budget margin. Moves are measured as the elapsed time from the change to a successful redial by the M17 netem harness, not derived from this bound.

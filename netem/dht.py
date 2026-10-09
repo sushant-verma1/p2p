@@ -327,6 +327,31 @@ def stats(xs):
             "max": max(xs) if xs else None, "mean": round(sum(xs) / len(xs), 2) if xs else None}
 
 
+def result_path(args):
+    return os.path.join(args.out, f"dht-{args.scenario}{('-' + args.tag) if args.tag else ''}.json")
+
+
+def write_result(args, result):
+    """Atomically preserve each completed sample with its executable and source.
+
+    Docker namespaces share the container host clock.  The harness uses that
+    one monotonic clock for both the member-side STORE acceptance line and the
+    client's session event; this is an assumption recorded beside the metric,
+    not a claimed clock-synchronisation experiment.
+    """
+    binary, digest = verified_binary(args.binary)
+    result["binary"] = {"path": binary, "sha256": digest,
+                        "source_commit": args.source_commit}
+    result["clock_assumption"] = "containers share the host monotonic clock"
+    os.makedirs(args.out, exist_ok=True)
+    path = result_path(args)
+    temporary = f"{path}.tmp"
+    with open(temporary, "w", encoding="utf-8") as f:
+        json.dump(result, f, indent=1, default=str)
+        f.write("\n")
+    os.replace(temporary, path)
+
+
 class H:
     def __init__(self, args, binary=None, env=None):
         self.args = args
@@ -1606,6 +1631,9 @@ def redials(args):
     R = {"profile": args.profile, "redial_bound_s": REDIAL_AFTER_NEW_RECORD,
          "findability_bound_s": REPUBLISH + 30,
          "end_to_end_bound_s": REPUBLISH + 30 + REDIAL_AFTER_NEW_RECORD,
+         "causal_reference": "member-side STORE-accepted timestamp",
+         "gate_metric": "move_to_session_established_s",
+         "reported_metrics": ["move_to_session_established_s", "store_accepted_to_session_established_s"],
          # A start every second plus a three-second lookup budget is the
          # five-second claim below. The product caps concurrency at four.
          "retry_probe_starts_s": "every 1s while stale dial is in flight",
@@ -1691,10 +1719,6 @@ def redials(args):
             observer_thread.join(REPUBLISH + 35)
             prop = observed.get("after_s")
             new_record_at = observed_started + prop if prop is not None else None
-            redial = (round(redial_started[0] - new_record_at, 3)
-                      if redial_started is not None and new_record_at is not None else None)
-            end_to_end = (round(redial_started[0] - changed_at, 3)
-                          if redial_started is not None else None)
             detection = b.wait(lambda line: "m17 trace observed address changed" in line and new in line,
                                30, b_mark)
             published = b.wait(lambda line: "m17 trace publish completed" in line and new in line,
@@ -1708,6 +1732,11 @@ def redials(args):
                     if ("m17 trace store landed" in line and fp(b.id) in line and seq
                             and int(seq.group(1)) > before_seq):
                         stores.append(t)
+            store_accepted_at = min(stores) if stores else None
+            move_to_session = (round(session[0] - changed_at, 3)
+                               if session is not None else None)
+            store_to_session = (round(session[0] - store_accepted_at, 3)
+                                if session is not None and store_accepted_at is not None else None)
             with a.cv:
                 trace = [{"after_move_s": round(t - changed_at, 3), "line": line}
                          for t, line in a.lines[a_mark:] if "m17 trace" in line]
@@ -1727,12 +1756,10 @@ def redials(args):
                 "stale_dial_started_after_move_s": round(stale_started[0] - changed_at, 3),
                 "change_detection_s": round(detection[0] - changed_at, 3) if detection else None,
                 "publish_completed_s": round(published[0] - changed_at, 3) if published else None,
-                "newer_store_landed_s": round(min(stores) - changed_at, 3) if stores else None,
-                "new_address_findable_s": prop,
-                "redial_after_findability_s": redial,
-                "end_to_end_s": end_to_end,
-                "session_established_s": (round(session[0] - changed_at, 3)
-                                          if session is not None else None),
+                "newer_store_accepted_s": round(store_accepted_at - changed_at, 3)
+                                      if store_accepted_at is not None else None,
+                "move_to_session_established_s": move_to_session,
+                "store_accepted_to_session_established_s": store_to_session,
                 "probe_starts": probe_starts,
                 "probe_rpcs": probe_rpcs,
                 "limiter_refusals_during_redial": h.rate_limited_between(changed_at, redial_ended),
@@ -1741,14 +1768,18 @@ def redials(args):
             }
             sample_result["pass"] = (
                 redial_started is not None and prop is not None and prop <= REPUBLISH + 30
-                and redial is not None and redial <= REDIAL_AFTER_NEW_RECORD
-                and end_to_end is not None and end_to_end <= REPUBLISH + 30 + REDIAL_AFTER_NEW_RECORD
+                and move_to_session is not None and move_to_session >= 0
+                and move_to_session <= REPUBLISH + 30 + REDIAL_AFTER_NEW_RECORD
+                and store_to_session is not None and store_to_session >= 0
                 and not failed and sample_result["limiter_refusals_during_redial"] == 0
             )
             R["samples"].append(sample_result)
             log("redial", args.profile, sample + 1,
-                {k: sample_result[k] for k in ("new_address_findable_s", "redial_after_findability_s",
-                                                 "end_to_end_s", "pass")})
+                {k: sample_result[k] for k in ("move_to_session_established_s",
+                                                 "store_accepted_to_session_established_s", "pass")})
+            # A completed sample survives a later profile fault or container
+            # cleanup; no distribution is reconstructed from terminal output.
+            write_result(args, R)
             a.kill()
             # Each distribution point is one move of one fresh peer.  Reusing
             # B would make the next point depend on its prior reachability
@@ -1761,13 +1792,13 @@ def redials(args):
                 b = h.nodes[b_i] = Subject(h, b_i)
                 if findable(observer, b.id, b.private, args.findable_s) is None:
                     raise RuntimeError(f"sample {sample + 1}: fresh moved peer was not externally findable")
-        R["redial_after_findability_s"] = stats([s["redial_after_findability_s"] for s in R["samples"]])
-        R["end_to_end_s"] = stats([s["end_to_end_s"] for s in R["samples"]])
-        R["session_established_s"] = stats([s["session_established_s"] for s in R["samples"]])
+        R["move_to_session_established_s"] = stats([s["move_to_session_established_s"] for s in R["samples"]])
+        R["store_accepted_to_session_established_s"] = stats(
+            [s["store_accepted_to_session_established_s"] for s in R["samples"]]
+        )
         R["change_detection_s"] = stats([s["change_detection_s"] for s in R["samples"]])
         R["publish_completed_s"] = stats([s["publish_completed_s"] for s in R["samples"]])
-        R["newer_store_landed_s"] = stats([s["newer_store_landed_s"] for s in R["samples"]])
-        R["new_address_findable_s"] = stats([s["new_address_findable_s"] for s in R["samples"]])
+        R["newer_store_accepted_s"] = stats([s["newer_store_accepted_s"] for s in R["samples"]])
         R["probe_starts"] = stats([s["probe_starts"] for s in R["samples"]])
         R["probe_rpcs"] = stats([s["probe_rpcs"] for s in R["samples"]])
         R["limiter_refusals_during_redials"] = sum(
@@ -1807,8 +1838,10 @@ def main():
                    help="run M17 checker faults only (used by mutants)")
     p.add_argument("--redials", type=int, default=20,
                    help="real address moves in the redials scenario")
-    p.add_argument("--move-offsets", default="0",
+    p.add_argument("--move-offsets", default="0.1,0.3,0.5,0.7,0.9,2,5,9,14",
                    help="comma-separated seconds after stale dial begins (redials only)")
+    p.add_argument("--source-commit", required=True,
+                   help="Git commit from which --binary was built")
     args = p.parse_args()
     env = dict(e.split("=", 1) for e in args.env)
     if args.scenario == "selftest":
@@ -1823,12 +1856,12 @@ def main():
     else:
         R = trial(args, env)
     R["args"] = vars(args)
+    write_result(args, R)
     binary, digest = verified_binary(args.binary)
-    R["binary"] = {"path": binary, "sha256": digest}
-    name = f"dht-{args.scenario}{('-' + args.tag) if args.tag else ''}.json"
-    os.makedirs(args.out, exist_ok=True)
-    with open(os.path.join(args.out, name), "w", encoding="utf-8") as f:
-        json.dump(R, f, indent=1, default=str)
+    R["binary"] = {"path": binary, "sha256": digest, "source_commit": args.source_commit}
+    R["clock_assumption"] = "containers share the host monotonic clock"
+    name = os.path.basename(result_path(args))
+    write_result(args, R)
     log("result", json.dumps({k: v for k, v in R.items()
                               if k in ("pass", "all_detected", "selftest_all_detected", "failed_gates")} or {"written": name}))
     if args.scenario == "publish" and not R["pass"]:

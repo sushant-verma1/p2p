@@ -536,6 +536,9 @@ pub struct Found {
     /// The `k` closest contacts that answered, closest first.
     pub closest: Vec<Contact>,
     pub rpcs: usize,
+    /// Failed RPCs (including pre-TLS limiter refusals).  An empty result
+    /// with any of these is not evidence that no newer record exists.
+    pub failed_rpcs: usize,
     pub stop: Stop,
 }
 
@@ -827,6 +830,7 @@ impl Dht {
         };
         let mut asking = JoinSet::new();
         let mut rpcs = 0;
+        let mut failed_rpcs = 0;
         let mut value = None;
         loop {
             while asking.len() < alpha && rpcs < MAX_LOOKUP_RPCS {
@@ -905,6 +909,7 @@ impl Dht {
                                     }
                                 }
                                 _ => {
+                                    failed_rpcs += 1;
                                     if self.member().is_some() {
                                         self.table().failed(
                                             &responder.id,
@@ -927,6 +932,7 @@ impl Dht {
                 // suspect, but put its confirming Ping strictly outside the
                 // public limiter's window; see Table::failed.
                 _ => {
+                    failed_rpcs += 1;
                     if let Some(c) = who {
                         if let Some(entry) = shortlist.get_mut(&key(&c.id)) {
                             entry.1 = State::Failed;
@@ -966,6 +972,7 @@ impl Dht {
             value,
             closest,
             rpcs,
+            failed_rpcs,
             stop,
         }
     }

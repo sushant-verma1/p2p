@@ -214,17 +214,38 @@ future; it never extends expiry. At r=8, each node sends 40 publishes/hour or
 320 STORE RPCs/hour, versus the old 30-minute placeholder's 2 publishes/16
 STOREs per hour (20x).
 
-**M17a follow-up — pending new netem run.** The former “successful redial after
-the move” values (20.02/22.58/23.35 s) were invalid evidence: the harness
-waited for the stale-address dial to fail, then submitted a second one-shot
-connect. `Node::connect` now looks for a strictly newer, different signed
-record concurrently with that dial and dials it as soon as it appears. A slow
-probe is bounded and the next probes start on a 1/2/4-second backoff schedule;
-suspect routing contacts are tried after healthy candidates. Gate 2 starts its
-redial clock when an unrelated member first reads the newer record, requires
-that redial within 5 s, and requires no stale-dial failure before the session.
-Five seconds is half the loopback gate's dial deadline and one quarter of the
-shipped 20 s deadline, so a redial that merely beats either deadline fails.
+**M17a evidence reset.** The three observer-relative distributions are
+superseded in `netem/results/m17a-evidence-manifest.md` and are not gate
+results. The replacement's causal reference is the member-side
+`STORE`-accepted timestamp. Each of its 20 samples per profile is atomically
+written to disk and reports both move-to-session-established and
+STORE-accepted-to-session-established. The gate is the end-to-end first value;
+neither value may be negative. Containers share the host monotonic clock; that
+is an explicit harness assumption recorded beside the metric.
+
+Provenance check: binary SHA-256
+`6081b0493e8657100a4fe5965f8028bfb57ea29ac6ee75e77806258942b69c87` was
+the binary in the retained trace whose probe lines say `cadence_ms=1000`; it
+was built from the 1 s cadence code. Every new result JSON records both the
+binary hash and the source commit used to build it.
+
+`Node::connect` looks for a strictly newer, different signed record while the
+old-address dial is in flight and dials it as soon as it arrives. Probe starts
+are on a fixed **1 s cadence**, each lookup has a **3 s budget**, and at most
+four can be in flight; a newer tick never cancels an older probe. The latency
+bound is therefore **maximum gap between probe starts (1 s) + lookup budget
+(3 s) + that profile's connect-and-handshake p99**, measured from STORE
+acceptance to session establishment. This replaces the void 0/1/3/7/12/17
+description. Suspect routing contacts are tried after healthy candidates.
+
+**Peer-down load.** The reconnect loop is driven by §10's 1, 2, 4, 8, 16,
+then 30 s ±20% backoff, not by the watcher cadence. A dialling node without a
+public endpoint is a client and therefore receives the product stranger
+allowance (10 requests/source/minute), not the proven/configured member
+allowance (30). The ten-minute product-default run records lookups, RPCs per
+lookup, per-nearest-node/minute RPCs, refusals, and mobile-data byte/hour
+projection. If that run reaches the stranger allowance, its lookup work is
+capped per dial attempt rather than raising the stranger limit.
 
 **DHT lookup address policy.** A record is rejected, both before signing and
 after verifying its owner signature, if an address is unspecified, multicast,

@@ -195,6 +195,13 @@ pub fn diagnose(dialled: &AddressRecord, newer: Option<&AddressRecord>, now: u64
     }
 }
 
+/// A refusal occurs before TLS and has the same wire shape as a timeout.  An
+/// empty lookup containing one is uncertain, not proof that no newer record
+/// exists.
+fn newer_record_lookup_uncertain(found: &p2pchat_net::dht::Found) -> bool {
+    found.failed_rpcs != 0
+}
+
 /// The one line a person gets for a [`Diagnosis`] — M12's style: what
 /// happened, and for the unreachable case, what to check.
 pub fn explain(addr: SocketAddr, waited: Duration, diagnosis: &Diagnosis) -> String {
@@ -875,10 +882,26 @@ impl Node {
         // addresses changed.  Re-read once for the diagnostic path so a
         // same-address republish still refreshes M12's age calculation, and
         // a record that won the race by a few milliseconds is still used.
-        let newer = match newer {
-            Some(newer) => Some(newer),
-            None => dht.lookup_newer(peer, record.body.seq).await.value,
+        let (newer, failed_rpcs) = match newer {
+            Some(newer) => (Some(newer), None),
+            None => {
+                let refreshed = dht.lookup_newer(peer, record.body.seq).await;
+                let uncertain = newer_record_lookup_uncertain(&refreshed);
+                (refreshed.value, uncertain.then_some(refreshed.failed_rpcs))
+            }
         };
+        if newer.is_none() && failed_rpcs.is_some() {
+            let failed_rpcs = failed_rpcs.expect("checked above");
+            let reason = format!(
+                "no answer from {addr} after {:?}; DHT lookup could not establish whether a newer record exists: {failed_rpcs} RPCs were refused or failed. Retry later.",
+                dial_timeout(),
+            );
+            let _ = self.events.try_send(Event::DialFailed {
+                peer,
+                reason: reason.clone(),
+            });
+            return Err(anyhow!(reason));
+        }
         let diagnosis = diagnose(&record, newer.as_ref(), invite::now());
         let reason = explain(addr, dial_timeout(), &diagnosis);
         tracing::warn!(%peer, %addr, seq = record.body.seq, ?diagnosis, %error, "dial from the record failed");
@@ -1961,6 +1984,21 @@ mod tests {
             assert_eq!(cadence, Duration::from_secs(expected));
             cadence = (cadence * 2).min(NEWER_RECORD_POLL_MAX);
         }
+    }
+
+    #[test]
+    fn a_refused_newer_record_lookup_is_not_an_empty_result() {
+        let refused = p2pchat_net::dht::Found {
+            value: None,
+            closest: Vec::new(),
+            rpcs: 1,
+            failed_rpcs: 1,
+            stop: p2pchat_net::dht::Stop::Exhausted,
+        };
+        assert!(
+            newer_record_lookup_uncertain(&refused),
+            "a refused lookup must not be reported as no newer record",
+        );
     }
 
     /// Starting a later probe is not authority to cancel an earlier one. A

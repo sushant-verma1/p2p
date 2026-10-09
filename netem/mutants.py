@@ -106,6 +106,11 @@ MUTANTS = {
         "            entry\n                .confirm_after\n                .get_or_insert(now + confirming_ping_delay(rate_window));",
         "            entry.confirm_after = Some(now); // mutant: refusal is death",
     ),
+    "m17-refusal-as-empty-result": (
+        NODE,
+        "    found.failed_rpcs != 0\n",
+        "    false // mutant: a refusal is treated as an empty result\n",
+    ),
 }
 
 RUST_GATES = {
@@ -124,6 +129,10 @@ RUST_GATES = {
     "m17-probe-aborts-lookup": [
         "cargo", "test", "-q", "-p", "p2pchat", "--test", "lookup",
         "m17_gates_on_loopback", "--", "--nocapture",
+    ],
+    "m17-refusal-as-empty-result": [
+        "cargo", "test", "-q", "-p", "p2pchat",
+        "a_refused_newer_record_lookup_is_not_an_empty_result",
     ],
 }
 
