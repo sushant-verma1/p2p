@@ -1,0 +1,590 @@
+   Compiling p2pchat v0.1.0 (/p2p/crates/p2pchat)
+   Compiling p2pchat-net v0.1.0 (/p2p/crates/p2pchat-net)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 15.60s
+     Running unittests src/lib.rs (/target/debug/deps/p2pchat-34e1b334c65e961f)
+
+running 15 tests
+test node::tests::a_dial_back_fits_inside_the_request_that_asked_for_it ... ok
+test node::tests::the_backoff_follows_the_documented_schedule ... ok
+test node::tests::a_request_and_a_dial_give_up_together ... ok
+test node::tests::only_authentication_failures_are_fatal ... ok
+test node::tests::the_backoff_gives_up_after_ten_minutes ... ok
+test node::tests::the_dial_deadline_fires_before_the_connection_goes_idle ... ok
+test node::tests::the_backoff_settles_at_thirty_seconds_with_jitter ... ok
+test node::tests::the_handshake_and_a_slow_connect_fit_inside_the_dial_deadline ... ok
+test node::tests::a_silent_dial_is_stale_only_on_evidence ... ok
+test reach::tests::only_a_forwarded_dial_back_from_an_uncontacted_ip_makes_a_member ... ok
+test registry::tests::a_redial_from_the_same_initiator_replaces ... ok
+test registry::tests::the_losers_cleanup_does_not_take_the_winner ... ok
+test registry::tests::a_dead_sessions_cleanup_does_not_take_its_replacement ... ok
+test registry::tests::the_lower_initiator_survives_whichever_arrives_first ... ok
+test reach::tests::a_saved_result_reads_back ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/main.rs (/target/debug/deps/p2pchat-2c6503268d72cc36)
+
+running 1 test
+test tests::a_symmetric_result_names_the_container_nat ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/access.rs (/target/debug/deps/access-68a9c71eaae60980)
+
+running 6 tests
+test probing_an_accepted_id_and_an_unaccepted_one_is_indistinguishable ... ok
+test an_accepted_peers_session_succeeds ... ok
+test a_peer_claiming_an_accepted_id_without_its_key_is_rejected ... ok
+test a_rejected_peer_cannot_open_a_session ... ok
+test an_unaccepted_peer_that_completes_the_handshake_is_closed ... ok
+test we_do_not_open_a_session_with_a_peer_we_have_not_accepted ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.62s
+
+     Running tests/backoff.rs (/target/debug/deps/backoff-fab483a4cb9f94e4)
+
+running 1 test
+test the_reconnect_loop_gives_up_when_the_budget_runs_out ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.12s
+
+     Running tests/bind.rs (/target/debug/deps/bind-bc11ba1c14ab2700)
+
+running 5 tests
+test an_invite_with_no_address_is_refused ... ok
+test an_invite_refuses_to_advertise_an_unspecified_address ... ok
+test the_default_bind_is_every_interface ... ok
+test a_node_is_reachable_by_a_non_loopback_address ... ok
+test the_bind_flag_takes_effect_and_the_environment_beats_it ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+
+     Running tests/check.rs (/target/debug/deps/check-a7e26cd69f5135dd)
+
+running 2 tests
+test a_correct_node_passes_and_names_the_ports_to_open ... ok
+test a_misconfigured_node_is_flagged_before_anyone_dials_it ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/connect.rs (/target/debug/deps/connect-fa417f0b3671b812)
+
+running 11 tests
+test accepting_without_an_address_is_refused_in_the_same_words ... ok
+test an_unspecified_private_address_is_refused ... ok
+test an_outbound_request_resumes_polling_after_a_restart ... ok
+test a_status_carries_an_address_only_when_it_is_accepted ... ok
+test the_private_address_is_derived_from_addr_and_can_be_overridden ... ok
+test a_requester_that_accepts_no_inbound_connections_gets_a_session ... ok
+test a_rejection_stops_the_polling_and_clears_the_acceptance ... ok
+test a_forged_accepted_status_pointing_elsewhere_makes_no_session ... ok
+test a_silent_address_is_dialled_into_what_to_check ... ok
+test an_unreachable_owner_is_reported_with_what_to_check ... ok
+test an_unanswered_first_dial_is_retried_until_there_is_a_session ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 26.19s
+
+     Running tests/dial_socket.rs (/target/debug/deps/dial_socket-15929d8dfd6c3449)
+
+running 2 tests
+test the_running_node_holds_the_stun_side_of_its_socket ... ok
+test dials_and_asks_leave_from_the_private_endpoints_socket ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/identity.rs (/target/debug/deps/identity-acdf23b4b5bec261)
+
+running 3 tests
+test the_log_holds_the_fingerprint_and_not_the_full_id ... ok
+test a_wider_key_file_stops_the_binary ... ok
+test two_runs_produce_an_identical_user_id ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/invite.rs (/target/debug/deps/invite-a2eddda8292a799e)
+
+running 2 tests
+test an_over_long_name_fails_rather_than_printing_a_blob ... ok
+test the_invite_is_one_line_that_carries_this_nodes_identity ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/layering.rs (/target/debug/deps/layering-0a2821a4565a5e6f)
+
+running 1 test
+test dependencies_flow_downward ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/logging.rs (/target/debug/deps/logging-8c80bb28e1a222e1)
+
+running 3 tests
+test without_a_terminal_it_says_so_and_exits_non_zero ... ok
+test respects_rust_log ... ok
+test logs_go_to_the_file_and_never_to_a_terminal_stream ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/lookup.rs (/target/debug/deps/lookup-1fd08a0edd9d8185)
+
+running 1 test
+test m17_gates_on_loopback ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 13.66s
+
+     Running tests/messaging.rs (/target/debug/deps/messaging-3335a480d0db6749)
+
+running 3 tests
+test a_frame_whose_sender_is_not_the_authenticated_peer_is_rejected ... ok
+test simultaneous_dial_leaves_one_session_and_it_is_the_lower_initiators ... ok
+test a_message_resent_after_a_lost_ack_is_stored_once_and_re_acked ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.56s
+
+     Running tests/reach.rs (/target/debug/deps/reach-4f1345b06480d322)
+
+running 11 tests
+test a_member_on_a_wildcard_bind_does_not_forward_to_itself ... ok
+test m14b_gate_5_rate_limits_hold ... ok
+test m16a_the_member_allowance_follows_a_passed_dial_back_not_a_claim ... ok
+test m14b_gate_2_a_reachable_node_is_a_member_via_the_forwarded_dial_back ... ok
+test m14b_gate_1_a_node_behind_an_ip_only_nat_is_a_client ... ok
+test m14_gate_1_a_node_behind_cgnat_is_a_client ... ok
+test m14_gate_4_a_false_claim_of_reachability_is_detected ... ok
+test m14_gate_3_the_role_follows_a_network_change_within_a_bound ... ok
+test m14b_gate_6_a_forwarding_member_cannot_be_aimed_at_a_third_party ... ok
+test m14b_gate_4_b_dials_only_what_a_observed ... ok
+test m14b_gate_3_fewer_than_two_members_reachable_is_a_client ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.17s
+
+     Running tests/reconnect.rs (/target/debug/deps/reconnect-d5b16195d960558b)
+
+running 7 tests
+test queued_pending_rows_go_out_when_a_session_opens ... ok
+test a_reconnection_is_a_new_session_and_retransmits_under_its_key ... ok
+test a_restarted_node_dials_the_peer_it_had_accepted ... ok
+test fifty_messages_survive_a_cut_during_the_resync ... ok
+test fifty_messages_survive_a_cut_in_the_middle_of_the_stream ... ok
+test fifty_messages_sent_while_the_peer_is_down_all_arrive_once_and_in_order ... ok
+test a_peer_that_fails_the_handshake_is_not_retried ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 27.31s
+
+     Running tests/screen.rs (/target/debug/deps/screen-086c66e1d79e7e13)
+
+running 5 tests
+test a_message_typed_with_no_session_is_stored_pending_and_shown ... ok
+test a_pasted_invite_that_is_accepted_ends_on_a_connected_screen ... ok
+test the_status_bar_says_offline_connected_reconnecting_and_handshaking ... ok
+test an_accepted_request_whose_dial_fails_ends_on_a_failed_screen ... ok
+test a_silent_session_outlives_the_idle_timeout ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 26.20s
+
+     Running tests/secrets.rs (/target/debug/deps/secrets-c57553217fe6eff3)
+
+running 1 test
+test no_secret_reaches_the_log ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+
+     Running tests/terminal.rs (/target/debug/deps/terminal-f3369b4f4f50fd83)
+
+running 3 tests
+test ctrl_c_gives_the_terminal_back ... ok
+test a_deliberate_panic_gives_the_terminal_back_before_it_prints ... ok
+test the_tui_really_did_take_the_terminal ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.32s
+
+     Running tests/two_nodes.rs (/target/debug/deps/two_nodes-c533c213bedcb09d)
+
+running 3 tests
+test acceptance_survives_a_restart_and_the_peer_reconnects ... ok
+test a_hundred_messages_arrive_once_each_in_order ... ok
+test a_killed_receiver_never_leaves_a_delivered_message_unstored ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.46s
+
+     Running tests/ui.rs (/target/debug/deps/ui-c5df851648097650)
+
+running 1 test
+test a_thousand_messages_arrive_while_nothing_is_reading_the_events ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.73s
+
+     Running unittests src/lib.rs (/target/debug/deps/p2pchat_core-78820d1f1722e062)
+
+running 10 tests
+test frame::tests::a_frame_is_a_big_endian_length_and_a_body ... ok
+test frame::tests::a_partial_frame_asks_for_more ... ok
+test frame::tests::two_frames_in_one_buffer_are_read_one_at_a_time ... ok
+test frame::tests::the_limit_itself_is_allowed ... ok
+test id::seq_tests::a_conversation_id_renders_short ... ok
+test id::seq_tests::frame_seq_stops_at_the_limit ... ok
+test id::seq_tests::message_ids_are_time_ordered ... ok
+test id::tests::debug_and_display_show_only_the_fingerprint ... ok
+test id::tests::fingerprint_is_four_groups_of_four ... ok
+test id::tests::hex_is_sixty_four_lowercase_chars ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/wire.rs (/target/debug/deps/wire-b12e47f67b32ab41)
+
+running 52 tests
+test a_display_name_over_the_bound_is_refused_on_the_way_in_and_out ... ok
+test a_frame_header_claiming_four_gibibytes_allocates_nothing ... ok
+test a_ciphertext_over_the_bound_is_refused_on_decode ... ok
+test a_dht_answer_is_bounded ... ok
+test a_length_field_with_nothing_behind_it_allocates_nothing ... ok
+test a_frame_at_the_limit_is_accepted ... ok
+test a_local_only_status_is_not_an_acknowledgement ... ok
+test a_state_that_is_not_accepted_may_not_carry_an_address ... ok
+test an_over_size_header_is_rejected_before_the_body_is_waited_for ... ok
+test t_connection_status::round_trips_through_a_frame ... ok
+test t_ack::round_trips_through_a_frame ... ok
+test t_address_record_body::round_trips_through_a_frame ... ok
+test t_dht_request::round_trips_through_a_frame ... ok
+test t_address_record::round_trips_through_a_frame ... ok
+test t_connection_status::serializes_identically_a_thousand_times ... ok
+test t_connection_request::round_trips_through_a_frame ... ok
+test t_ack::serializes_identically_a_thousand_times ... ok
+test t_hello_confirm::round_trips_through_a_frame ... ok
+test t_hello_init::round_trips_through_a_frame ... ok
+test t_connection_request::serializes_identically_a_thousand_times ... ok
+test t_dht_response::round_trips_through_a_frame ... ok
+test t_dht_request::serializes_identically_a_thousand_times ... ok
+test t_hello_resp_unsigned::round_trips_through_a_frame ... ok
+test t_hello_resp::round_trips_through_a_frame ... ok
+test t_address_record_body::serializes_identically_a_thousand_times ... ok
+test t_hello_confirm::serializes_identically_a_thousand_times ... ok
+test t_invite_body::round_trips_through_a_frame ... ok
+test t_invite::round_trips_through_a_frame ... ok
+test t_message_frame::round_trips_through_a_frame ... ok
+test t_message_header::round_trips_through_a_frame ... ok
+test t_hello_init::serializes_identically_a_thousand_times ... ok
+test t_profile_request::round_trips_through_a_frame ... ok
+test t_public_request::round_trips_through_a_frame ... ok
+test t_hello_resp_unsigned::serializes_identically_a_thousand_times ... ok
+test t_profile_request::serializes_identically_a_thousand_times ... ok
+test t_address_record::serializes_identically_a_thousand_times ... ok
+test the_aad_is_the_encoded_header ... ok
+test the_invite_body_is_a_prefix_of_the_invite ... ok
+test the_public_request_envelope_checks_its_payload ... ok
+test the_unsigned_hello_resp_is_a_prefix_of_the_signed_one ... ok
+test too_many_addresses_are_refused_on_decode ... ok
+test t_resync::round_trips_through_a_frame ... ok
+test t_invite_body::serializes_identically_a_thousand_times ... ok
+test t_public_response::round_trips_through_a_frame ... ok
+test t_message_header::serializes_identically_a_thousand_times ... ok
+test t_public_request::serializes_identically_a_thousand_times ... ok
+test t_resync::serializes_identically_a_thousand_times ... ok
+test t_hello_resp::serializes_identically_a_thousand_times ... ok
+test t_invite::serializes_identically_a_thousand_times ... ok
+test t_dht_response::serializes_identically_a_thousand_times ... ok
+test t_message_frame::serializes_identically_a_thousand_times ... ok
+test t_public_response::serializes_identically_a_thousand_times ... ok
+
+test result: ok. 52 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.35s
+
+     Running unittests src/lib.rs (/target/debug/deps/p2pchat_crypto-a7c87843aa26ce7d)
+
+running 62 tests
+test handshake::tests::the_shared_secret_zeroizes ... ok
+test identity::tests::conversation_id_is_the_documented_hash ... ok
+test identity::tests::debug_does_not_print_the_full_id ... ok
+test identity::tests::conversation_id_derivation_is_order_independent ... ok
+test identity::tests::distinct_identities_get_distinct_ids ... ok
+test identity::tests::secret_key_material_zeroizes ... ok
+test identity::tests::user_id_binds_to_the_public_key ... ok
+test identity::tests::different_pairs_get_different_conversations ... ok
+test identity::tests::same_seed_gives_the_same_user_id ... ok
+test invite::tests::a_forged_invite_never_reports_expiry ... ok
+test invite::tests::a_typical_invite_fits_in_a_line ... ok
+test invite::tests::a_substituted_key_under_a_borrowed_user_id_is_rejected ... ok
+test invite::tests::an_invite_whose_user_id_does_not_bind_is_rejected ... ok
+test invite::tests::an_oversize_field_is_malformed_not_accepted ... ok
+test invite::tests::an_unspecified_address_is_never_advertised ... ok
+test identity::tests::generation_is_fast ... ok
+test handshake::tests::nonce_r_altered_in_flight_breaks_the_transcript ... ok
+test handshake::tests::a_different_channel_binding_on_each_side_fails ... ok
+test keystore::tests::a_truncated_key_file_is_rejected ... ok
+test invite::tests::an_invite_without_an_expiry_does_not_expire ... ok
+test invite::tests::expired_and_malformed_are_distinct_errors ... ok
+test keystore::tests::only_owner_only_modes_are_private ... ok
+test invite::tests::an_invite_round_trips ... ok
+test invite::tests::a_tampered_invite_is_rejected_by_the_signature ... ok
+test handshake::tests::nonce_i_altered_in_flight_breaks_the_transcript ... ok
+test keystore::tests::a_created_key_file_is_0600 ... ok
+test keystore::tests::the_key_file_is_exactly_the_seed ... ok
+test keystore::tests::a_world_readable_key_file_is_refused ... ok
+test keystore::tests::first_launch_creates_and_second_launch_loads_the_same_identity ... ok
+test record::tests::gate_2_a_user_id_that_does_not_bind_is_rejected ... ok
+test invite::tests::an_expired_and_tampered_invite_reports_the_signature ... ok
+test record::tests::a_record_round_trips ... ok
+test record::tests::a_forged_high_seq_does_not_supersede ... ok
+test record::tests::nothing_undialable_is_signed ... ok
+test handshake::tests::both_sides_agree_on_the_secret_and_the_transcript ... ok
+test record::tests::a_signature_without_the_domain_does_not_verify ... ok
+test record::tests::gate_1_a_forged_record_is_rejected ... ok
+test record::tests::gate_5_a_tampered_address_fails_the_signature ... ok
+test record::tests::gate_6_a_tampered_and_expired_record_reports_the_signature ... ok
+test session::tests::a_body_over_the_maximum_is_refused ... ok
+test session::tests::a_flipped_aad_field_fails_the_tag ... ok
+test invite::tests::five_minutes_ahead_is_accepted_and_twenty_five_hours_is_not ... ok
+test record::tests::unusable_dht_endpoint_shapes_are_rejected_after_signing ... ok
+test handshake::tests::two_handshakes_share_nothing ... ok
+test session::tests::a_flipped_ciphertext_bit_fails_the_tag ... ok
+test session::tests::a_frame_claiming_another_sender_is_rejected ... ok
+test record::tests::gate_4_a_rolled_back_seq_is_rejected ... ok
+test session::tests::the_transcript_hash_is_what_salts_the_keys ... ok
+test session::tests::the_two_directional_keys_differ ... ok
+test session::tests::a_replayed_frame_is_rejected ... ok
+test session::tests::a_frame_round_trips_in_both_directions ... ok
+test record::tests::gate_3_expired_and_malformed_are_distinct_errors ... ok
+test session::tests::a_side_cannot_open_its_own_frame ... ok
+test session::tests::sealing_the_same_frame_twice_gives_the_same_bytes ... ok
+test session::tests::both_sides_of_one_session_share_its_id ... ok
+test session::tests::the_receive_counter_stops_at_its_limit ... ok
+test session::tests::the_frame_counter_stops_at_its_limit ... ok
+test session::tests::two_sessions_between_the_same_identities_have_different_ids ... ok
+test session::tests::two_sessions_between_the_same_identities_derive_different_keys ... ok
+test session::tests::every_header_field_is_covered_by_the_aad ... ok
+test record::tests::no_single_altered_byte_survives ... ok
+test invite::tests::no_single_altered_byte_survives ... ok
+
+test result: ok. 62 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.51s
+
+     Running unittests src/lib.rs (/target/debug/deps/p2pchat_net-107eb45029b5bb0e)
+
+running 41 tests
+test dht::tests::a_full_bucket_checks_its_oldest_and_evicts_only_the_dead ... ok
+test dht::tests::closest_is_by_xor ... ok
+test dht::tests::distance_is_xor_and_buckets_count_shared_bits ... ok
+test dht::tests::confirming_ping_delay_is_the_configured_window_plus_margin ... ok
+test dht::tests::a_known_id_from_another_address_is_not_taken ... ok
+test dht::tests::rate_limited_refusal_does_not_evict_on_the_second_strike ... ok
+test dht::tests::refresh_covers_every_bucket_to_one_past_the_deepest_filled ... ok
+test dht::tests::a_random_id_lands_in_the_bucket_asked_for ... ok
+test dht::tests::suspect_contacts_sort_after_healthy_lookup_candidates ... ok
+test public::tests::a_proof_lapses_and_the_set_is_capped ... ok
+test dht::tests::the_table_is_bounded_whatever_arrives ... ok
+test public::tests::one_source_does_not_spend_anothers_allowance ... ok
+test public::tests::passed_dial_back_earns_a_meaningful_allowance ... ok
+test public::tests::a_source_gets_its_allowance_and_no_more ... ok
+test public::tests::the_source_table_is_capped_and_does_not_evict_a_live_limit ... ok
+test public::tests::the_window_reopens ... ok
+test socket::tests::a_short_quic_tail_stays_the_tail ... ok
+test socket::tests::a_mixed_batch_splits_exactly ... ok
+test socket::tests::a_datagram_too_short_for_a_stun_header_goes_to_quinn ... ok
+test stun::tests::a_binding_error_response_is_reported_as_a_server_error ... ok
+test stun::tests::a_mismatched_transaction_id_is_rejected ... ok
+test stun::tests::a_response_with_no_mapped_address_attribute_is_reported_as_such ... ok
+test stun::tests::a_truncated_header_is_rejected_not_panicked ... ok
+test stun::tests::agreeing_servers_are_endpoint_independent_and_punchable ... ok
+test stun::tests::disagreeing_servers_are_address_or_port_dependent_and_never_punchable ... ok
+test stun::tests::an_attribute_length_with_nothing_behind_it_is_rejected_not_panicked ... ok
+test stun::tests::one_disagreement_among_several_is_still_address_or_port_dependent ... ok
+test stun::tests::an_unknown_comprehension_required_attribute_rejects_the_whole_message ... ok
+test stun::tests::a_well_formed_response_decodes_to_the_address_it_carries ... ok
+test stun::tests::skipping_the_xor_would_give_a_different_address_than_applying_it ... ok
+test stun::tests::an_unknown_comprehension_optional_attribute_is_ignored ... ok
+test stun::tests::unknown_is_never_punchable_either ... ok
+test stun::tests::zero_or_one_observation_is_unknown_never_a_guess ... ok
+test tests::the_two_endpoints_do_not_share_an_alpn_or_a_port ... ok
+test stun::tests::padding_crafted_to_look_like_a_header_never_derails_the_next_attribute ... ok
+test stun::tests::a_truncated_attribute_header_is_always_rejected ... ok
+test stun::tests::an_overlong_declared_attribute_length_is_always_rejected ... ok
+test stun::tests::a_zero_length_attribute_never_panics ... ok
+test dht::tests::records_are_verified_on_the_way_in_and_on_the_way_out ... ok
+test stun::tests::parse_response_never_panics_on_arbitrary_bytes ... ok
+test stun::tests::parse_attributes_never_panics_on_arbitrary_bytes ... ok
+
+test result: ok. 41 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests/dht.rs (/target/debug/deps/dht-5e9224d1e74eba7d)
+
+running 1 test
+test m16_gates_on_loopback ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 16.58s
+
+     Running tests/handshake.rs (/target/debug/deps/handshake-53a41e64b39135ba)
+
+running 12 tests
+test an_outbound_connection_to_the_wrong_peer_is_rejected ... ok
+test a_small_order_ephemeral_key_is_rejected ... ok
+test a_bad_signature_on_hello_resp_is_rejected ... ok
+test an_all_zero_ephemeral_key_is_rejected ... ok
+test a_user_id_that_does_not_bind_to_the_key_is_rejected ... ok
+test a_bad_signature_on_hello_confirm_is_rejected ... ok
+test two_peers_complete_the_handshake_and_agree ... ok
+test a_quic_level_proxy_between_the_parties_is_rejected ... ok
+test no_failure_tells_the_peer_which_check_failed ... ok
+test a_recorded_session_replayed_wholesale_is_rejected ... ok
+test a_hello_confirm_from_another_connection_is_rejected ... ok
+test a_handshake_abandoned_after_hello_init_times_out ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 14.04s
+
+     Running tests/public.rs (/target/debug/deps/public-3981dd4767439c9f)
+
+running 7 tests
+test a_status_query_for_an_unknown_caller_says_so ... ok
+test a_profile_request_for_someone_else_is_not_answered ... ok
+test nonsense_from_one_caller_does_not_stop_the_node ... ok
+test a_connection_request_reaches_the_peer_and_can_be_accepted ... ok
+test a_profile_request_is_answered_with_the_owners_signed_invite ... ok
+test a_connection_request_can_be_rejected ... ok
+test a_flood_from_one_source_is_rate_limited_rather_than_queued ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/stun.rs (/target/debug/deps/stun-a87174086a6ae919)
+
+running 8 tests
+test a_spoofed_reply_with_the_wrong_transaction_id_is_discarded ... ok
+test two_servers_disagreeing_on_the_port_is_never_reported_as_punchable ... ok
+test one_server_is_unknown_not_a_guess ... ok
+test two_servers_agreeing_is_reported_as_punchable ... ok
+test the_mapping_reported_is_the_mapping_of_the_quic_socket ... ok
+test a_full_handshake_completes_while_stun_is_in_flight_on_the_same_port ... ok
+test an_unreachable_server_is_skipped_not_fatal ... ok
+test quic_never_reaches_stun_and_stun_never_reaches_quinn ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.54s
+
+     Running tests/transport.rs (/target/debug/deps/transport-f77da2672b401a7b)
+
+running 6 tests
+test responder_child_process ... ignored, started as a child process by two_processes_exchange_framed_messages
+test a_client_offering_the_wrong_alpn_is_rejected ... ok
+test two_processes_exchange_framed_messages ... ok
+test two_connections_derive_different_channel_bindings ... ok
+test a_hundred_frames_each_way_keep_the_counters_in_step ... ok
+test a_frame_split_across_several_reads_decodes ... ok
+
+test result: ok. 5 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.12s
+
+     Running unittests src/lib.rs (/target/debug/deps/p2pchat_store-1a9e580143ef0064)
+
+running 11 tests
+test db::tests::only_owner_only_modes_are_private ... ok
+test repo::tests::delivery_status_maps_to_the_documented_integers ... ok
+test actor::tests::a_database_that_cannot_be_opened_reports_at_open ... ok
+test schema::tests::an_existing_database_migrates_forward ... ok
+test schema::tests::a_database_from_the_future_is_refused ... ok
+test schema::tests::a_second_migration_is_a_no_op ... ok
+test schema::tests::migrating_an_empty_database_reaches_the_current_version ... ok
+test db::tests::a_world_readable_database_is_refused ... ok
+test db::tests::the_pragmas_are_set ... ok
+test actor::tests::closing_releases_the_file_for_a_fresh_open ... ok
+test db::tests::each_pragma_is_applied_over_its_opposite ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests/gate.rs (/target/debug/deps/gate-3e7830526d36be24)
+
+running 10 tests
+test messages_survive_a_restart ... ok
+test a_resent_message_is_stored_once ... ok
+test a_conversation_with_an_unknown_peer_is_refused ... ok
+test a_message_in_an_unknown_conversation_is_refused ... ok
+test an_empty_conversation_has_no_pages ... ok
+test the_database_file_is_0600 ... ok
+test the_two_sides_may_both_use_a_sequence_number ... ok
+test reopening_a_database_migrates_nothing ... ok
+test a_full_page_is_exactly_fifty_rows_newest_first ... ok
+test ten_thousand_messages_paginate_under_fifty_milliseconds_per_page ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.28s
+
+     Running tests/requests.rs (/target/debug/deps/requests-dae9e2e084028e9b)
+
+running 8 tests
+test a_decision_is_final_and_a_retry_does_not_requeue ... ok
+test an_unheard_of_caller_is_unknown ... ok
+test acceptance_survives_a_restart ... ok
+test a_peer_sighting_does_not_change_acceptance ... ok
+test a_rejection_leaves_the_peer_unaccepted ... ok
+test a_full_queue_rejects_rather_than_growing ... ok
+test outbound_requests_survive_a_restart ... ok
+test pending_requests_survive_a_restart ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+     Running unittests src/lib.rs (/target/debug/deps/p2pchat_tui-79fc0dde6a8cc898)
+
+running 7 tests
+test view::tests::a_line_of_emoji_words_never_overflows_the_pane ... ok
+test view::tests::a_word_longer_than_the_pane_is_broken_rather_than_dropped ... ok
+test view::tests::emoji_wrap_at_the_column_not_at_the_char ... ok
+test view::tests::devanagari_wraps_on_columns_and_never_splits_a_mark_from_its_base ... ok
+test view::tests::truncation_counts_columns_too ... ok
+test view::tests::wrapping_keeps_every_word ... ok
+test view::tests::wrapping_never_exceeds_the_width ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/gates.rs (/target/debug/deps/gates-982ea46a643cf064)
+
+running 19 tests
+test cancelling_the_preview_connects_to_nothing ... ok
+test enter_sends_and_neither_newline_binding_does ... ok
+test ctrl_c_asks_to_quit ... ok
+test restore_writes_the_sequences_that_undo_the_setup ... ok
+test the_guard_restores_on_panic_and_on_drop ... ok
+test the_help_overlay_names_the_newline_key ... ok
+test an_unverified_peer_is_marked_and_a_verified_one_is_not ... ok
+test an_imported_invite_shows_its_fingerprint_before_anything_is_connected ... ok
+test a_pending_request_is_badged_and_can_be_accepted_or_rejected ... ok
+test a_failed_conversation_shows_what_to_check ... ok
+test a_draft_survives_switching_conversations_and_back ... ok
+test a_long_message_wraps_inside_its_pane ... ok
+test the_help_overlay_opens_on_a_question_mark_and_closes_on_escape ... ok
+test the_whole_layout_fits_in_eighty_by_twenty_four ... ok
+test one_keystroke_shows_the_local_fingerprint_and_the_full_id ... ok
+test a_new_message_follows_the_view_only_when_it_is_at_the_bottom ... ok
+test the_next_page_starts_at_the_oldest_row_already_held ... ok
+test resizing_up_and_back_neither_panics_nor_corrupts_the_layout ... ok
+test scrollback_pages_and_never_reads_the_whole_conversation ... ok
+
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+   Doc-tests p2pchat
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests p2pchat_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests p2pchat_crypto
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests p2pchat_net
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests p2pchat_store
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests p2pchat_tui
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

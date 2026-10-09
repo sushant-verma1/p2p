@@ -1,0 +1,135 @@
+{
+  "binary": "/target/release/p2pchat",
+  "gates": {
+    "no_punch_direct_fails": true,
+    "open_direct_succeeds": true,
+    "port_restricted_independent_classification": true,
+    "port_restricted_product_classification": true,
+    "port_restricted_python_punch_succeeds": false,
+    "symmetric_independent_classification": true,
+    "symmetric_like_python_punch_fails": true,
+    "symmetric_product_classification": true
+  },
+  "image": "p2p-wan",
+  "pass": false,
+  "raw": {
+    "independent_source_check": {
+      "pr-a": {
+        "classification": "endpoint-independent",
+        "o1": {
+          "source": [
+            "172.30.18.2",
+            46119
+          ]
+        },
+        "o2": {
+          "source": [
+            "172.30.18.2",
+            46119
+          ]
+        }
+      },
+      "sym-a": {
+        "classification": "symmetric",
+        "o1": {
+          "source": [
+            "172.30.18.4",
+            50399
+          ]
+        },
+        "o2": {
+          "source": [
+            "172.30.18.4",
+            55637
+          ]
+        }
+      }
+    },
+    "no_punch_direct": {
+      "a_observed": {
+        "source": [
+          "172.30.18.2",
+          53191
+        ]
+      },
+      "b_attempt": {
+        "ack": false
+      },
+      "pass": true
+    },
+    "open_direct": {
+      "ack": true
+    },
+    "p2pchat_nat": {
+      "pr-a": {
+        "classification": "endpoint-independent",
+        "raw": [
+          "socket     0.0.0.0:47101",
+          "google     172.30.18.10:19302           reflexive 172.30.18.2:47101",
+          "cloudflare 172.30.18.11:3478            reflexive 172.30.18.2:47101",
+          "twilio     172.30.18.11:3478            reflexive 172.30.18.2:47101",
+          "mapping    endpoint-independent",
+          "punchable  yes"
+        ]
+      },
+      "sym-a": {
+        "classification": "symmetric",
+        "raw": [
+          "socket     0.0.0.0:47101",
+          "google     172.30.18.10:19302           reflexive 172.30.18.4:3269",
+          "cloudflare 172.30.18.11:3478            reflexive 172.30.18.4:36504",
+          "twilio     172.30.18.11:3478            reflexive 172.30.18.4:36504",
+          "mapping    address- or port-dependent (symmetric) - no relay means this can never be punched",
+          "punchable  no",
+          "note       this is running inside a Docker container, so the NAT measured is the container's own, which is symmetric whatever the network beyond it is. Run `p2pchat nat` on the host itself to classify the network (`--network host` does that only on a Linux host: Docker Desktop's host is a NATed VM)"
+        ]
+      }
+    },
+    "port_restricted_punch": {
+      "pass": false,
+      "pr-a": {
+        "peer": [
+          "172.30.18.3",
+          49564
+        ],
+        "success": false
+      },
+      "pr-b": {
+        "peer": [
+          "172.30.18.2",
+          52983
+        ],
+        "success": false
+      }
+    },
+    "symmetric_like_punch": {
+      "pass": false,
+      "sym-a": {
+        "peer": [
+          "172.30.18.5",
+          2630
+        ],
+        "success": false
+      },
+      "sym-b": {
+        "peer": [
+          "172.30.18.4",
+          43511
+        ],
+        "success": false
+      }
+    }
+  },
+  "selftest": {
+    "faults_present": {
+      "forced_symmetric_as_endpoint_independent": true,
+      "forced_symmetric_punch_success": true
+    },
+    "faults_removed": {
+      "symmetric_is_symmetric": true,
+      "symmetric_punch_fails": true
+    },
+    "pass": true
+  },
+  "stage": "M18a"
+}

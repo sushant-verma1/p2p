@@ -469,6 +469,18 @@ async fn command(node: &std::sync::Arc<Node>, line: &str) -> bool {
 
 async fn run_command(node: &std::sync::Arc<Node>, verb: &str, rest: &str) -> Result<String> {
     Ok(match verb {
+        // Harness control only: acknowledge after queuing the real DHT
+        // connect, so a network move can be placed while its stale-address
+        // dial is in flight.  `connect` remains synchronous for a person
+        // driving the stdin CLI.
+        "connect-async" if rest.len() == 64 && !rest.contains(':') => {
+            let peer = user_id(rest)?;
+            let node = std::sync::Arc::clone(node);
+            tokio::spawn(async move {
+                let _ = node.connect(peer).await;
+            });
+            "queued".to_owned()
+        }
         // `connect <addr> [<user-id>]` — the user ID is the one from the
         // invite, and passing it is what makes the handshake check who
         // answered.

@@ -1,0 +1,8 @@
+2026-10-04T10:45:49.481985Z  INFO p2pchat: p2pchat starting version="0.1.0"
+2026-10-04T10:45:49.516986Z  INFO p2pchat_net: listening kind=Private addr=0.0.0.0:47101
+2026-10-04T10:45:49.517055Z  INFO p2pchat::node: endpoints bound me=09ac 08b9 d1d9 391e private=0.0.0.0:47101 public=None
+2026-10-04T10:45:49.517098Z  INFO p2pchat::node: node started me=09ac 08b9 d1d9 391e public_advertised=[10.99.0.62:47100] private_advertised=Some(10.99.0.62:47101)
+2026-10-04T10:45:49.529343Z  INFO p2pchat::reach: dial-back test member=10.99.0.10:47100 observed=10.99.0.62:47101 forwarded=true reached=true arrived=Some(10.99.0.11:57789)
+2026-10-04T10:45:49.529380Z  INFO p2pchat::reach: reachability test role=Member(10.99.0.62:47101) reason=Reached members=3
+2026-10-04T10:45:49.529386Z  INFO p2pchat::node: reachability from=Client to=Member(10.99.0.62:47101)
+2026-10-04T10:45:49.543552Z  INFO p2pchat::node: record published seq=1791110749517 published_at=1791110749 addrs=[10.99.0.62:47101] stored=8 elapsed_ms=25

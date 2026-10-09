@@ -4,9 +4,9 @@
 //! The timings that set OD-6 come from `netem/dht.py publish`, over 50
 //! members and netem profiles. This is the part that runs in CI: the same
 //! code, eight members, clocks scaled down, and every gate that does not
-//! need a record to live out its lifetime. Gate 3's bound is a record's
-//! lifetime plus the clock skew allowed, ten minutes, so here it is the
-//! "not found" answer and not the time it takes; the harness measures that.
+//! need a record to live out its lifetime. Gate 3's 256-second bound starts
+//! at `published_at`; the netem harness measures it and this test checks the
+//! terminal "not found" result.
 //!
 //! As in `reconnect.rs`, a node is stopped by dropping its runtime, so every
 //! node, and the DHT, gets one of its own and these are plain `#[test]`s.
@@ -39,8 +39,14 @@ const FINDABLE: Duration = Duration::from_secs(10);
 /// A node's public port, when it has a public node.
 const PUBLIC_PORT: u16 = 47100;
 
-/// A silent dial gives up after this, so gate 4's stale dial is quick.
-const DIAL_TIMEOUT_MS: &str = "2000";
+/// Long enough for gate 2's five-second concurrent re-lookup cadence to see
+/// B's restarted record before the old-address dial ends.
+const DIAL_TIMEOUT_MS: &str = "10000";
+
+/// A concurrent lookup starts again after one second and the loopback DHT
+/// answers in milliseconds.  Five seconds leaves loaded-CI slack while still
+/// failing a redial that merely beats the ten-second dial deadline.
+const REDIAL_AFTER_NEW_RECORD: Duration = Duration::from_secs(5);
 
 fn runtime() -> Runtime {
     tokio::runtime::Builder::new_multi_thread()
@@ -62,6 +68,8 @@ fn params() -> Params {
     std::env::set_var("P2PCHAT_DHT_REFRESH_MS", "3000");
     std::env::set_var("P2PCHAT_DHT_RPC_TIMEOUT_MS", "2000");
     std::env::set_var("P2PCHAT_DIAL_TIMEOUT_MS", DIAL_TIMEOUT_MS);
+    // This loopback-only fixture deliberately publishes 127/8 addresses.
+    std::env::set_var("P2PCHAT_ALLOW_NONPUBLIC_DHT_ADDRS", "1");
     Params::from_env()
 }
 
@@ -149,11 +157,24 @@ impl Drop for Peer {
 /// A node on `ip`, a new private port each start — so a restart is an
 /// address change — with a public node if `public`.
 fn start(dir: &Path, at: IpAddr, public: bool, seeds: &[SocketAddr]) -> Peer {
+    start_with_dirs(dir, dir, at, public, seeds)
+}
+
+/// Starts with identity/configuration from `config_root` and the peer/session
+/// database under `data_root`. A moved-peer restart can therefore preserve its
+/// user ID without replaying an unrelated startup reconnect from old data.
+fn start_with_dirs(
+    config_root: &Path,
+    data_root: &Path,
+    at: IpAddr,
+    public: bool,
+    seeds: &[SocketAddr],
+) -> Peer {
     let runtime = runtime();
     let (node, events) = runtime
         .block_on(Node::start(Config {
-            config_dir: dir.join("config"),
-            data_dir: dir.join("data"),
+            config_dir: config_root.join("config"),
+            data_dir: data_root.join("data"),
             private_bind: SocketAddr::new(at, 0),
             public_bind: public.then(|| SocketAddr::new(at, PUBLIC_PORT)),
             // The host a private address is derived from; its port is the
@@ -266,6 +287,10 @@ fn m17_gates_on_loopback() {
         |e| matches!(e, Event::Connected { peer, .. } if *peer == owner),
     );
     eprintln!("m17 gate 5: invite request answered {state:?}, accepted, session up");
+    assert!(
+        q.rt().block_on(q.node.sessions()).contains(&owner),
+        "gate 5: the accepted invite did not leave a session",
+    );
 
     // Gate 3: a peer with no record is reported not found, not dialled.
     let dir_a = tempfile::tempdir().unwrap();
@@ -279,12 +304,10 @@ fn m17_gates_on_loopback() {
     let error = answer.expect_err("a peer with no record connected");
     eprintln!("m17 gate 3: {error:#}");
     assert!(
+        error.is::<NotFound>() && a.rt().block_on(a.node.sessions()).is_empty(),
+        "gate 3: not found={}; sessions={:?}; error={error:#}",
         error.is::<NotFound>(),
-        "not reported as not found: {error:#}"
-    );
-    assert!(
-        a.rt().block_on(a.node.sessions()).is_empty(),
-        "something was dialled"
+        a.rt().block_on(a.node.sessions()),
     );
 
     // A and B accept each other; B reaches A by user ID alone. B dials, so
@@ -323,16 +346,24 @@ fn m17_gates_on_loopback() {
         std::thread::sleep(Duration::from_millis(5));
     }
     let moved_at = Instant::now();
-    let b = start(dir_b.path(), ip(2), false, &net.seeds);
+    let dir_b_restart_data = tempfile::tempdir().unwrap();
+    let b = start_with_dirs(
+        dir_b.path(),
+        dir_b_restart_data.path(),
+        ip(2),
+        false,
+        &net.seeds,
+    );
+    assert_eq!(b.node.me, b_id, "the moved peer changed identity");
+    b.accept(a_id);
     let second = b.node.private_advertise().unwrap();
     assert_ne!(first, second, "the restart kept its port");
     let propagated = findable(&net, &unrelated, b_id, second);
+    let newer_seen = Instant::now();
     eprintln!(
         "m17 gate 2: {first} -> {second}, findable from an unrelated member {:?} after the move",
         moved_at.elapsed()
     );
-    assert!(propagated < FINDABLE, "{propagated:?}");
-
     let result = a.rt().block_on(connecting).expect("the task ran");
     a.drain();
     let reasons: Vec<&str> = a
@@ -343,28 +374,33 @@ fn m17_gates_on_loopback() {
             _ => None,
         })
         .collect();
-    eprintln!("m17 gate 4: {reasons:?}, then {result:?}");
-    assert_eq!(
-        reasons.len(),
-        1,
-        "one failed dial, reported once: {reasons:?}"
-    );
+    let redial = newer_seen.elapsed();
+    eprintln!("m17 gate 2: propagated={propagated:?}, redial={redial:?}, failures={reasons:?}, result={result:?}");
     assert!(
-        reasons[0].contains("is stale") && reasons[0].contains(&first.to_string()),
-        "the stale dial was not diagnosed as stale: {}",
-        reasons[0]
-    );
-    assert!(
-        !reasons[0].contains("look the same from here"),
-        "diagnosed as M12's unreachable owner: {}",
-        reasons[0]
-    );
-    assert_eq!(
-        result.unwrap(),
-        b_id,
-        "A did not reach B at its new address"
+        propagated < FINDABLE
+            && redial < REDIAL_AFTER_NEW_RECORD
+            && reasons.is_empty()
+            && result.as_ref().is_ok_and(|id| *id == b_id),
+        "gate 2: propagated={propagated:?}, redial={redial:?}, failures={reasons:?}, result={result:?}",
     );
 
-    drop(b);
-    drop((p, q, a));
+    // Gate 4: with no newer record, preserve M12's diagnosis. C never held
+    // a session with B, so no reconnect loop races this one-shot control.
+    stop(b);
+    let dir_c = tempfile::tempdir().unwrap();
+    let c = start(dir_c.path(), ip(6), false, &net.seeds);
+    c.accept(b_id);
+    let no_newer = {
+        let node = Arc::clone(&c.node);
+        c.rt()
+            .block_on(node.connect(b_id))
+            .expect_err("the stopped peer connected")
+    };
+    eprintln!("m17 gate 4: {no_newer:#}");
+    assert!(
+        !no_newer.is::<NotFound>() && no_newer.to_string().contains("DHT address may be stale"),
+        "gate 4 lost M12's no-newer diagnosis: {no_newer:#}",
+    );
+
+    drop((p, q, a, c));
 }

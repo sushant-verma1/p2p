@@ -1,0 +1,174 @@
+{
+ "profile": "baseline",
+ "selftest": {
+  "1_findable": {
+   "fault_findable_after_s": null,
+   "control_findable_after_s": 0.58,
+   "detected": true
+  },
+  "2_propagated": {
+   "fault_new_found_after_s": null,
+   "fault_old_still_found": true,
+   "control_old_seq": 1791129502633,
+   "control_new_found_after_s": 4.53,
+   "detected": true
+  },
+  "4_stale": {
+   "fault_firewalled_read_as": "unreachable",
+   "fault_answer": "no answer from 10.99.0.61:47101 after 20s. An unreachable node and a wrong address look the same from here, so check: that 10.99.0.61:47101 is what `p2pchat check` on the owner's machine lists as advertised; that UDP port 47101 is open inbound on the owner's firewall and cloud security group (QUIC i",
+   "detected": true
+  },
+  "3_not_found": {
+   "fault_online_reported_not_found": false,
+   "fault_answer": "f331647fdcd16c0de3805fe607d88ce953d41c8741fa44e3522906c5dcb98e81",
+   "control_ghost_reported_not_found": true,
+   "control_answer": "not found: the DHT holds no current record for this peer, so it is offline (a record lapses within 180 s of its owner's last publish)",
+   "control_seconds": 0.01,
+   "detected": true
+  },
+  "3_offline_after_expiry": {
+   "fault_offline_reported_not_found": true,
+   "fault_answer": "not found: the DHT holds no current record for this peer, so it is offline (a record lapses within 180 s of its owner's last publish)",
+   "after_offline_s": 0.01,
+   "control_online_reported_not_found": false,
+   "detected": true
+  },
+  "5_invite": {
+   "fault_rejected_has_session": false,
+   "control_accepted_has_session": true,
+   "detected": true
+  }
+ },
+ "gates": {
+  "5_invite": {
+   "session": true,
+   "pass": true
+  },
+  "1_findable": {
+   "bound_s": 30,
+   "subjects": 8,
+   "seconds_after_start": {
+    "n": 8,
+    "p50": 0.54,
+    "p90": 0.58,
+    "p99": 0.62,
+    "max": 0.62,
+    "mean": 0.35
+   },
+   "missed": [],
+   "pass": true
+  },
+  "2_propagated": {
+   "bound_s": 180,
+   "refresh_s": 90,
+   "old_seq": 1791129876745,
+   "retried_after_new_record": false,
+   "new_address_findable_after_move_s": 7.54,
+   "successful_redial_after_new_address_s": 4.48,
+   "redial_bound_after_new_address_s": 5,
+   "stale_dial_failed_before_redial": false,
+   "successful_redial_after_move_s": 12.03,
+   "pass": true
+  },
+  "4_stale": {
+   "m12_no_newer_control": "unreachable",
+   "stale_dial_failures": 0,
+   "connected": true,
+   "connect_seconds": 12.02,
+   "answer": "",
+   "pass": true
+  },
+  "3_not_found": {
+   "reported": "not found: the DHT holds no current record for this peer, so it is offline (a record lapses within 180 s of its owner's last publish)",
+   "after_offline_s": 216.1,
+   "published_at": 1791129886,
+   "record_age_at_offline_s": 5.3,
+   "after_last_publish_s": 221.4,
+   "expiry_probe_after_published_s": 190.0,
+   "expiry_probe_completed": true,
+   "served_after_expiry": false,
+   "bound_s": 256,
+   "diagnoses_in_order": [
+    "Unreachable",
+    "Abandoned",
+    "Abandoned",
+    "Abandoned",
+    "Abandoned",
+    "Unreachable",
+    "Abandoned",
+    "Abandoned",
+    "Abandoned"
+   ],
+   "dials_after_report": 0,
+   "gave_up_on_budget": 0,
+   "pass": true
+  }
+ },
+ "converged_after_s": 30.5,
+ "selftest_all_detected": true,
+ "od6": {
+  "publish_ms": {
+   "n": 45,
+   "p50": 15,
+   "p90": 32,
+   "p99": 66,
+   "max": 66,
+   "mean": 19.13
+  },
+  "publish_stored": {
+   "n": 46,
+   "p50": 8,
+   "p90": 8,
+   "p99": 8,
+   "max": 8,
+   "mean": 7.83
+  },
+  "publishes": 46,
+  "republish_gap_s": {
+   "n": 37,
+   "p50": 90.0,
+   "p90": 90.0,
+   "p99": 90.0,
+   "max": 90.0,
+   "mean": 66.49
+  },
+  "stale_dial_failed_after_s": [],
+  "successful_redial_after_new_address_s": [
+   4.48
+  ],
+  "address_change_to_successful_redial_s": [
+   12.03
+  ]
+ },
+ "gate_assertions": {
+  "5_invite": true,
+  "1_findable": true,
+  "2_propagated": true,
+  "4_stale": true,
+  "3_not_found": true
+ },
+ "failed_gates": [],
+ "pass": true,
+ "args": {
+  "scenario": "publish",
+  "n": 50,
+  "clients": 3,
+  "profile": "baseline",
+  "k": null,
+  "alpha": null,
+  "replication": null,
+  "rpc_timeout_ms": null,
+  "refresh_ms": 30000,
+  "converge_s": 120,
+  "gets": 4,
+  "finds": 2,
+  "kill": 0.3,
+  "only": null,
+  "binary": null,
+  "env": [],
+  "findable_s": 30,
+  "out": "/out",
+  "tag": "m17a-final-baseline",
+  "selftest_only": false
+ }
+}

@@ -1,0 +1,14 @@
+2026-10-04T16:10:28.358429Z  INFO p2pchat: p2pchat starting version="0.1.0"
+2026-10-04T16:10:28.396782Z  INFO p2pchat_net: listening kind=Private addr=0.0.0.0:47101
+2026-10-04T16:10:28.396815Z  INFO p2pchat::node: endpoints bound me=1851 89f3 109b 4044 private=0.0.0.0:47101 public=None
+2026-10-04T16:10:28.396930Z  INFO p2pchat::node: node started me=1851 89f3 109b 4044 public_advertised=[10.99.0.61:47100] private_advertised=Some(10.99.0.61:47101)
+2026-10-04T16:10:29.877346Z  INFO p2pchat::reach: dial-back test member=10.99.0.10:47100 observed=10.99.0.61:47101 forwarded=true reached=true arrived=Some(10.99.0.11:37718)
+2026-10-04T16:10:29.877406Z  INFO p2pchat::reach: reachability test role=Member(10.99.0.61:47101) reason=Reached members=3
+2026-10-04T16:10:29.877421Z  INFO p2pchat::node: reachability from=Client to=Member(10.99.0.61:47101)
+2026-10-04T16:10:30.980671Z  INFO p2pchat::node: record published seq=1791130228397 published_at=1791130228 addrs=[10.99.0.61:47101] stored=8 elapsed_ms=2583
+2026-10-04T16:10:35.087387Z  INFO p2pchat::node: record published seq=1791130230980 published_at=1791130230 addrs=[10.99.0.61:47101] stored=8 elapsed_ms=4106
+2026-10-04T16:12:08.519323Z  INFO p2pchat::node: record published seq=1791130325081 published_at=1791130325 addrs=[10.99.0.61:47101] stored=8 elapsed_ms=3440
+2026-10-04T16:13:21.875881Z  INFO p2pchat_net::handshake: session established peer=1385 aef3 ec7d f4d3
+2026-10-04T16:13:21.876347Z  INFO p2pchat::node: session established peer=1385 aef3 ec7d f4d3 initiator=1385 aef3 ec7d f4d3
+2026-10-04T16:13:21.876507Z  INFO p2pchat::session: resync sent peer=1385 aef3 ec7d f4d3 have_through=0
+2026-10-04T16:13:21.903309Z  INFO p2pchat::session: resync received; retransmitting what the peer is missing peer=1385 aef3 ec7d f4d3 have_through=0 count=0

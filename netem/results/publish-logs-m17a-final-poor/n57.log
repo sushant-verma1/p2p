@@ -1,0 +1,15 @@
+2026-10-04T16:31:07.375110Z  INFO p2pchat: p2pchat starting version="0.1.0"
+2026-10-04T16:31:07.392237Z  INFO p2pchat_net: listening kind=Private addr=0.0.0.0:47101
+2026-10-04T16:31:07.392259Z  INFO p2pchat::node: endpoints bound me=0548 abfc 2de3 f20e private=0.0.0.0:47101 public=None
+2026-10-04T16:31:07.392307Z  INFO p2pchat::node: node started me=0548 abfc 2de3 f20e public_advertised=[10.99.0.67:47100] private_advertised=Some(10.99.0.67:47101)
+2026-10-04T16:31:11.261499Z  INFO p2pchat::reach: dial-back test member=10.99.0.10:47100 observed=10.99.0.67:47101 forwarded=true reached=true arrived=Some(10.99.0.11:58295)
+2026-10-04T16:31:11.261545Z  INFO p2pchat::reach: reachability test role=Member(10.99.0.67:47101) reason=Reached members=3
+2026-10-04T16:31:11.261559Z  INFO p2pchat::node: reachability from=Client to=Member(10.99.0.67:47101)
+2026-10-04T16:31:15.384129Z  INFO p2pchat::node: record published seq=1791131467392 published_at=1791131467 addrs=[10.99.0.67:47101] stored=8 elapsed_ms=7991
+2026-10-04T16:31:22.171074Z  INFO p2pchat::node: record published seq=1791131475384 published_at=1791131475 addrs=[10.99.0.67:47101] stored=8 elapsed_ms=6786
+2026-10-04T16:31:31.264278Z  INFO p2pchat::reach: the network changed; testing reachability again from=Some(10.99.0.67) to=Some(10.99.2.67)
+2026-10-04T16:31:31.264304Z  INFO p2pchat::node: reachability from=Member(10.99.0.67:47101) to=Client
+2026-10-04T16:31:35.407795Z  INFO p2pchat::reach: dial-back test member=10.99.0.10:47100 observed=10.99.2.67:47101 forwarded=true reached=true arrived=Some(10.99.0.11:35722)
+2026-10-04T16:31:35.407819Z  INFO p2pchat::reach: reachability test role=Member(10.99.2.67:47101) reason=Reached members=3
+2026-10-04T16:31:35.407833Z  INFO p2pchat::node: reachability from=Client to=Member(10.99.2.67:47101)
+2026-10-04T16:31:42.561536Z  INFO p2pchat::node: record published seq=1791131495407 published_at=1791131495 addrs=[10.99.2.67:47101, 10.99.0.67:47101] stored=8 elapsed_ms=7153

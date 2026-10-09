@@ -121,7 +121,7 @@ Self-certifying: any node can verify `BLAKE3(identity_pk) == user_id` and check 
 
 **Gate:** a forged record is rejected; a record whose user ID does not bind to its key is rejected; an expired record is rejected with a distinct error; a rolled-back `seq` is rejected; a tampered address field fails the signature; expiry is checked after the signature.
 
-As built: `p2pchat_crypto::record` — `create`, `open`, `verify`, `supersedes`; the order and the signing domain are in `architecture.md` §3. The same `seq` is accepted only as the identical record. **OD-6:** records live for 180 s and republish at 90 s. The 600 s budget is §10's chosen reconnect budget, not a measured timeout; the strict expiry plus signature/wire budgets fit within it with 344 s remaining. Clock skew applies only to a `published_at` too far in the future (300 s); expiry is strict, so it cannot extend a record's lifetime.
+As built: `p2pchat_crypto::record` — `create`, `open`, `verify`, `supersedes`; the order and the signing domain are in `architecture.md` §3. The same `seq` is accepted only as the identical record. **OD-6:** records live for 180 s and republish at 90 s. The 600 s budget is §10's chosen reconnect budget, not a measured timeout; the strict expiry plus signature/wire budgets fit within it with 344 s remaining. Clock skew applies only to a `published_at` too far in the future; expiry is strict, so it cannot extend a record's lifetime.
 
 ### M16 — Kademlia core
 
@@ -171,7 +171,7 @@ Every time is a count of 20-second RPC timeouts. A lookup waits on dead contacts
 
 ### M16a — Rate limit against α, and the member allowance
 
-**The limit bound.** M16's final gates run had 43 requests refused at α = 5. A refused RPC looks like a dead contact to the asker, which marks it suspect and evicts it if the check is refused too, and that reads as churn. So the demand was measured before anything else was changed. `netem/dht.py gates` now ends with `demand`: per (server, source IP) pair, the most requests in one limiter window, counted as the limiter counts. The source is the servers' own logs. The instrument was run three ways: the `wide` build (both allowances lifted) at the simulation's 30 s refresh, the shipped limits at the same refresh, and `wide` at the shipped 15-minute refresh.
+**The limit bound.** M16's final gates run had 43 requests refused at α = 5. There is no wire signal that distinguishes a pre-TLS rate refusal from a close or silence, so the asker cannot truthfully call a refusal non-fatal. Every failed RPC marks the contact suspect; its one confirming Ping is held for the DHT's configured limiter window plus the scheduling margin — **61 s** with the shipped 60 s window and 1 s margin — then only that second failed request evicts it. Later failures do not postpone that one confirmation. A flood can therefore still cause eviction through the two-strike rule, but cannot spend both strikes in one rate window. The focused `rate_limited_refusal_does_not_evict_on_the_second_strike` gate mutates that hold to zero and fails. `netem/dht.py gates` ends with `demand`: per (server, source IP) pair, the most requests in one limiter window, counted as the limiter counts. The source is the servers' own logs. The instrument was run three ways: the `wide` build (both allowances lifted) at the simulation's 30 s refresh, the shipped limits at the same refresh, and `wide` at the shipped 15-minute refresh.
 
 | run | pairs | peak p50 / p90 / p99 / max | pairs over 10 / 30 | refused |
 |---|---|---|---|---|
@@ -179,7 +179,9 @@ Every time is a count of 20-second RPC timeouts. A lookup waits on dead contacts
 | shipped limits, 30 s refresh | 2604 | 8 / 19 / 28 / 38 | 978 / 14 | 33 |
 | `wide`, 15 min refresh | 2440 | 3 / 11 / 16 / 20 | 300 / 0 | 0 |
 
-The limited run's refusals fall where the lifted run's demand exceeds 30, which is the check that the instrument sees what it claims to. At 30 s refresh the peaks are FIND_NODE, from maintenance running at thirty times the shipped rate. At the shipped refresh the peak is a member's first minute: join, publish, and a burst of lookups.
+The limited run's refusals fall where the lifted run's demand exceeds 30, which is the check that the instrument sees what it claims to. At 30 s refresh the peaks are FIND_NODE, from maintenance running at thirty times the shipped rate. At the shipped refresh the peak is a member's first minute: join, publish, and a burst of lookups. The proven-member headroom is **30 versus 10 requests per source per 60 s**: 20 requests/minute absolute, or 3× the stranger allowance.
+
+**Scaling statement — reasoning, not measurement.** The 50-node measurements do not establish that demand is independent of network size. Total demand and the number of `(server, source)` pairs grow with the network; per-member maintenance also has more populated buckets as the ID space fills. Fixed `k`, α and per-lookup budgets bound individual operations, but they do not prove a network-size-invariant per-pair rate. The allowance is therefore a product bound validated only at the measured topology, not a scaling result.
 
 **Resolved without a refusal signal on the wire.** The 20/minute shipped-refresh and 34/minute compressed-refresh figures are not interchangeable: the latter comes from maintenance running thirty times too often. The simulation had not performed dial-backs, so its ordinary members were strangers at most servers; it could not choose a product stranger allowance. Product defaults remain `per_source = 10` and `forward_per_member = 30`: proof is a meaningful 3× allowance, while a stranger retains V0.1's flood bound. The `p2pchat dht` harness explicitly starts its controlled population in the post-dial-back state and applies 40/60 only when its refresh is compressed to 30 seconds. No on-wire claim, routing-table entry, or simulation shortcut changes the product limiter. A refusal signal remains unnecessary protocol complexity.
 
@@ -205,21 +207,43 @@ record the error says that the DHT address *may be stale* before the M12
 unreachable checklist; silence alone is not evidence of either condition.
 
 **OD-6 resolved — 180 s strict lifetime, 90 s republish.** The 600 s number is
-the selected §10 reconnect budget, not a measured timeout. Its accounting is
-180 s record lifetime + 36 s capped backoff/jitter + 40 s for two 20 s dials,
-leaving 344 s. The 300 s skew check rejects only a `published_at` in the
+the selected §10 reconnect budget, not a measured timeout. Its bounded path is
+**180 + 36 + 40 = 256 s**: record lifetime, one capped backoff/jitter delay,
+and two 20 s dials. The future-skew check rejects only a `published_at` in the
 future; it never extends expiry. At r=8, each node sends 40 publishes/hour or
 320 STORE RPCs/hour, versus the old 30-minute placeholder's 2 publishes/16
 STOREs per hour (20x).
 
-**Final M17 netem, 50 nodes, final harness.** Every profile passed all five
-gates and every self-test fault. Baseline/typical/poor respectively measured
-startup findability maxima of 0.55/4.81/10.72 s; a strictly newer moved record
-in 0.00/0.21/0.61 s; successful redial after the move in 20.02/22.58/23.35 s;
-and offline-to-not-found in 216.1/167.1/188.3 s. Publish p90 was
-14/3861/8970 ms and republish-gap p90 90.0/93.6/98.5 s. Mutants fail the named
-gates: DHT bypass 1, no newer republish 2, ignored expiry 3, and hard-wired
-unreachable 4. JSON and logs are retained under `netem/results/`.
+**M17a follow-up — pending new netem run.** The former “successful redial after
+the move” values (20.02/22.58/23.35 s) were invalid evidence: the harness
+waited for the stale-address dial to fail, then submitted a second one-shot
+connect. `Node::connect` now looks for a strictly newer, different signed
+record concurrently with that dial and dials it as soon as it appears. A slow
+probe is bounded and the next probes start on a 1/2/4-second backoff schedule;
+suspect routing contacts are tried after healthy candidates. Gate 2 starts its
+redial clock when an unrelated member first reads the newer record, requires
+that redial within 5 s, and requires no stale-dial failure before the session.
+Five seconds is half the loopback gate's dial deadline and one quarter of the
+shipped 20 s deadline, so a redial that merely beats either deadline fails.
+
+**DHT lookup address policy.** A record is rejected, both before signing and
+after verifying its owner signature, if an address is unspecified, multicast,
+or uses port 0. A valid loopback, RFC1918 IPv4, or IPv6 ULA address is not
+dialled from a DHT record in normal operation; it is allowed only with the
+explicit test/harness flag `P2PCHAT_ALLOW_NONPUBLIC_DHT_ADDRS=1`. The loopback
+integration test and namespace harness set that flag because their topology is
+intentionally non-public. This is local dial policy, not a new record type or
+an assertion that private addresses are globally reachable.
+
+Gate 3 now records the signed `published_at` of the last stored record and
+checks an unrelated member after strict expiry. Its bound is 256 s from that
+publication, not from process death. `Records::get` verifies at serving time
+and deletes an expired value, so expiry does not depend on a sweep interval.
+The retained baseline run illustrates the old reference error: B's final
+record was logged at 01:33:27 and A reported not-found at 01:37:16 — about
+229 s from publication, within 256 s, although the old death-relative number
+was 216.1 s. The new run must retain the raw five-gate JSON per profile before
+this milestone is closed again.
 
 ### M18 — Coordinated hole punching
 

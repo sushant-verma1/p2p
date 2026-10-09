@@ -1,0 +1,357 @@
+{
+  "binary": "/target/release/p2pchat",
+  "gates": {
+    "no_punch_direct_fails": true,
+    "open_direct_succeeds": true,
+    "port_restricted_independent_classification": true,
+    "port_restricted_product_classification": true,
+    "port_restricted_python_punch_succeeds": true,
+    "symmetric_independent_classification": true,
+    "symmetric_like_python_punch_fails": true,
+    "symmetric_product_classification": true
+  },
+  "image": "p2p-wan",
+  "pass": true,
+  "raw": {
+    "independent_source_check": {
+      "pr-a": {
+        "classification": "endpoint-independent",
+        "o1": {
+          "source": [
+            "172.30.18.2",
+            58401
+          ]
+        },
+        "o2": {
+          "source": [
+            "172.30.18.2",
+            58401
+          ]
+        }
+      },
+      "sym-a": {
+        "classification": "symmetric",
+        "o1": {
+          "source": [
+            "172.30.18.4",
+            2494
+          ]
+        },
+        "o2": {
+          "source": [
+            "172.30.18.4",
+            56819
+          ]
+        }
+      }
+    },
+    "no_punch_direct": {
+      "a_observed": {
+        "source": [
+          "172.30.18.2",
+          34309
+        ]
+      },
+      "b_attempt": {
+        "ack": false
+      },
+      "pass": true
+    },
+    "open_direct": {
+      "ack": true
+    },
+    "p2pchat_nat": {
+      "pr-a": {
+        "classification": "endpoint-independent",
+        "raw": [
+          "socket     0.0.0.0:47101",
+          "google     172.30.18.10:19302           reflexive 172.30.18.2:47101",
+          "cloudflare 172.30.18.11:3478            reflexive 172.30.18.2:47101",
+          "twilio     172.30.18.11:3478            reflexive 172.30.18.2:47101",
+          "mapping    endpoint-independent",
+          "punchable  yes"
+        ]
+      },
+      "sym-a": {
+        "classification": "symmetric",
+        "raw": [
+          "socket     0.0.0.0:47101",
+          "google     172.30.18.10:19302           reflexive 172.30.18.4:46601",
+          "cloudflare 172.30.18.11:3478            reflexive 172.30.18.4:61722",
+          "twilio     172.30.18.11:3478            reflexive 172.30.18.4:61722",
+          "mapping    address- or port-dependent (symmetric) - no relay means this can never be punched",
+          "punchable  no",
+          "note       this is running inside a Docker container, so the NAT measured is the container's own, which is symmetric whatever the network beyond it is. Run `p2pchat nat` on the host itself to classify the network (`--network host` does that only on a Linux host: Docker Desktop's host is a NATed VM)"
+        ]
+      }
+    },
+    "port_restricted_punch": {
+      "pass": true,
+      "pr-a": {
+        "peer": [
+          "172.30.18.3",
+          44344
+        ],
+        "probes": 2,
+        "seen": [
+          {
+            "bytes": "{\"peer\": [\"172.30.18.3\", 44344]}",
+            "from": [
+              "172.30.18.10",
+              3490
+            ]
+          },
+          {
+            "bytes": "probe",
+            "from": [
+              "172.30.18.3",
+              44344
+            ]
+          },
+          {
+            "bytes": "ack",
+            "from": [
+              "172.30.18.3",
+              44344
+            ]
+          }
+        ],
+        "success": true
+      },
+      "pr-b": {
+        "peer": [
+          "172.30.18.2",
+          56901
+        ],
+        "probes": 2,
+        "seen": [
+          {
+            "bytes": "{\"peer\": [\"172.30.18.2\", 56901]}",
+            "from": [
+              "172.30.18.10",
+              3490
+            ]
+          },
+          {
+            "bytes": "probe",
+            "from": [
+              "172.30.18.2",
+              56901
+            ]
+          },
+          {
+            "bytes": "ack",
+            "from": [
+              "172.30.18.2",
+              56901
+            ]
+          }
+        ],
+        "success": true
+      }
+    },
+    "symmetric_like_punch": {
+      "pass": false,
+      "sym-a": {
+        "peer": [
+          "172.30.18.5",
+          9053
+        ],
+        "probes": 59,
+        "seen": [
+          {
+            "bytes": "{\"peer\": [\"172.30.18.3\", 44344]}",
+            "from": [
+              "172.30.18.10",
+              3490
+            ]
+          },
+          {
+            "bytes": "{\"peer\": [\"172.30.18.5\", 9053]}",
+            "from": [
+              "172.30.18.10",
+              3490
+            ]
+          },
+          {
+            "bytes": "{\"peer\": [\"172.30.18.5\", 9053]}",
+            "from": [
+              "172.30.18.10",
+              3490
+            ]
+          },
+          {
+            "bytes": "{\"peer\": [\"172.30.18.5\", 9053]}",
+            "from": [
+              "172.30.18.10",
+              3490
+            ]
+          },
+          {
+            "bytes": "{\"peer\": [\"172.30.18.5\", 9053]}",
+            "from": [
+              "172.30.18.10",
+              3490
+            ]
+          },
+          {
+            "bytes": "{\"peer\": [\"172.30.18.5\", 9053]}",
+            "from": [
+              "172.30.18.10",
+              3490
+            ]
+          },
+          {
+            "bytes": "{\"peer\": [\"172.30.18.5\", 9053]}",
+            "from": [
+              "172.30.18.10",
+              3490
+            ]
+          },
+          {
+            "bytes": "{\"peer\": [\"172.30.18.5\", 9053]}",
+            "from": [
+              "172.30.18.10",
+              3490
+            ]
+          },
+          {
+            "bytes": "{\"peer\": [\"172.30.18.5\", 9053]}",
+            "from": [
+              "172.30.18.10",
+              3490
+            ]
+          },
+          {
+            "bytes": "{\"peer\": [\"172.30.18.5\", 9053]}",
+            "from": [
+              "172.30.18.10",
+              3490
+            ]
+          },
+          {
+            "bytes": "{\"peer\": [\"172.30.18.5\", 9053]}",
+            "from": [
+              "172.30.18.10",
+              3490
+            ]
+          },
+          {
+            "bytes": "{\"peer\": [\"172.30.18.5\", 9053]}",
+            "from": [
+              "172.30.18.10",
+              3490
+            ]
+          }
+        ],
+        "success": false
+      },
+      "sym-b": {
+        "peer": [
+          "172.30.18.4",
+          10573
+        ],
+        "probes": 58,
+        "seen": [
+          {
+            "bytes": "{\"peer\": [\"172.30.18.4\", 10573]}",
+            "from": [
+              "172.30.18.10",
+              3490
+            ]
+          },
+          {
+            "bytes": "{\"peer\": [\"172.30.18.4\", 10573]}",
+            "from": [
+              "172.30.18.10",
+              3490
+            ]
+          },
+          {
+            "bytes": "{\"peer\": [\"172.30.18.4\", 10573]}",
+            "from": [
+              "172.30.18.10",
+              3490
+            ]
+          },
+          {
+            "bytes": "{\"peer\": [\"172.30.18.4\", 10573]}",
+            "from": [
+              "172.30.18.10",
+              3490
+            ]
+          },
+          {
+            "bytes": "{\"peer\": [\"172.30.18.4\", 10573]}",
+            "from": [
+              "172.30.18.10",
+              3490
+            ]
+          },
+          {
+            "bytes": "{\"peer\": [\"172.30.18.4\", 10573]}",
+            "from": [
+              "172.30.18.10",
+              3490
+            ]
+          },
+          {
+            "bytes": "{\"peer\": [\"172.30.18.4\", 10573]}",
+            "from": [
+              "172.30.18.10",
+              3490
+            ]
+          },
+          {
+            "bytes": "{\"peer\": [\"172.30.18.4\", 10573]}",
+            "from": [
+              "172.30.18.10",
+              3490
+            ]
+          },
+          {
+            "bytes": "{\"peer\": [\"172.30.18.4\", 10573]}",
+            "from": [
+              "172.30.18.10",
+              3490
+            ]
+          },
+          {
+            "bytes": "{\"peer\": [\"172.30.18.4\", 10573]}",
+            "from": [
+              "172.30.18.10",
+              3490
+            ]
+          },
+          {
+            "bytes": "{\"peer\": [\"172.30.18.4\", 10573]}",
+            "from": [
+              "172.30.18.10",
+              3490
+            ]
+          },
+          {
+            "bytes": "{\"peer\": [\"172.30.18.4\", 10573]}",
+            "from": [
+              "172.30.18.10",
+              3490
+            ]
+          }
+        ],
+        "success": false
+      }
+    }
+  },
+  "selftest": {
+    "faults_present": {
+      "forced_symmetric_as_endpoint_independent": true,
+      "forced_symmetric_punch_success": true
+    },
+    "faults_removed": {
+      "symmetric_is_symmetric": true,
+      "symmetric_punch_fails": true
+    },
+    "pass": true
+  },
+  "stage": "M18a"
+}

@@ -57,15 +57,10 @@ MUTANTS = {
     "wide": [(PUBLIC, "            per_source: 10,\n", "            per_source: 1_000_000,\n"),
              (PUBLIC, "            forward_per_member: 30,\n", "            forward_per_member: 1_000_000,\n")],
     # M17. Each mutant names the publish-harness gate that must reject it.
-    "m17-norepublish-loop": (
+    "m17-republish-never-fires": (
         NODE,
         "        tokio::select! {\n            () = tokio::time::sleep(wait) => {}\n            () = node.republish.notified() => {}\n        }\n",
         "        return;\n",
-    ),
-    "m17-norepublish": (
-        NODE,
-        "            seq = session::now_ms().max(seq + 1);",
-        "            seq = 1; // mutant: every later publication is non-newer.",
     ),
     "m17-noexpiry": (RECORD, "if now > body.expires_at {", "if false {"),
     "m17-unreachable": (
@@ -73,11 +68,63 @@ MUTANTS = {
         "            return Diagnosis::Stale {\n                newer: newer.body.addrs.clone(),\n                seq: newer.body.seq,\n            }\n",
         "            return Diagnosis::Unreachable {\n                age: now.saturating_sub(dialled.body.published_at),\n            }\n",
     ),
-    "m17-nodht": (
+    "m17-dht-bypass": (
         NODE,
         "let dht = (!config.bootstrap.is_empty()).then(|| {",
         "let dht = false.then(|| {",
     ),
+    # M17a: restore the old ordering by making the competing newer-record
+    # lookup finish before it asks.  The next command can still succeed, but
+    # gate 2 sees the stale dial in front of it and must fail.
+    "m17-lookup-after-dial": (
+        NODE,
+        "            Instant::now() + dial_timeout(),",
+        "            Instant::now(), // mutant: do not look while the stale dial runs",
+    ),
+    # M17a: a capped five-second cadence is part of the redial bound.  The
+    # focused cadence gate catches a change even if one loopback run happens
+    # to find the record on its very first probe.
+    "m17-retry-interval-doubled": (
+        NODE,
+        "const NEWER_RECORD_POLL_MAX: Duration = Duration::from_secs(1);",
+        "const NEWER_RECORD_POLL_MAX: Duration = Duration::from_secs(10);",
+    ),
+    # M17a: a new cadence tick must not kill a lookup that is traversing stale
+    # replicas. This deliberately aborts the just-started probe too: every
+    # redial lookup is in flight when the erroneous abort happens, so the
+    # redial gate must fail rather than accidentally passing on timing.
+    "m17-probe-aborts-lookup": (
+        NODE,
+        "                (this_attempt, rpcs, value)\n            });",
+        "                (this_attempt, rpcs, value)\n            });\n            lookups.abort_all(); // mutant: a new probe aborts in-flight lookup",
+    ),
+    # M17a: without a refusal bit on the wire, treating the close as death
+    # sends the confirming Ping in the same rate window and lets a flood evict
+    # a live member.  The focused Rust rate-refusal gate must reject this.
+    "m17-refusal-counted-as-death": (
+        DHT,
+        "            entry\n                .confirm_after\n                .get_or_insert(now + confirming_ping_delay(rate_window));",
+        "            entry.confirm_after = Some(now); // mutant: refusal is death",
+    ),
+}
+
+RUST_GATES = {
+    "m17-lookup-after-dial": [
+        "cargo", "test", "-q", "-p", "p2pchat", "--test", "lookup",
+        "m17_gates_on_loopback", "--", "--nocapture",
+    ],
+    "m17-refusal-counted-as-death": [
+        "cargo", "test", "-q", "-p", "p2pchat-net",
+        "rate_limited_refusal_does_not_evict_on_the_second_strike",
+    ],
+    "m17-retry-interval-doubled": [
+        "cargo", "test", "-q", "-p", "p2pchat",
+        "newer_record_retries_cap_at_five_seconds",
+    ],
+    "m17-probe-aborts-lookup": [
+        "cargo", "test", "-q", "-p", "p2pchat", "--test", "lookup",
+        "m17_gates_on_loopback", "--", "--nocapture",
+    ],
 }
 
 
@@ -98,6 +145,14 @@ def build(name):
             f.write(text.replace(old, new))
     env = dict(os.environ, CARGO_TARGET_DIR="/target/mutants")
     subprocess.run(["cargo", "build", "--release", "-q", "-p", "p2pchat"], cwd=src, env=env, check=True)
+    if name in RUST_GATES:
+        # Focused gates keep the two M17a ordering properties independently
+        # falsifiable: the loopback integration gate for stale-dial ordering,
+        # and the routing-table assertion for refusal confirmation timing.
+        checked = subprocess.run(RUST_GATES[name], cwd=src, env=env)
+        if checked.returncode == 0:
+            sys.exit(f"{name}: focused Rust gate passed; mutation escaped")
+        print(f"{name}: rejected by focused Rust gate", flush=True)
     os.makedirs("/target/bin", exist_ok=True)
     shutil.copy("/target/mutants/release/p2pchat", f"/target/bin/p2pchat-{name}")
     print(f"built /target/bin/p2pchat-{name}", flush=True)

@@ -1,0 +1,240 @@
+RUN- 
+
+running 1 test
+m17 gate 1: findable from an unrelated member 112.519144ms after start, at 127.0.2.2:43724
+m17 gate 5: invite request answered Pending, accepted, session up
+m17 gate 3: not found: the DHT holds no current record for this peer, so it is offline (a record lapses within 180 s of its owner's last publish)
+m17 gate 2: 127.0.2.2:43724 -> 127.0.2.2:50762, findable from an unrelated member 147.06922ms after the move
+m17 gate 2: propagated=132.7168ms, redial=890.386979ms, failures=[], result=Ok(UserId(f41c 6772 666e cd4e))
+m17 gate 4: no answer from 127.0.2.2:50762 after 10s. An unreachable node and a wrong address look the same from here, so check: that 127.0.2.2:50762 is what `p2pchat check` on the owner's machine lists as advertised; that UDP port 50762 is open inbound on the owner's firewall and cloud security group (QUIC is UDP, a TCP rule does nothing); and that the owner is not behind carrier-grade NAT (a 100.64.x.x WAN address on their router) - if they are, nobody can reach them, and their node needs a VPS, a LAN or a forwarded port. No newer record: this DHT address may be stale. The peer published it 11 s ago and has not replaced it, so as far as the DHT knows it is current. A peer that changed network in the last minute may not have republished yet, and a retry would find it
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 13.84s
+
+RUN- 
+
+running 1 test
+m17 gate 1: findable from an unrelated member 107.784028ms after start, at 127.0.2.2:35003
+m17 gate 5: invite request answered Pending, accepted, session up
+m17 gate 3: not found: the DHT holds no current record for this peer, so it is offline (a record lapses within 180 s of its owner's last publish)
+m17 gate 2: 127.0.2.2:35003 -> 127.0.2.2:59595, findable from an unrelated member 99.225364ms after the move
+m17 gate 2: propagated=87.064787ms, redial=929.676282ms, failures=[], result=Ok(UserId(24a7 7d64 17c9 6679))
+m17 gate 4: no answer from 127.0.2.2:59595 after 10s. An unreachable node and a wrong address look the same from here, so check: that 127.0.2.2:59595 is what `p2pchat check` on the owner's machine lists as advertised; that UDP port 59595 is open inbound on the owner's firewall and cloud security group (QUIC is UDP, a TCP rule does nothing); and that the owner is not behind carrier-grade NAT (a 100.64.x.x WAN address on their router) - if they are, nobody can reach them, and their node needs a VPS, a LAN or a forwarded port. No newer record: this DHT address may be stale. The peer published it 11 s ago and has not replaced it, so as far as the DHT knows it is current. A peer that changed network in the last minute may not have republished yet, and a retry would find it
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 13.73s
+
+RUN- 
+
+running 1 test
+m17 gate 1: findable from an unrelated member 95.80339ms after start, at 127.0.2.2:48294
+m17 gate 5: invite request answered Pending, accepted, session up
+m17 gate 3: not found: the DHT holds no current record for this peer, so it is offline (a record lapses within 180 s of its owner's last publish)
+m17 gate 2: 127.0.2.2:48294 -> 127.0.2.2:34743, findable from an unrelated member 97.295035ms after the move
+m17 gate 2: propagated=87.742192ms, redial=938.215431ms, failures=[], result=Ok(UserId(717e 85db 73b2 bbff))
+m17 gate 4: no answer from 127.0.2.2:34743 after 10s. An unreachable node and a wrong address look the same from here, so check: that 127.0.2.2:34743 is what `p2pchat check` on the owner's machine lists as advertised; that UDP port 34743 is open inbound on the owner's firewall and cloud security group (QUIC is UDP, a TCP rule does nothing); and that the owner is not behind carrier-grade NAT (a 100.64.x.x WAN address on their router) - if they are, nobody can reach them, and their node needs a VPS, a LAN or a forwarded port. No newer record: this DHT address may be stale. The peer published it 11 s ago and has not replaced it, so as far as the DHT knows it is current. A peer that changed network in the last minute may not have republished yet, and a retry would find it
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 13.70s
+
+RUN- 
+
+running 1 test
+m17 gate 1: findable from an unrelated member 94.211868ms after start, at 127.0.2.2:40375
+m17 gate 5: invite request answered Pending, accepted, session up
+m17 gate 3: not found: the DHT holds no current record for this peer, so it is offline (a record lapses within 180 s of its owner's last publish)
+m17 gate 2: 127.0.2.2:40375 -> 127.0.2.2:51487, findable from an unrelated member 99.712076ms after the move
+m17 gate 2: propagated=89.314562ms, redial=932.759356ms, failures=[], result=Ok(UserId(caca 2b8d 774a 7a4a))
+m17 gate 4: no answer from 127.0.2.2:51487 after 10s. An unreachable node and a wrong address look the same from here, so check: that 127.0.2.2:51487 is what `p2pchat check` on the owner's machine lists as advertised; that UDP port 51487 is open inbound on the owner's firewall and cloud security group (QUIC is UDP, a TCP rule does nothing); and that the owner is not behind carrier-grade NAT (a 100.64.x.x WAN address on their router) - if they are, nobody can reach them, and their node needs a VPS, a LAN or a forwarded port. No newer record: this DHT address may be stale. The peer published it 11 s ago and has not replaced it, so as far as the DHT knows it is current. A peer that changed network in the last minute may not have republished yet, and a retry would find it
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 13.69s
+
+RUN- 
+
+running 1 test
+m17 gate 1: findable from an unrelated member 94.145243ms after start, at 127.0.2.2:37051
+m17 gate 5: invite request answered Pending, accepted, session up
+m17 gate 3: not found: the DHT holds no current record for this peer, so it is offline (a record lapses within 180 s of its owner's last publish)
+m17 gate 2: 127.0.2.2:37051 -> 127.0.2.2:40454, findable from an unrelated member 204.193602ms after the move
+m17 gate 2: propagated=174.076643ms, redial=819.549878ms, failures=[], result=Ok(UserId(6be8 4467 d2a5 e13a))
+m17 gate 4: no answer from 127.0.2.2:40454 after 10s. An unreachable node and a wrong address look the same from here, so check: that 127.0.2.2:40454 is what `p2pchat check` on the owner's machine lists as advertised; that UDP port 40454 is open inbound on the owner's firewall and cloud security group (QUIC is UDP, a TCP rule does nothing); and that the owner is not behind carrier-grade NAT (a 100.64.x.x WAN address on their router) - if they are, nobody can reach them, and their node needs a VPS, a LAN or a forwarded port. No newer record: this DHT address may be stale. The peer published it 12 s ago and has not replaced it, so as far as the DHT knows it is current. A peer that changed network in the last minute may not have republished yet, and a retry would find it
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.00s
+
+RUN- 
+
+running 1 test
+m17 gate 1: findable from an unrelated member 94.161986ms after start, at 127.0.2.2:45824
+m17 gate 5: invite request answered Pending, accepted, session up
+m17 gate 3: not found: the DHT holds no current record for this peer, so it is offline (a record lapses within 180 s of its owner's last publish)
+m17 gate 2: 127.0.2.2:45824 -> 127.0.2.2:54163, findable from an unrelated member 101.807025ms after the move
+m17 gate 2: propagated=87.025338ms, redial=930.920321ms, failures=[], result=Ok(UserId(10a5 c085 5e12 fb19))
+m17 gate 4: no answer from 127.0.2.2:54163 after 10s. An unreachable node and a wrong address look the same from here, so check: that 127.0.2.2:54163 is what `p2pchat check` on the owner's machine lists as advertised; that UDP port 54163 is open inbound on the owner's firewall and cloud security group (QUIC is UDP, a TCP rule does nothing); and that the owner is not behind carrier-grade NAT (a 100.64.x.x WAN address on their router) - if they are, nobody can reach them, and their node needs a VPS, a LAN or a forwarded port. No newer record: this DHT address may be stale. The peer published it 11 s ago and has not replaced it, so as far as the DHT knows it is current. A peer that changed network in the last minute may not have republished yet, and a retry would find it
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 13.76s
+
+RUN- 
+
+running 1 test
+m17 gate 1: findable from an unrelated member 115.024336ms after start, at 127.0.2.2:35707
+m17 gate 5: invite request answered Pending, accepted, session up
+m17 gate 3: not found: the DHT holds no current record for this peer, so it is offline (a record lapses within 180 s of its owner's last publish)
+m17 gate 2: 127.0.2.2:35707 -> 127.0.2.2:56930, findable from an unrelated member 100.49795ms after the move
+m17 gate 2: propagated=85.720285ms, redial=930.066617ms, failures=[], result=Ok(UserId(72ef ada5 64fa fd1c))
+m17 gate 4: no answer from 127.0.2.2:56930 after 10s. An unreachable node and a wrong address look the same from here, so check: that 127.0.2.2:56930 is what `p2pchat check` on the owner's machine lists as advertised; that UDP port 56930 is open inbound on the owner's firewall and cloud security group (QUIC is UDP, a TCP rule does nothing); and that the owner is not behind carrier-grade NAT (a 100.64.x.x WAN address on their router) - if they are, nobody can reach them, and their node needs a VPS, a LAN or a forwarded port. No newer record: this DHT address may be stale. The peer published it 11 s ago and has not replaced it, so as far as the DHT knows it is current. A peer that changed network in the last minute may not have republished yet, and a retry would find it
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 13.82s
+
+RUN- 
+
+running 1 test
+m17 gate 1: findable from an unrelated member 97.223264ms after start, at 127.0.2.2:53041
+m17 gate 5: invite request answered Pending, accepted, session up
+m17 gate 3: not found: the DHT holds no current record for this peer, so it is offline (a record lapses within 180 s of its owner's last publish)
+m17 gate 2: 127.0.2.2:53041 -> 127.0.2.2:59734, findable from an unrelated member 100.163808ms after the move
+m17 gate 2: propagated=88.384909ms, redial=930.552712ms, failures=[], result=Ok(UserId(a2d5 338c ae12 37d0))
+m17 gate 4: no answer from 127.0.2.2:59734 after 10s. An unreachable node and a wrong address look the same from here, so check: that 127.0.2.2:59734 is what `p2pchat check` on the owner's machine lists as advertised; that UDP port 59734 is open inbound on the owner's firewall and cloud security group (QUIC is UDP, a TCP rule does nothing); and that the owner is not behind carrier-grade NAT (a 100.64.x.x WAN address on their router) - if they are, nobody can reach them, and their node needs a VPS, a LAN or a forwarded port. No newer record: this DHT address may be stale. The peer published it 11 s ago and has not replaced it, so as far as the DHT knows it is current. A peer that changed network in the last minute may not have republished yet, and a retry would find it
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 13.68s
+
+RUN- 
+
+running 1 test
+m17 gate 1: findable from an unrelated member 124.645367ms after start, at 127.0.2.2:53200
+m17 gate 5: invite request answered Pending, accepted, session up
+m17 gate 3: not found: the DHT holds no current record for this peer, so it is offline (a record lapses within 180 s of its owner's last publish)
+m17 gate 2: 127.0.2.2:53200 -> 127.0.2.2:54520, findable from an unrelated member 115.724929ms after the move
+m17 gate 2: propagated=100.552264ms, redial=920.96713ms, failures=[], result=Ok(UserId(f49c 3101 3f6f 4ad4))
+m17 gate 4: no answer from 127.0.2.2:54520 after 10s. An unreachable node and a wrong address look the same from here, so check: that 127.0.2.2:54520 is what `p2pchat check` on the owner's machine lists as advertised; that UDP port 54520 is open inbound on the owner's firewall and cloud security group (QUIC is UDP, a TCP rule does nothing); and that the owner is not behind carrier-grade NAT (a 100.64.x.x WAN address on their router) - if they are, nobody can reach them, and their node needs a VPS, a LAN or a forwarded port. No newer record: this DHT address may be stale. The peer published it 11 s ago and has not replaced it, so as far as the DHT knows it is current. A peer that changed network in the last minute may not have republished yet, and a retry would find it
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 13.92s
+
+RUN- 
+
+running 1 test
+m17 gate 1: findable from an unrelated member 95.947508ms after start, at 127.0.2.2:56643
+m17 gate 5: invite request answered Pending, accepted, session up
+m17 gate 3: not found: the DHT holds no current record for this peer, so it is offline (a record lapses within 180 s of its owner's last publish)
+m17 gate 2: 127.0.2.2:56643 -> 127.0.2.2:43203, findable from an unrelated member 113.492004ms after the move
+m17 gate 2: propagated=97.56068ms, redial=916.463896ms, failures=[], result=Ok(UserId(427c 77d1 1fb4 578d))
+m17 gate 4: no answer from 127.0.2.2:43203 after 10s. An unreachable node and a wrong address look the same from here, so check: that 127.0.2.2:43203 is what `p2pchat check` on the owner's machine lists as advertised; that UDP port 43203 is open inbound on the owner's firewall and cloud security group (QUIC is UDP, a TCP rule does nothing); and that the owner is not behind carrier-grade NAT (a 100.64.x.x WAN address on their router) - if they are, nobody can reach them, and their node needs a VPS, a LAN or a forwarded port. No newer record: this DHT address may be stale. The peer published it 11 s ago and has not replaced it, so as far as the DHT knows it is current. A peer that changed network in the last minute may not have republished yet, and a retry would find it
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 13.76s
+
+RUN- 
+
+running 1 test
+m17 gate 1: findable from an unrelated member 101.043545ms after start, at 127.0.2.2:33589
+m17 gate 5: invite request answered Pending, accepted, session up
+m17 gate 3: not found: the DHT holds no current record for this peer, so it is offline (a record lapses within 180 s of its owner's last publish)
+m17 gate 2: 127.0.2.2:33589 -> 127.0.2.2:52249, findable from an unrelated member 114.047693ms after the move
+m17 gate 2: propagated=96.338639ms, redial=917.190389ms, failures=[], result=Ok(UserId(0aa2 29f4 eeaf d942))
+m17 gate 4: no answer from 127.0.2.2:52249 after 10s. An unreachable node and a wrong address look the same from here, so check: that 127.0.2.2:52249 is what `p2pchat check` on the owner's machine lists as advertised; that UDP port 52249 is open inbound on the owner's firewall and cloud security group (QUIC is UDP, a TCP rule does nothing); and that the owner is not behind carrier-grade NAT (a 100.64.x.x WAN address on their router) - if they are, nobody can reach them, and their node needs a VPS, a LAN or a forwarded port. No newer record: this DHT address may be stale. The peer published it 11 s ago and has not replaced it, so as far as the DHT knows it is current. A peer that changed network in the last minute may not have republished yet, and a retry would find it
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 13.76s
+
+RUN- 
+
+running 1 test
+m17 gate 1: findable from an unrelated member 103.081199ms after start, at 127.0.2.2:45503
+m17 gate 5: invite request answered Pending, accepted, session up
+m17 gate 3: not found: the DHT holds no current record for this peer, so it is offline (a record lapses within 180 s of its owner's last publish)
+m17 gate 2: 127.0.2.2:45503 -> 127.0.2.2:41732, findable from an unrelated member 103.292958ms after the move
+m17 gate 2: propagated=87.127451ms, redial=929.425015ms, failures=[], result=Ok(UserId(a337 91cd 33fa 6eea))
+m17 gate 4: no answer from 127.0.2.2:41732 after 10s. An unreachable node and a wrong address look the same from here, so check: that 127.0.2.2:41732 is what `p2pchat check` on the owner's machine lists as advertised; that UDP port 41732 is open inbound on the owner's firewall and cloud security group (QUIC is UDP, a TCP rule does nothing); and that the owner is not behind carrier-grade NAT (a 100.64.x.x WAN address on their router) - if they are, nobody can reach them, and their node needs a VPS, a LAN or a forwarded port. No newer record: this DHT address may be stale. The peer published it 11 s ago and has not replaced it, so as far as the DHT knows it is current. A peer that changed network in the last minute may not have republished yet, and a retry would find it
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 13.83s
+
+RUN- 
+
+running 1 test
+m17 gate 1: findable from an unrelated member 99.691074ms after start, at 127.0.2.2:41880
+m17 gate 5: invite request answered Pending, accepted, session up
+m17 gate 3: not found: the DHT holds no current record for this peer, so it is offline (a record lapses within 180 s of its owner's last publish)
+m17 gate 2: 127.0.2.2:41880 -> 127.0.2.2:54396, findable from an unrelated member 101.44218ms after the move
+m17 gate 2: propagated=87.990785ms, redial=925.990955ms, failures=[], result=Ok(UserId(99da cd0e e251 e450))
+m17 gate 4: no answer from 127.0.2.2:54396 after 10s. An unreachable node and a wrong address look the same from here, so check: that 127.0.2.2:54396 is what `p2pchat check` on the owner's machine lists as advertised; that UDP port 54396 is open inbound on the owner's firewall and cloud security group (QUIC is UDP, a TCP rule does nothing); and that the owner is not behind carrier-grade NAT (a 100.64.x.x WAN address on their router) - if they are, nobody can reach them, and their node needs a VPS, a LAN or a forwarded port. No newer record: this DHT address may be stale. The peer published it 11 s ago and has not replaced it, so as far as the DHT knows it is current. A peer that changed network in the last minute may not have republished yet, and a retry would find it
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 13.80s
+
+RUN- 
+
+running 1 test
+m17 gate 1: findable from an unrelated member 104.262018ms after start, at 127.0.2.2:45828
+m17 gate 5: invite request answered Pending, accepted, session up
+m17 gate 3: not found: the DHT holds no current record for this peer, so it is offline (a record lapses within 180 s of its owner's last publish)
+m17 gate 2: 127.0.2.2:45828 -> 127.0.2.2:35049, findable from an unrelated member 120.197514ms after the move
+m17 gate 2: propagated=98.339329ms, redial=920.804911ms, failures=[], result=Ok(UserId(ed75 6d29 69e0 6c02))
+m17 gate 4: no answer from 127.0.2.2:35049 after 10s. An unreachable node and a wrong address look the same from here, so check: that 127.0.2.2:35049 is what `p2pchat check` on the owner's machine lists as advertised; that UDP port 35049 is open inbound on the owner's firewall and cloud security group (QUIC is UDP, a TCP rule does nothing); and that the owner is not behind carrier-grade NAT (a 100.64.x.x WAN address on their router) - if they are, nobody can reach them, and their node needs a VPS, a LAN or a forwarded port. No newer record: this DHT address may be stale. The peer published it 11 s ago and has not replaced it, so as far as the DHT knows it is current. A peer that changed network in the last minute may not have republished yet, and a retry would find it
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 13.83s
+
+RUN- 
+
+running 1 test
+m17 gate 1: findable from an unrelated member 93.780443ms after start, at 127.0.2.2:43042
+m17 gate 5: invite request answered Pending, accepted, session up
+m17 gate 3: not found: the DHT holds no current record for this peer, so it is offline (a record lapses within 180 s of its owner's last publish)
+m17 gate 2: 127.0.2.2:43042 -> 127.0.2.2:60840, findable from an unrelated member 105.285389ms after the move
+m17 gate 2: propagated=94.02309ms, redial=924.34333ms, failures=[], result=Ok(UserId(d7ce c8ea 87cb 4746))
+m17 gate 4: no answer from 127.0.2.2:60840 after 10s. An unreachable node and a wrong address look the same from here, so check: that 127.0.2.2:60840 is what `p2pchat check` on the owner's machine lists as advertised; that UDP port 60840 is open inbound on the owner's firewall and cloud security group (QUIC is UDP, a TCP rule does nothing); and that the owner is not behind carrier-grade NAT (a 100.64.x.x WAN address on their router) - if they are, nobody can reach them, and their node needs a VPS, a LAN or a forwarded port. No newer record: this DHT address may be stale. The peer published it 11 s ago and has not replaced it, so as far as the DHT knows it is current. A peer that changed network in the last minute may not have republished yet, and a retry would find it
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 13.69s
+
+RUN- 
+
+running 1 test
+m17 gate 1: findable from an unrelated member 99.850497ms after start, at 127.0.2.2:36610
+m17 gate 5: invite request answered Pending, accepted, session up
+m17 gate 3: not found: the DHT holds no current record for this peer, so it is offline (a record lapses within 180 s of its owner's last publish)
+m17 gate 2: 127.0.2.2:36610 -> 127.0.2.2:47062, findable from an unrelated member 112.967949ms after the move
+m17 gate 2: propagated=95.070267ms, redial=925.235733ms, failures=[], result=Ok(UserId(3575 574a 5175 9152))
+m17 gate 4: no answer from 127.0.2.2:47062 after 10s. An unreachable node and a wrong address look the same from here, so check: that 127.0.2.2:47062 is what `p2pchat check` on the owner's machine lists as advertised; that UDP port 47062 is open inbound on the owner's firewall and cloud security group (QUIC is UDP, a TCP rule does nothing); and that the owner is not behind carrier-grade NAT (a 100.64.x.x WAN address on their router) - if they are, nobody can reach them, and their node needs a VPS, a LAN or a forwarded port. No newer record: this DHT address may be stale. The peer published it 11 s ago and has not replaced it, so as far as the DHT knows it is current. A peer that changed network in the last minute may not have republished yet, and a retry would find it
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 13.79s
+
+RUN- 
+
+running 1 test
+m17 gate 1: findable from an unrelated member 109.638969ms after start, at 127.0.2.2:57932
+m17 gate 5: invite request answered Pending, accepted, session up
+m17 gate 3: not found: the DHT holds no current record for this peer, so it is offline (a record lapses within 180 s of its owner's last publish)
+m17 gate 2: 127.0.2.2:57932 -> 127.0.2.2:51959, findable from an unrelated member 107.544328ms after the move
+m17 gate 2: propagated=92.72733ms, redial=921.84766ms, failures=[], result=Ok(UserId(9623 916d 1fe1 0f14))
+m17 gate 4: no answer from 127.0.2.2:51959 after 10s. An unreachable node and a wrong address look the same from here, so check: that 127.0.2.2:51959 is what `p2pchat check` on the owner's machine lists as advertised; that UDP port 51959 is open inbound on the owner's firewall and cloud security group (QUIC is UDP, a TCP rule does nothing); and that the owner is not behind carrier-grade NAT (a 100.64.x.x WAN address on their router) - if they are, nobody can reach them, and their node needs a VPS, a LAN or a forwarded port. No newer record: this DHT address may be stale. The peer published it 11 s ago and has not replaced it, so as far as the DHT knows it is current. A peer that changed network in the last minute may not have republished yet, and a retry would find it
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 13.87s
+
+RUN- 
+
+running 1 test
+m17 gate 1: findable from an unrelated member 92.906131ms after start, at 127.0.2.2:49258
+m17 gate 5: invite request answered Pending, accepted, session up
+m17 gate 3: not found: the DHT holds no current record for this peer, so it is offline (a record lapses within 180 s of its owner's last publish)
+m17 gate 2: 127.0.2.2:49258 -> 127.0.2.2:43912, findable from an unrelated member 120.638262ms after the move
+m17 gate 2: propagated=99.457995ms, redial=992.508622ms, failures=[], result=Ok(UserId(2dcd c5c4 84cd baf2))
+m17 gate 4: no answer from 127.0.2.2:43912 after 10s. An unreachable node and a wrong address look the same from here, so check: that 127.0.2.2:43912 is what `p2pchat check` on the owner's machine lists as advertised; that UDP port 43912 is open inbound on the owner's firewall and cloud security group (QUIC is UDP, a TCP rule does nothing); and that the owner is not behind carrier-grade NAT (a 100.64.x.x WAN address on their router) - if they are, nobody can reach them, and their node needs a VPS, a LAN or a forwarded port. No newer record: this DHT address may be stale. The peer published it 12 s ago and has not replaced it, so as far as the DHT knows it is current. A peer that changed network in the last minute may not have republished yet, and a retry would find it
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 14.02s
+
+RUN- 
+
+running 1 test
+m17 gate 1: findable from an unrelated member 115.690203ms after start, at 127.0.2.2:36414
+m17 gate 5: invite request answered Pending, accepted, session up
+m17 gate 3: not found: the DHT holds no current record for this peer, so it is offline (a record lapses within 180 s of its owner's last publish)
+m17 gate 2: 127.0.2.2:36414 -> 127.0.2.2:51317, findable from an unrelated member 115.621721ms after the move
+m17 gate 2: propagated=100.237336ms, redial=921.114998ms, failures=[], result=Ok(UserId(490e 02fa 9688 8089))
+m17 gate 4: no answer from 127.0.2.2:51317 after 10s. An unreachable node and a wrong address look the same from here, so check: that 127.0.2.2:51317 is what `p2pchat check` on the owner's machine lists as advertised; that UDP port 51317 is open inbound on the owner's firewall and cloud security group (QUIC is UDP, a TCP rule does nothing); and that the owner is not behind carrier-grade NAT (a 100.64.x.x WAN address on their router) - if they are, nobody can reach them, and their node needs a VPS, a LAN or a forwarded port. No newer record: this DHT address may be stale. The peer published it 11 s ago and has not replaced it, so as far as the DHT knows it is current. A peer that changed network in the last minute may not have republished yet, and a retry would find it
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 13.95s
+
+RUN- 
+
+running 1 test
+m17 gate 1: findable from an unrelated member 94.806298ms after start, at 127.0.2.2:45149
+m17 gate 5: invite request answered Pending, accepted, session up
+m17 gate 3: not found: the DHT holds no current record for this peer, so it is offline (a record lapses within 180 s of its owner's last publish)
+m17 gate 2: 127.0.2.2:45149 -> 127.0.2.2:46329, findable from an unrelated member 102.156166ms after the move
+m17 gate 2: propagated=87.990567ms, redial=932.238741ms, failures=[], result=Ok(UserId(eacf f81b 0e28 faca))
+m17 gate 4: no answer from 127.0.2.2:46329 after 10s. An unreachable node and a wrong address look the same from here, so check: that 127.0.2.2:46329 is what `p2pchat check` on the owner's machine lists as advertised; that UDP port 46329 is open inbound on the owner's firewall and cloud security group (QUIC is UDP, a TCP rule does nothing); and that the owner is not behind carrier-grade NAT (a 100.64.x.x WAN address on their router) - if they are, nobody can reach them, and their node needs a VPS, a LAN or a forwarded port. No newer record: this DHT address may be stale. The peer published it 12 s ago and has not replaced it, so as far as the DHT knows it is current. A peer that changed network in the last minute may not have republished yet, and a retry would find it
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 14.12s
+

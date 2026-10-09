@@ -54,15 +54,17 @@ pub const REPUBLISH: u64 = LIFETIME / 2;
 /// A record for this identity at `addrs`, valid for [`LIFETIME`] from
 /// `published_at`. `seq` is the caller's to keep increasing — M17.
 ///
-/// No addresses, or an unspecified one, is refused here for the reason
-/// `invite::create` gives: a record nobody can dial is not worth publishing.
+/// No addresses, an unspecified or multicast address, or port zero is refused
+/// here for the reason `invite::create` gives: a record nobody can dial is not
+/// worth publishing.  The same syntactic rule is enforced after the signature
+/// on received records, so storage cannot serve one the owner signed badly.
 pub fn create(
     identity: &Identity,
     addrs: Vec<SocketAddr>,
     seq: u64,
     published_at: u64,
 ) -> Result<AddressRecord, CryptoError> {
-    if addrs.is_empty() || addrs.iter().any(|addr| addr.ip().is_unspecified()) {
+    if addrs.is_empty() || addrs.iter().any(|addr| !valid_dht_addr(*addr)) {
         return Err(CryptoError::RecordMalformed);
     }
     let body = AddressRecordBody {
@@ -76,6 +78,13 @@ pub fn create(
     };
     let sig = identity.sign(&signed_message(&body)?);
     Ok(AddressRecord { body, sig })
+}
+
+/// The universally invalid endpoint shapes for an AddressRecord.  Whether a
+/// syntactically valid non-public address may be dialled is a local policy in
+/// the DHT consumer; test networks need that explicit opt-in.
+pub fn valid_dht_addr(addr: SocketAddr) -> bool {
+    addr.port() != 0 && !addr.ip().is_unspecified() && !addr.ip().is_multicast()
 }
 
 /// `DOMAIN ‖ postcard(body)`. `to_bytes` validates, so a body past the bounds
@@ -119,6 +128,12 @@ pub fn verify(record: &AddressRecord, now: u64) -> Result<(), CryptoError> {
     // `verify_strict`, as for invites and the handshake.
     key.verify_strict(&message, &sig)
         .map_err(|_| CryptoError::RecordSignature)?;
+
+    // This is owner-signed but still unusable.  It remains after signature so
+    // a forged malformed record cannot choose the error before authentication.
+    if body.addrs.iter().any(|addr| !valid_dht_addr(*addr)) {
+        return Err(CryptoError::RecordMalformed);
+    }
 
     // Only now are timestamps worth reading. Skew admits a publisher whose
     // clock runs ahead; it never extends a record's validity.
@@ -199,6 +214,29 @@ mod tests {
         let record = sample(&identity, 1);
         assert_eq!(open(&bytes(&record), EPOCH).unwrap(), record);
         assert_eq!(record.body.expires_at, EPOCH + LIFETIME);
+    }
+
+    #[test]
+    fn unusable_dht_endpoint_shapes_are_rejected_after_signing() {
+        let identity = Identity::generate();
+        for text in ["0.0.0.0:47101", "203.0.113.7:0", "224.0.0.1:47101"] {
+            assert!(
+                matches!(
+                    create(&identity, vec![addr(text)], 1, EPOCH),
+                    Err(CryptoError::RecordMalformed)
+                ),
+                "create accepted {text}"
+            );
+            let mut body = sample(&identity, 2).body;
+            body.addrs = vec![addr(text)];
+            assert!(
+                matches!(
+                    open(&bytes(&resign(&identity, body)), EPOCH),
+                    Err(CryptoError::RecordMalformed)
+                ),
+                "verify accepted {text}"
+            );
+        }
     }
 
     /// Gate 1: a record for the victim, built by someone without the victim's

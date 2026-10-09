@@ -9,7 +9,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 
-use p2pchat_core::wire::{AddressRecord, DhtAnswer, DhtQuery};
+use p2pchat_core::wire::{AddressRecord, Contact, DhtAnswer, DhtQuery};
 use p2pchat_core::UserId;
 use p2pchat_crypto::{invite, record, Identity};
 use p2pchat_net::dht::{Dht, Params, Stop};
@@ -29,6 +29,10 @@ fn params() -> Params {
         // loaded machine: at one second they did, and evicted live members.
         refresh: Duration::from_secs(3),
         rpc_timeout: Duration::from_secs(2),
+        // The public nodes below use the same compressed limiter clock.  Its
+        // 1 s window plus the shipped 1 s margin keeps gate 5's 7.75 s bound
+        // while exercising the exact production calculation.
+        rate_limit_window: Duration::from_secs(1),
     }
 }
 
@@ -73,6 +77,7 @@ async fn member(bootstrap: Vec<SocketAddr>) -> Member {
         limits: Limits {
             per_source: 100_000,
             forward_per_member: 100_000,
+            window: params().rate_limit_window,
             ..Limits::default()
         },
         requests,
@@ -183,6 +188,48 @@ async fn m16_gates_on_loopback() {
             truth(&target, ids.iter().copied().filter(|id| *id != me), k)
         );
     }
+
+    // A newer-only lookup must get past a bootstrap replica that still holds
+    // the old value. FIND_VALUE returns that value instead of contacts, so the
+    // lookup has to ask the responder for NODES before it can reach the member
+    // holding the replacement.
+    let moving = Identity::generate();
+    let moving_id = moving.user_id();
+    let old = record::create(
+        &moving,
+        vec!["198.51.100.1:47101".parse().unwrap()],
+        1,
+        invite::now(),
+    )
+    .unwrap();
+    let newer = record::create(
+        &moving,
+        vec!["198.51.100.2:47101".parse().unwrap()],
+        2,
+        invite::now(),
+    )
+    .unwrap();
+    let seed_contact = Contact {
+        id: members[0].identity.user_id(),
+        addr: members[0].public.local_addr().unwrap(),
+    };
+    assert_eq!(
+        members[1].dht.store_at(&old, &[seed_contact]).await.len(),
+        1
+    );
+    let holder = members
+        .iter()
+        .skip(1)
+        .map(|m| Contact {
+            id: m.identity.user_id(),
+            addr: m.public.local_addr().unwrap(),
+        })
+        .min_by_key(|c| xor(&moving_id, &c.id))
+        .unwrap();
+    assert_eq!(members[1].dht.store_at(&newer, &[holder]).await.len(), 1);
+    let (_, stale_seed_client) = client(vec![seed_contact.addr]);
+    let replacement = stale_seed_client.lookup_newer(moving_id, 1).await.value;
+    assert_eq!(replacement.map(|r| r.body.seq), Some(2));
 
     // Gate 3: an absent key ends because nothing closer is left to ask.
     let found = members[3]

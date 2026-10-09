@@ -1,0 +1,111 @@
+
+running 1 test
+m17 gate 1: findable from an unrelated member 107.77315ms after start, at 127.0.2.2:59493
+m17 gate 5: invite request answered Pending, accepted, session up
+m17 gate 3: not found: the DHT holds no current record for this peer, so it is offline (a record lapses within 180 s of its owner's last publish)
+m17 gate 2: 127.0.2.2:59493 -> 127.0.2.2:49457, findable from an unrelated member 99.692576ms after the move
+m17 gate 2: propagated=86.532212ms, redial=9.938197282s, failures=["no answer from 127.0.2.2:59493 after 10s: that address is stale. The peer has since published a newer record (seq 1791479487631) at [127.0.2.2:49457], so it moved"], result=Ok(UserId(df99 c9d5 3362 db99))
+
+thread 'm17_gates_on_loopback' panicked at crates/p2pchat/tests/lookup.rs:379:5:
+gate 2: propagated=86.532212ms, redial=9.938197282s, failures=["no answer from 127.0.2.2:59493 after 10s: that address is stale. The peer has since published a newer record (seq 1791479487631) at [127.0.2.2:49457], so it moved"], result=Ok(UserId(df99 c9d5 3362 db99))
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+m17_gates_on_loopback --- FAILED
+
+failures:
+
+failures:
+    m17_gates_on_loopback
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 12.63s
+
+error: test failed, to rerun pass `-p p2pchat --test lookup`
+m17-lookup-after-dial: rejected by focused Rust gate
+built /target/bin/p2pchat-m17-lookup-after-dial
+
+running 1 test
+node::tests::newer_record_retries_cap_at_five_seconds --- FAILED
+
+failures:
+
+---- node::tests::newer_record_retries_cap_at_five_seconds stdout ----
+
+thread 'node::tests::newer_record_retries_cap_at_five_seconds' panicked at crates/p2pchat/src/node.rs:1954:13:
+assertion `left == right` failed
+  left: 2s
+ right: 1s
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    node::tests::newer_record_retries_cap_at_five_seconds
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p p2pchat --lib`
+m17-retry-interval-doubled: rejected by focused Rust gate
+built /target/bin/p2pchat-m17-retry-interval-doubled
+warning: unused variable: `rate_window`
+   --> crates/p2pchat-net/src/dht.rs:320:53
+    |
+320 |     fn failed(&mut self, id: &UserId, now: Instant, rate_window: Duration) {
+    |                                                     ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_rate_window`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `rate_window`
+   --> crates/p2pchat-net/src/dht.rs:320:53
+    |
+320 |     fn failed(&mut self, id: &UserId, now: Instant, rate_window: Duration) {
+    |                                                     ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_rate_window`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+
+running 1 test
+dht::tests::rate_limited_refusal_does_not_evict_on_the_second_strike --- FAILED
+
+failures:
+
+---- dht::tests::rate_limited_refusal_does_not_evict_on_the_second_strike stdout ----
+
+thread 'dht::tests::rate_limited_refusal_does_not_evict_on_the_second_strike' panicked at crates/p2pchat-net/src/dht.rs:1186:9:
+assertion failed: t.take_due_checks(now + rate_window, every).is_empty()
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    dht::tests::rate_limited_refusal_does_not_evict_on_the_second_strike
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 41 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p p2pchat-net --lib`
+m17-refusal-counted-as-death: rejected by focused Rust gate
+built /target/bin/p2pchat-m17-refusal-counted-as-death
+
+running 1 test
+m17 gate 1: findable from an unrelated member 102.484118ms after start, at 127.0.2.2:49629
+m17 gate 5: invite request answered Pending, accepted, session up
+m17 gate 3: not found: the DHT holds no current record for this peer, so it is offline (a record lapses within 180 s of its owner's last publish)
+m17 gate 2: 127.0.2.2:49629 -> 127.0.2.2:59087, findable from an unrelated member 98.174776ms after the move
+m17 gate 2: propagated=87.028596ms, redial=9.931409933s, failures=["no answer from 127.0.2.2:49629 after 10s: that address is stale. The peer has since published a newer record (seq 1791479615609) at [127.0.2.2:59087], so it moved"], result=Ok(UserId(a193 7cd6 882d c536))
+
+thread 'm17_gates_on_loopback' panicked at crates/p2pchat/tests/lookup.rs:379:5:
+gate 2: propagated=87.028596ms, redial=9.931409933s, failures=["no answer from 127.0.2.2:49629 after 10s: that address is stale. The peer has since published a newer record (seq 1791479615609) at [127.0.2.2:59087], so it moved"], result=Ok(UserId(a193 7cd6 882d c536))
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+m17_gates_on_loopback --- FAILED
+
+failures:
+
+failures:
+    m17_gates_on_loopback
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 12.61s
+
+error: test failed, to rerun pass `-p p2pchat --test lookup`
+m17-probe-aborts-lookup: rejected by focused Rust gate
+built /target/bin/p2pchat-m17-probe-aborts-lookup
+bc044955f7279dfae0a08e273b50ee8e465bd5c92e644f3b67e0c6277a179a0b  /target/m17b-verified/release/p2pchat
+78eebf87b4029dfec0de93af0df6a976f4012946f6aba8e4784e142c808d8b5b  /target/bin/p2pchat-m17-lookup-after-dial
+b56fa95c8505640f36db2807d084552cface73072b99de760827cf1a8b073d9b  /target/bin/p2pchat-m17-retry-interval-doubled
+084ed7c88b5ed251d4dc1c6b23094939df5582b40753892dcd88ba40e88e12fa  /target/bin/p2pchat-m17-refusal-counted-as-death
+84142d58f704a5fd766b3b689a6048010b4a9c34b39d21d3988152fdd632a3d0  /target/bin/p2pchat-m17-probe-aborts-lookup

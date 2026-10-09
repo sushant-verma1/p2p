@@ -1,0 +1,634 @@
+{
+  "scope": "DHT/M17 result artifacts present when the mandatory --binary change landed",
+  "files": [
+    {
+      "file": "dht-gates-m17a-final-m16-gate5.json",
+      "kind": "json",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "missing recorded binary SHA-256"
+    },
+    {
+      "file": "dht-gates-m17a-fresh-m16-gate5.json",
+      "kind": "json",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "missing recorded binary SHA-256"
+    },
+    {
+      "file": "dht-gates-m17a-gate5.json",
+      "kind": "json",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "missing recorded binary SHA-256"
+    },
+    {
+      "file": "dht-gates-m17a-recheck-m16-gate5.json",
+      "kind": "json",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "missing recorded binary SHA-256"
+    },
+    {
+      "file": "dht-publish-baseline-final.json",
+      "kind": "json",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "missing recorded binary SHA-256"
+    },
+    {
+      "file": "dht-publish-baseline.json",
+      "kind": "json",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "missing recorded binary SHA-256"
+    },
+    {
+      "file": "dht-publish-m17a-final-baseline.json",
+      "kind": "json",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "missing recorded binary SHA-256"
+    },
+    {
+      "file": "dht-publish-m17a-final-poor.json",
+      "kind": "json",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "missing recorded binary SHA-256"
+    },
+    {
+      "file": "dht-publish-m17a-final-typical.json",
+      "kind": "json",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "missing recorded binary SHA-256"
+    },
+    {
+      "file": "dht-publish-mutant-nodht.json",
+      "kind": "json",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "missing recorded binary SHA-256"
+    },
+    {
+      "file": "dht-publish-mutant-noexpiry.json",
+      "kind": "json",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "missing recorded binary SHA-256"
+    },
+    {
+      "file": "dht-publish-mutant-norepublish.json",
+      "kind": "json",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "missing recorded binary SHA-256"
+    },
+    {
+      "file": "dht-publish-mutant-republish-never-fires.json",
+      "kind": "json",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "missing recorded binary SHA-256"
+    },
+    {
+      "file": "dht-publish-mutant-unreachable.json",
+      "kind": "json",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "missing recorded binary SHA-256"
+    },
+    {
+      "file": "dht-publish-poor.json",
+      "kind": "json",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "missing recorded binary SHA-256"
+    },
+    {
+      "file": "dht-publish-typical.json",
+      "kind": "json",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "missing recorded binary SHA-256"
+    },
+    {
+      "file": "dht-redials-m17a-bootstrap-poor-smoke.json",
+      "kind": "json",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "missing recorded binary SHA-256"
+    },
+    {
+      "file": "dht-redials-m17a-independent-poor-smoke.json",
+      "kind": "json",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "missing recorded binary SHA-256"
+    },
+    {
+      "file": "dht-redials-m17a-independent-poor-smoke5.json",
+      "kind": "json",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "missing recorded binary SHA-256"
+    },
+    {
+      "file": "dht-redials-m17a-redials-baseline.json",
+      "kind": "json",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "missing recorded binary SHA-256"
+    },
+    {
+      "file": "dht-redials-m17a-redials-final-baseline.json",
+      "kind": "json",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "missing recorded binary SHA-256"
+    },
+    {
+      "file": "dht-redials-m17a-redials-final-typical.json",
+      "kind": "json",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "missing recorded binary SHA-256"
+    },
+    {
+      "file": "dht-redials-m17a-trace-current4-baseline.json",
+      "kind": "json",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "missing recorded binary SHA-256"
+    },
+    {
+      "file": "dht-redials-m17a-trace-current5b-baseline.json",
+      "kind": "json",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "missing recorded binary SHA-256"
+    },
+    {
+      "file": "dht-redials-m17a-trace-typical-current6.json",
+      "kind": "json",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "missing recorded binary SHA-256"
+    },
+    {
+      "file": "dht-redials-m17a-trace-typical-fail.json",
+      "kind": "json",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "missing recorded binary SHA-256"
+    },
+    {
+      "file": "dht-trial-m17a-at-kill.json",
+      "kind": "json",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "missing recorded binary SHA-256"
+    },
+    {
+      "file": "dht-trial-m17a-final-at-kill.json",
+      "kind": "json",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "missing recorded binary SHA-256"
+    },
+    {
+      "file": "m17a-binary-recheck3-smoke-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-bootstrap-poor-smoke-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-final-at-kill-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-final-baseline-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-final-m16-gate5-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-final-mutants-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-final-poor-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-final-typical-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-fresh-m16-gate5-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-independent-poor-smoke-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-linux-audit.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-linux-clippy.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-linux-deny.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-linux-five-checks-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-linux-fmt.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-linux-test.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-m16-at-kill-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-m16-gate5-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-m16-loopback-linux.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-m17-loopback-linux-final.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-m17-loopback-linux-fixed.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-m17-loopback-linux.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-mutant-builds-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-mutant-lookup-after-dial-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-mutant-republish-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-publish-baseline-final-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-publish-baseline-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-publish-poor-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-publish-typical-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-recheck-m16-gate5-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-redials-baseline-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-redials-bootstrap-poor-reused-peer-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-redials-cadencefixed-poor-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-redials-final-baseline-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-redials-final-poor-failed-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-redials-final-poor-postdeadline-cadence-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-redials-final-poor-race-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-redials-final-typical-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-redials-fixed-poor-short-wait-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-redials-racefixed-poor-parser-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-redials-typical-failed-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-release-build.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-trace-baseline-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-trace-current-baseline-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-trace-current2-baseline-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-trace-current3-baseline-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-trace-current4-baseline-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-trace-current5-baseline-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-trace-typical-current6-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    },
+    {
+      "file": "m17a-trace-typical-fail-raw.txt",
+      "kind": "txt",
+      "binary": null,
+      "sha256": null,
+      "status": "void",
+      "reason": "transcript/log has no result-JSON provenance"
+    }
+  ],
+  "counts": {
+    "total": 78,
+    "verified": 0,
+    "void": 78
+  }
+}

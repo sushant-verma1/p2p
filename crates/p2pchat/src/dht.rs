@@ -9,7 +9,7 @@
 
 use std::net::{IpAddr, SocketAddr};
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use anyhow::{bail, Context, Result};
 use p2pchat_core::wire::{AddressRecord, DhtAnswer, DhtQuery};
@@ -130,6 +130,13 @@ pub async fn run(
 /// that distortion out of product defaults.
 fn harness_limits() -> Limits {
     let mut limits = Limits::default();
+    if let Some(window) = std::env::var("P2PCHAT_HARNESS_WINDOW_MS")
+        .ok()
+        .and_then(|text| text.parse::<u64>().ok())
+        .filter(|value| *value > 0)
+    {
+        limits.window = Duration::from_millis(window);
+    }
     for (name, slot) in [
         ("P2PCHAT_HARNESS_PER_SOURCE", &mut limits.per_source),
         (

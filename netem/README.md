@@ -78,7 +78,42 @@ They are created fresh, with `--cap-add=NET_ADMIN`, by every run.
 ```sh
 python netem/wan.py [PROFILE ...]    # the full M12a run; all profiles if none named
 python netem/tail.py PROFILE [--requests N] [--handshakes N] [--dials N] [--strand N]
+python netem/nat.py                  # M18a: kernel-NAT controls, no p2pchat changes
 ```
+
+### M18a kernel NAT harness
+
+`nat.py` creates three private Docker networks and separate router containers
+for each peer. The simulated NATs are Linux conntrack: the port-restricted
+case uses endpoint-independent `MASQUERADE` mappings with address-and-port
+filtering, while the symmetric-like case uses `MASQUERADE --random-fully`.
+This does not measure carrier filtering; that remains unknown until the same
+punch is run across real networks. Two independent observer containers
+implement STUN and report UDP source addresses. The script checks each mapping twice:
+the release binary's `p2pchat nat` talks to those observers through fixed
+container-local hostname mappings, and a small Python socket probes both
+observers independently.
+
+The controls are an open UDP host that answers a direct datagram, an unsolicited
+direct datagram across the two port-restricted NAT clients (which must fail),
+and an independent simultaneous UDP punch.  The latter must work through the
+port-restricted routers and fail through the symmetric-like routers.  Before
+the gates are accepted the harness forces the two opposite claims — symmetric
+reported as endpoint-independent, and symmetric punching reported successful —
+and requires its checkers to report both.  `nat.py` removes only containers and
+networks whose names begin with its fixed `m18a-nat-` prefix.
+
+The independent punch remains a standalone Python command. Run two copies
+concurrently, with opposite IDs, against any reachable rendezvous `HOST[:PORT]`
+(port 3490 is the default):
+
+```sh
+python netem/nat.py punch rendezvous.example:3490 alice bob
+python netem/nat.py punch rendezvous.example:3490 bob alice
+```
+
+This is the path to repeat the control across real networks once a reachable
+rendezvous machine exists; it does not depend on Docker or on `p2pchat`.
 
 `wan.py` covers the following for each profile:
 - ping;
@@ -129,11 +164,14 @@ docker build -t p2p-wan netem            # python3 is in the image from M16
 # the release binary, as in Setup above; then, from the repo root:
 MSYS_NO_PATHCONV=1 docker run --rm --privileged -v p2p-target:/target:ro \
     -v "$(pwd -W)/netem:/h:ro" -v "$OUT:/out" p2p-wan python3 -u /h/dht.py selftest
-# ... dht.py gates  [--only 1,2,...] [--binary /target/bin/p2pchat-MUTANT]
+# ... dht.py gates --binary /target/release/p2pchat [--only 1,2,...]
 # ... dht.py trial  --k K --alpha A --replication R [--profile poor] [--kill 0.3]
 ```
 
-`--n` sets the members (default 50), `--clients` the clients (3),
+`--binary` is mandatory for every DHT scenario. There is no default: the
+harness verifies that path is executable and writes its SHA-256 into every
+result JSON. A JSON without both fields is void evidence. `--n` sets the
+members (default 50), `--clients` the clients (3),
 `--refresh-ms` the refresh and liveness interval (30 s here, 15 min shipped),
 and `--profile` a netem profile from the table above. Results go to
 `/out/dht-SCENARIO[-TAG].json`.
@@ -216,7 +254,7 @@ numbers were used (M16a: 33 refusals at the old 30, 0 lifted).
 ```sh
 MSYS_NO_PATHCONV=1 docker run --rm --privileged -v p2p-target:/target:ro \
     -v "$(pwd -W)/netem:/h:ro" -v "$(pwd -W)/netem/results:/out" \
-    p2p-wan python3 -u /h/dht.py publish --profile baseline --tag baseline
+    p2p-wan python3 -u /h/dht.py publish --binary /target/release/p2pchat --profile baseline --tag baseline
 ```
 
 The 50 `p2pchat dht` members are the network. The subjects are real

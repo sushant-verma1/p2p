@@ -1,0 +1,21 @@
+2026-10-04T16:31:07.403405Z  INFO p2pchat: p2pchat starting version="0.1.0"
+2026-10-04T16:31:07.415208Z  INFO p2pchat_net: listening kind=Private addr=0.0.0.0:47101
+2026-10-04T16:31:07.415228Z  INFO p2pchat::node: endpoints bound me=5aa3 aff9 1b15 9faf private=0.0.0.0:47101 public=None
+2026-10-04T16:31:07.415292Z  INFO p2pchat::node: node started me=5aa3 aff9 1b15 9faf public_advertised=[10.99.0.68:47100] private_advertised=Some(10.99.0.68:47101)
+2026-10-04T16:31:10.255808Z  INFO p2pchat::reach: dial-back test member=10.99.0.10:47100 observed=10.99.0.68:47101 forwarded=true reached=true arrived=Some(10.99.0.11:55190)
+2026-10-04T16:31:10.255847Z  INFO p2pchat::reach: reachability test role=Member(10.99.0.68:47101) reason=Reached members=3
+2026-10-04T16:31:10.255852Z  INFO p2pchat::node: reachability from=Client to=Member(10.99.0.68:47101)
+2026-10-04T16:31:17.148259Z  INFO p2pchat::node: record published seq=1791131467415 published_at=1791131467 addrs=[10.99.0.68:47101] stored=8 elapsed_ms=9732
+2026-10-04T16:31:20.596559Z  INFO p2pchat::node: connection request sent peer=53c9 e2e2 86d4 832a addr=10.99.0.64:47100 state=Pending
+2026-10-04T16:31:20.596744Z DEBUG p2pchat::node: no answer to act on yet; keeping the poller peer=53c9 e2e2 86d4 832a state=Pending
+2026-10-04T16:31:20.596839Z DEBUG polling{peer=53c9 e2e2 86d4 832a}: p2pchat::node: polling started addr=10.99.0.64:47100 first=2s
+2026-10-04T16:31:22.597697Z DEBUG polling{peer=53c9 e2e2 86d4 832a}: p2pchat::node: asking what became of our request peer=53c9 e2e2 86d4 832a addr=10.99.0.64:47100
+2026-10-04T16:31:23.787515Z  INFO polling{peer=53c9 e2e2 86d4 832a}: p2pchat::node: accepted; dialling the peer privately peer=53c9 e2e2 86d4 832a addr=10.99.0.64:47101
+2026-10-04T16:31:24.545033Z  INFO p2pchat::node: record published seq=1791131477148 published_at=1791131477 addrs=[10.99.0.68:47101] stored=8 elapsed_ms=7396
+2026-10-04T16:31:24.710002Z  INFO polling{peer=53c9 e2e2 86d4 832a}: p2pchat_net::handshake: session established peer=53c9 e2e2 86d4 832a
+2026-10-04T16:31:24.710566Z  INFO polling{peer=53c9 e2e2 86d4 832a}: p2pchat::node: session established peer=53c9 e2e2 86d4 832a initiator=5aa3 aff9 1b15 9faf
+2026-10-04T16:31:24.710711Z  INFO p2pchat::session: resync sent peer=53c9 e2e2 86d4 832a have_through=0
+2026-10-04T16:31:24.710924Z DEBUG polling{peer=53c9 e2e2 86d4 832a}: p2pchat::node: polling stopped
+2026-10-04T16:31:25.082750Z  INFO p2pchat::session: resync received; retransmitting what the peer is missing peer=53c9 e2e2 86d4 832a have_through=0 count=0
+2026-10-04T16:33:01.452992Z  INFO p2pchat::node: record published seq=1791131574540 published_at=1791131574 addrs=[10.99.0.68:47101] stored=8 elapsed_ms=6912
+2026-10-04T16:34:37.108292Z  INFO p2pchat::node: record published seq=1791131671449 published_at=1791131671 addrs=[10.99.0.68:47101] stored=8 elapsed_ms=5660

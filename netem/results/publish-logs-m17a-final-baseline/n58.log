@@ -1,0 +1,22 @@
+2026-10-04T16:04:36.750919Z  INFO p2pchat: p2pchat starting version="0.1.0"
+2026-10-04T16:04:36.771308Z  INFO p2pchat_net: listening kind=Private addr=0.0.0.0:47101
+2026-10-04T16:04:36.771333Z  INFO p2pchat::node: endpoints bound me=f4d3 77b0 a501 39dd private=0.0.0.0:47101 public=None
+2026-10-04T16:04:36.771350Z  INFO p2pchat::node: node started me=f4d3 77b0 a501 39dd public_advertised=[10.99.0.68:47100] private_advertised=Some(10.99.0.68:47101)
+2026-10-04T16:04:36.781673Z  INFO p2pchat::reach: dial-back test member=10.99.0.10:47100 observed=10.99.0.68:47101 forwarded=true reached=true arrived=Some(10.99.0.11:43995)
+2026-10-04T16:04:36.781726Z  INFO p2pchat::reach: reachability test role=Member(10.99.0.68:47101) reason=Reached members=3
+2026-10-04T16:04:36.781734Z  INFO p2pchat::node: reachability from=Client to=Member(10.99.0.68:47101)
+2026-10-04T16:04:36.786896Z  INFO p2pchat::node: record published seq=1791129876771 published_at=1791129876 addrs=[10.99.0.68:47101] stored=8 elapsed_ms=15
+2026-10-04T16:04:36.797861Z  INFO p2pchat::node: record published seq=1791129876786 published_at=1791129876 addrs=[10.99.0.68:47101] stored=8 elapsed_ms=10
+2026-10-04T16:04:37.288950Z  INFO p2pchat::node: connection request sent peer=1221 e844 b764 d813 addr=10.99.0.64:47100 state=Pending
+2026-10-04T16:04:37.289123Z DEBUG p2pchat::node: no answer to act on yet; keeping the poller peer=1221 e844 b764 d813 state=Pending
+2026-10-04T16:04:37.289214Z DEBUG polling{peer=1221 e844 b764 d813}: p2pchat::node: polling started addr=10.99.0.64:47100 first=2s
+2026-10-04T16:04:39.290193Z DEBUG polling{peer=1221 e844 b764 d813}: p2pchat::node: asking what became of our request peer=1221 e844 b764 d813 addr=10.99.0.64:47100
+2026-10-04T16:04:39.291964Z  INFO polling{peer=1221 e844 b764 d813}: p2pchat::node: accepted; dialling the peer privately peer=1221 e844 b764 d813 addr=10.99.0.64:47101
+2026-10-04T16:04:39.294168Z  INFO polling{peer=1221 e844 b764 d813}: p2pchat_net::handshake: session established peer=1221 e844 b764 d813
+2026-10-04T16:04:39.294612Z  INFO polling{peer=1221 e844 b764 d813}: p2pchat::node: session established peer=1221 e844 b764 d813 initiator=f4d3 77b0 a501 39dd
+2026-10-04T16:04:39.294815Z  INFO p2pchat::session: resync sent peer=1221 e844 b764 d813 have_through=0
+2026-10-04T16:04:39.294870Z DEBUG polling{peer=1221 e844 b764 d813}: p2pchat::node: polling stopped
+2026-10-04T16:04:39.295261Z  INFO p2pchat::session: resync received; retransmitting what the peer is missing peer=1221 e844 b764 d813 have_through=0 count=0
+2026-10-04T16:06:06.810050Z  INFO p2pchat::node: record published seq=1791129966791 published_at=1791129966 addrs=[10.99.0.68:47101] stored=8 elapsed_ms=18
+2026-10-04T16:07:36.814621Z  INFO p2pchat::node: record published seq=1791130056804 published_at=1791130056 addrs=[10.99.0.68:47101] stored=8 elapsed_ms=10
+2026-10-04T16:09:06.820735Z  INFO p2pchat::node: record published seq=1791130146808 published_at=1791130146 addrs=[10.99.0.68:47101] stored=8 elapsed_ms=11

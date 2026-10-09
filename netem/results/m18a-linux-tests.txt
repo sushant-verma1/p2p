@@ -1,0 +1,128 @@
+
+running 15 tests
+...............
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+
+running 1 test
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 6 tests
+......
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.59s
+
+
+running 1 test
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.11s
+
+
+running 5 tests
+.....
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+
+running 2 tests
+..
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+
+running 11 tests
+...........
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 26.20s
+
+
+running 2 tests
+..
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+
+running 3 tests
+...
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+
+running 2 tests
+..
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+
+running 1 test
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+
+running 3 tests
+...
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+
+running 1 test
+m17_gates_on_loopback --- FAILED
+
+failures:
+
+---- m17_gates_on_loopback stdout ----
+m17 gate 1: findable from an unrelated member 94.099242ms after start, at 127.0.2.2:49986
+m17 gate 5: invite request answered Pending, accepted, session up
+m17 gate 3: not found: the DHT holds no current record for this peer, so it is offline (a record lapses within 180 s of its owner's last publish)
+m17 gate 2: 127.0.2.2:49986 -> 127.0.2.2:33204, findable from an unrelated member 89.585548ms after the move
+m17 gate 2: propagated=86.634792ms, redial=9.936410802s, failures=[], result=Err(no answer from 127.0.2.2:49986 after 10s. An unreachable node and a wrong address look the same from here, so check: that 127.0.2.2:49986 is what `p2pchat check` on the owner's machine lists as advertised; that UDP port 49986 is open inbound on the own.
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.47s
+
+
+running 1 test
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.71s
+
+
+running 10 tests
+..........
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+
+running 52 tests
+....................................................
+test result: ok. 52 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.29s
+
+
+running 62 tests
+..............................................................
+test result: ok. 62 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.54s
+
+
+running 39 tests
+.......................................
+test result: ok. 39 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+
+running 1 test
+m16_gates_on_loopback --- FAILED
+
+failures:
+
+---- m16_gates_on_loopback stdout ----
+
+thread 'm16_gates_on_loopback' panicked at crates/p2pchat-net/tests/dht.rs:236:9:
+a dead member is still held after 7.75s
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    m16_gates_on_loopback
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 16.16s
+
+error: test failed, to rerun pass `-p p2pchat-net --test dht`
+nt. A peer that changed network in the last minute may not have republished yet, and a retry would find it)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    m17_gates_on_loopback
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 12.55s
+
+error: test failed, to rerun pass `-p p2pchat --test lookup`

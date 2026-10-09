@@ -94,6 +94,20 @@ pub struct Params {
     /// One RPC, connect to answer. `request_timeout`, so that a DHT RPC and
     /// every other public exchange give up after the same time (M12c, M14b).
     pub rpc_timeout: Duration,
+    /// The public-node limiter window.  Failed RPCs are not confirmed until
+    /// this window has closed, because a pre-TLS refusal and silence have the
+    /// same wire shape.  Kept beside the other DHT parameters so compressed
+    /// test clocks can configure both layers consistently.
+    pub rate_limit_window: Duration,
+}
+
+/// Scheduler margin after the public limiter window.  The confirming Ping
+/// must land strictly in the next window, not on a timer boundary shared with
+/// the refusal that made the contact suspect.
+pub const RATE_LIMIT_MARGIN: Duration = Duration::from_secs(1);
+
+fn confirming_ping_delay(window: Duration) -> Duration {
+    window + RATE_LIMIT_MARGIN
 }
 
 impl Default for Params {
@@ -104,13 +118,14 @@ impl Default for Params {
             replication: 8,
             refresh: Duration::from_secs(15 * 60),
             rpc_timeout: public::Limits::default().request_timeout,
+            rate_limit_window: public::Limits::default().window,
         }
     }
 }
 
 impl Params {
     /// The defaults, with `P2PCHAT_DHT_K`, `_ALPHA`, `_REPLICATION`,
-    /// `_REFRESH_MS` and `_RPC_TIMEOUT_MS` applied — how the simulation
+    /// `_REFRESH_MS`, `_RPC_TIMEOUT_MS` and `_RATE_LIMIT_WINDOW_MS` applied — how the simulation
     /// sweeps them. Out-of-range values are clamped, not refused: `k` to
     /// `1..=MAX_CONTACTS`, since an answer carries at most that many.
     pub fn from_env() -> Self {
@@ -129,6 +144,8 @@ impl Params {
                 .clamp(1, k),
             refresh: get("REFRESH_MS").map_or(d.refresh, Duration::from_millis),
             rpc_timeout: get("RPC_TIMEOUT_MS").map_or(d.rpc_timeout, Duration::from_millis),
+            rate_limit_window: get("RATE_LIMIT_WINDOW_MS")
+                .map_or(d.rate_limit_window, Duration::from_millis),
         }
     }
 }
@@ -182,8 +199,12 @@ pub fn random_in(me: &UserId, bucket: usize) -> UserId {
 struct Entry {
     contact: Contact,
     seen: Instant,
-    /// An RPC to it failed. Checked at the next maintenance round.
+    /// An RPC to it failed.  There is no on-wire distinction between a
+    /// rate-limit refusal and silence, so the confirming Ping is held until
+    /// after the public rate window rather than immediately spending the
+    /// second strike in that same window.
     suspect: bool,
+    confirm_after: Option<Instant>,
     /// A liveness check on it is in flight, so no round starts another.
     checking: bool,
 }
@@ -257,6 +278,7 @@ impl Table {
             let mut entry = bucket.entries.remove(at);
             entry.seen = now;
             entry.suspect = false;
+            entry.confirm_after = None;
             entry.checking = false;
             bucket.entries.push(entry);
             return Seen::Known;
@@ -266,6 +288,7 @@ impl Table {
                 contact,
                 seen: now,
                 suspect: false,
+                confirm_after: None,
                 checking: false,
             });
             return Seen::Added;
@@ -294,10 +317,45 @@ impl Table {
         evicted
     }
 
-    fn failed(&mut self, id: &UserId) {
+    fn failed(&mut self, id: &UserId, now: Instant, rate_window: Duration) {
         if let Some(entry) = self.entry_mut(id) {
             entry.suspect = true;
+            // Later failed lookups while it is suspect are not new strikes
+            // and must not postpone the one confirmation forever.
+            entry
+                .confirm_after
+                .get_or_insert(now + confirming_ping_delay(rate_window));
         }
+    }
+
+    /// A maintenance Ping failed.  Its first failure is only suspicion: a
+    /// pre-TLS limiter refusal and silence are indistinguishable.  The next
+    /// ping is the confirmation only after the configured limiter window.
+    /// Returns whether that confirmation evicted the contact.
+    fn check_failed(&mut self, id: &UserId, now: Instant, rate_window: Duration) -> bool {
+        let confirming = self.entry_mut(id).is_some_and(|entry| {
+            entry.checking = false;
+            entry.suspect && entry.confirm_after.is_some_and(|after| now >= after)
+        });
+        if confirming {
+            if std::env::var_os("P2PCHAT_M16_TRACE").is_some() {
+                tracing::info!(
+                    peer = %id,
+                    delay_ms = confirming_ping_delay(rate_window).as_millis() as u64,
+                    "m16 trace confirming ping failed"
+                );
+            }
+            return self.evict(id);
+        }
+        self.failed(id, now, rate_window);
+        if std::env::var_os("P2PCHAT_M16_TRACE").is_some() {
+            tracing::info!(
+                peer = %id,
+                delay_ms = confirming_ping_delay(rate_window).as_millis() as u64,
+                "m16 trace liveness failure held for confirmation"
+            );
+        }
+        false
     }
 
     /// Removes `id`. The one place a contact leaves the table.
@@ -325,6 +383,16 @@ impl Table {
         all.sort_by_key(|c| distance(target, &c.id));
         all.truncate(n);
         all
+    }
+
+    /// Initial candidates for a lookup. A suspect remains usable if healthy
+    /// contacts are exhausted, but its timeout never precedes a healthy,
+    /// slightly farther candidate. Returned FIND_NODE contacts still use
+    /// [`Table::closest`] and therefore remain in strict XOR-distance order.
+    fn lookup_candidates(&self, target: &UserId, n: usize) -> Vec<Contact> {
+        let mut all: Vec<_> = self.buckets.iter().flat_map(|b| b.entries.iter()).collect();
+        all.sort_by_key(|e| (e.suspect, distance(target, &e.contact.id)));
+        all.into_iter().take(n).map(|e| e.contact).collect()
     }
 
     pub fn contacts(&self) -> Vec<Contact> {
@@ -381,11 +449,18 @@ impl Table {
     }
 
     /// Contacts due a liveness check, failed an RPC or unheard from for
-    /// `every`, marked as being checked.
+    /// `every`, marked as being checked.  A suspect is deliberately not
+    /// checked until its rate-window guard expires, even when it is also
+    /// stale: otherwise a flood can turn a refusal into two strikes.
     fn take_due_checks(&mut self, now: Instant, every: Duration) -> Vec<Contact> {
         let mut due = Vec::new();
         for e in self.buckets.iter_mut().flat_map(|b| b.entries.iter_mut()) {
-            if !e.checking && (e.suspect || now.duration_since(e.seen) >= every) {
+            let check_due = if e.suspect {
+                e.confirm_after.is_some_and(|after| now >= after)
+            } else {
+                now.duration_since(e.seen) >= every
+            };
+            if !e.checking && check_due {
                 e.checking = true;
                 due.push(e.contact);
             }
@@ -470,6 +545,35 @@ enum State {
     Asking,
     Answered,
     Failed,
+}
+
+fn merge_candidates(
+    shortlist: &mut BTreeMap<[u8; 32], (Contact, State)>,
+    asked: &BTreeSet<UserId>,
+    me: UserId,
+    target: UserId,
+    contacts: Vec<Contact>,
+) {
+    for c in contacts {
+        if c.id != me && !asked.contains(&c.id) {
+            shortlist
+                .entry(distance(&target, &c.id))
+                .or_insert((c, State::Waiting));
+        }
+    }
+    while shortlist.len() > SHORTLIST {
+        match shortlist
+            .iter()
+            .rev()
+            .find(|(_, (_, state))| *state != State::Asking)
+        {
+            Some((far, _)) => {
+                let far = *far;
+                shortlist.remove(&far);
+            }
+            None => break,
+        }
+    }
 }
 
 pub struct Dht {
@@ -591,7 +695,23 @@ impl Dht {
                     None => DhtAnswer::Nodes(self.table().closest(&key, self.params.k)),
                 }
             }
-            DhtQuery::Store(record) => DhtAnswer::Stored(self.records().store(*record, now)),
+            DhtQuery::Store(record) => {
+                let record = *record;
+                let stored = self.records().store(record.clone(), now);
+                if std::env::var_os("P2PCHAT_M17_TRACE").is_some() {
+                    eprintln!(
+                        "m17 trace store landed key={} seq={} stored={stored}",
+                        record.body.user_id, record.body.seq,
+                    );
+                    tracing::info!(
+                        key = %record.body.user_id,
+                        seq = record.body.seq,
+                        stored,
+                        "m17 trace store landed"
+                    );
+                }
+                DhtAnswer::Stored(stored)
+            }
         };
         Some(DhtResponse {
             id: self.me,
@@ -665,6 +785,13 @@ impl Dht {
         self.lookup_seeded(target, true, false, Some(seq)).await
     }
 
+    /// As [`Self::lookup_newer`], but begin at bootstrap peers even when a
+    /// member's local shortlist is stale.  A post-dial move watcher uses this
+    /// bounded recovery path; ordinary foreground lookups retain locality.
+    pub async fn lookup_newer_bootstrap(self: &Arc<Self>, target: UserId, seq: u64) -> Found {
+        self.lookup_seeded(target, true, true, Some(seq)).await
+    }
+
     async fn lookup_seeded(
         self: &Arc<Self>,
         target: UserId,
@@ -682,7 +809,7 @@ impl Dht {
         if self.member().is_some() {
             let mut table = self.table();
             table.looked_up(&target, Instant::now());
-            for c in table.closest(&target, k) {
+            for c in table.lookup_candidates(&target, k) {
                 shortlist.insert(distance(&target, &c.id), (c, State::Waiting));
             }
         }
@@ -738,24 +865,7 @@ impl Dht {
                     self.saw(responder);
                     match r.answer {
                         DhtAnswer::Nodes(contacts) => {
-                            for c in contacts {
-                                if c.id != self.me && !asked.contains(&c.id) {
-                                    shortlist.entry(key(&c.id)).or_insert((c, State::Waiting));
-                                }
-                            }
-                            while shortlist.len() > SHORTLIST {
-                                match shortlist
-                                    .iter()
-                                    .rev()
-                                    .find(|(_, (_, s))| *s != State::Asking)
-                                {
-                                    Some((far, _)) => {
-                                        let far = *far;
-                                        shortlist.remove(&far);
-                                    }
-                                    None => break,
-                                }
-                            }
+                            merge_candidates(&mut shortlist, &asked, self.me, target, contacts);
                         }
                         DhtAnswer::Value(record)
                             if want_value
@@ -766,6 +876,45 @@ impl Dht {
                             value = Some(*record);
                             break;
                         }
+                        // A server cannot know the caller's minimum sequence:
+                        // FIND_VALUE therefore returns its valid older value
+                        // instead of the NODES that would let this lookup move
+                        // past that replica. Ask the same responder for those
+                        // candidates explicitly and continue. Without this, a
+                        // client with one stale bootstrap replica can never
+                        // discover a newer value held elsewhere.
+                        DhtAnswer::Value(record)
+                            if want_value
+                                && newer_than.is_some()
+                                && record.body.user_id == target
+                                && record::verify(&record, invite::now()).is_ok()
+                                && newer_than.is_some_and(|seq| record.body.seq <= seq)
+                                && rpcs < MAX_LOOKUP_RPCS =>
+                        {
+                            rpcs += 1;
+                            match self.ask(addr, DhtQuery::FindNode(target)).await {
+                                Ok(nodes) if nodes.id == responder.id => {
+                                    if let DhtAnswer::Nodes(contacts) = nodes.answer {
+                                        merge_candidates(
+                                            &mut shortlist,
+                                            &asked,
+                                            self.me,
+                                            target,
+                                            contacts,
+                                        );
+                                    }
+                                }
+                                _ => {
+                                    if self.member().is_some() {
+                                        self.table().failed(
+                                            &responder.id,
+                                            Instant::now(),
+                                            self.params.rate_limit_window,
+                                        );
+                                    }
+                                }
+                            }
+                        }
                         // A value for another key, or one that fails M15, or
                         // one no newer than the caller already has, or an
                         // answer to a question we did not ask: this node told
@@ -773,15 +922,21 @@ impl Dht {
                         _ => {}
                     }
                 }
-                // No answer, or an answer from someone other than the contact
-                // we dialled: that contact is not there.
+                // A pre-TLS refusal is deliberately indistinguishable from a
+                // peer that closed or went silent.  Treat every failed RPC as
+                // suspect, but put its confirming Ping strictly outside the
+                // public limiter's window; see Table::failed.
                 _ => {
                     if let Some(c) = who {
                         if let Some(entry) = shortlist.get_mut(&key(&c.id)) {
                             entry.1 = State::Failed;
                         }
                         if self.member().is_some() {
-                            self.table().failed(&c.id);
+                            self.table().failed(
+                                &c.id,
+                                Instant::now(),
+                                self.params.rate_limit_window,
+                            );
                         }
                     }
                 }
@@ -927,8 +1082,12 @@ impl Dht {
                     let _permit = checks.acquire().await.ok();
                     if dht.ping(c).await {
                         dht.table().seen(c, Instant::now());
-                    } else if dht.table().evict(&c.id) {
-                        tracing::info!(peer = %c.id, reason = "liveness check failed", "contact evicted");
+                    } else if dht.table().check_failed(
+                        &c.id,
+                        Instant::now(),
+                        dht.params.rate_limit_window,
+                    ) {
+                        tracing::info!(peer = %c.id, reason = "confirmation ping failed", "contact evicted");
                     }
                 });
             }
@@ -1015,21 +1174,75 @@ mod tests {
     }
 
     #[test]
-    fn stale_and_suspect_contacts_come_up_for_checking() {
+    fn rate_limited_refusal_does_not_evict_on_the_second_strike() {
         let now = Instant::now();
-        let every = Duration::from_secs(60);
+        let every = Duration::from_secs(5 * 60);
+        let rate_window = Duration::from_secs(60);
         let mut t = Table::new(id(0), 4, now);
         t.seen(contact(0x80), now);
         t.seen(contact(0x40), now);
         assert!(t.take_due_checks(now, every).is_empty());
-        t.failed(&id(0x40));
-        assert_eq!(t.take_due_checks(now, every), vec![contact(0x40)]);
+        t.failed(&id(0x40), now, rate_window);
+        // A refusal and silence have the same local error.  The confirmation
+        // must not be another request in the limiter window that refused it.
+        assert!(t.take_due_checks(now + rate_window, every).is_empty());
+        t.failed(&id(0x40), now + rate_window, rate_window);
+        assert_eq!(
+            t.take_due_checks(now + rate_window + Duration::from_secs(1), every),
+            vec![contact(0x40)]
+        );
         // In flight: not handed out again until it answers.
-        assert_eq!(t.take_due_checks(now + every, every), vec![contact(0x80)]);
-        t.seen(contact(0x40), now + every);
-        assert_eq!(t.take_due_checks(now + every * 2, every).len(), 1);
+        assert_eq!(
+            t.take_due_checks(now + every * 2, every),
+            vec![contact(0x80)]
+        );
+        t.seen(contact(0x40), now + every * 2);
+        assert_eq!(t.take_due_checks(now + every * 3, every).len(), 1);
         assert!(t.evict(&id(0x40)));
         assert!(!t.evict(&id(0x40)));
+    }
+
+    #[test]
+    fn confirming_ping_delay_is_the_configured_window_plus_margin() {
+        let window = Duration::from_secs(7);
+        assert_eq!(confirming_ping_delay(window), window + RATE_LIMIT_MARGIN);
+    }
+
+    #[test]
+    fn a_maintenance_ping_failure_waits_for_its_confirmation_window() {
+        let now = Instant::now();
+        let every = Duration::from_secs(5);
+        let window = Duration::from_secs(7);
+        let mut t = Table::new(id(0), 4, now);
+        t.seen(contact(0x40), now);
+        let first = t.take_due_checks(now + every, every);
+        assert_eq!(first, vec![contact(0x40)]);
+        assert!(!t.check_failed(&id(0x40), now + every, window));
+        assert!(t.take_due_checks(now + every + window, every).is_empty());
+        let confirmation = t.take_due_checks(now + every + confirming_ping_delay(window), every);
+        assert_eq!(confirmation, vec![contact(0x40)]);
+        assert!(t.check_failed(
+            &id(0x40),
+            now + every + confirming_ping_delay(window),
+            window,
+        ));
+        assert!(!t.contacts().iter().any(|contact| contact.id == id(0x40)));
+    }
+
+    #[test]
+    fn suspect_contacts_sort_after_healthy_lookup_candidates() {
+        let now = Instant::now();
+        let mut t = Table::new(id(0), 4, now);
+        t.seen(contact(0x01), now);
+        t.seen(contact(0x02), now);
+        t.seen(contact(0x80), now);
+        t.failed(&id(0x01), now, Duration::from_secs(60));
+
+        assert_eq!(
+            t.lookup_candidates(&id(0), 3),
+            vec![contact(0x02), contact(0x80), contact(0x01)],
+            "the closest suspect must not precede healthy candidates"
+        );
     }
 
     #[test]

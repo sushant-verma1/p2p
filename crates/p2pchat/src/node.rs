@@ -18,7 +18,7 @@
 //! completes turns the handshake into an oracle for the accepted list.
 
 use std::collections::{HashMap, HashSet};
-use std::net::SocketAddr;
+use std::net::{IpAddr, SocketAddr};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
@@ -27,6 +27,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use anyhow::{anyhow, Context, Result};
 use quinn::{Connection, Endpoint, VarInt};
 use tokio::sync::{mpsc, Mutex};
+use tokio::task::JoinSet;
 use tracing::Instrument;
 
 use p2pchat_core::wire::{
@@ -63,6 +64,36 @@ const REQUESTS: usize = 32;
 /// rest are made the next time somebody opens the client.
 const POLL_MIN: Duration = Duration::from_secs(2);
 const POLL_MAX: Duration = Duration::from_secs(60);
+
+/// A moved peer normally republishes as soon as its reachability test observes
+/// the new address.  Keep looking while an old-address dial is in flight, but
+/// do not turn one reconnect into an unbounded stream of DHT traffic.
+const NEWER_RECORD_POLL_MIN: Duration = Duration::from_secs(1);
+/// Probe starts are never more than one second apart. Together with the
+/// three-second lookup budget below, that gives a five-second bound from an
+/// independently findable newer record to the fresh dial.
+const NEWER_RECORD_POLL_MAX: Duration = Duration::from_secs(1);
+const MOVED_RECORD_POLL_MAX: Duration = Duration::from_secs(1);
+/// Probe cadence is deliberately independent from this budget.  A one-second
+/// cadence must not abort an iterative DHT lookup before it can get past a
+/// stale replica; three seconds still leaves two seconds inside M17a's
+/// five-second post-findability bound.
+const NEWER_RECORD_LOOKUP_TIMEOUT: Duration = Duration::from_secs(3);
+/// Four slots cover a three-second lookup at a one-second cadence, plus one
+/// scheduler-tick of slack. Crucially, a new probe never cancels an older
+/// lookup: it ends only at its own budget or when a newer record is found.
+const NEWER_RECORD_LOOKUPS_IN_FLIGHT: usize = 4;
+/// Once the old dial has given up, a signed address change is still useful.
+/// This is deliberately a bounded background observation, rather than making
+/// the caller wait a republish interval for an ordinary unreachable peer.
+const MOVED_RECORD_WATCH: Duration = Duration::from_secs(record::REPUBLISH + 30);
+
+/// Enables the timestamped M17 trace used by the netem diagnostic run.  It is
+/// deliberately opt-in: reconnects are normal operation, not normally
+/// info-level telemetry.
+fn m17_trace() -> bool {
+    std::env::var_os("P2PCHAT_M17_TRACE").is_some()
+}
 
 /// How long a whole dial may take — M9f, `architecture.md` §6.
 ///
@@ -243,6 +274,20 @@ fn env_ms(name: &str, default: u64) -> Duration {
 /// they are measuring.
 fn dial_timeout() -> Duration {
     env_ms("P2PCHAT_DIAL_TIMEOUT_MS", DIAL_TIMEOUT_MS)
+}
+
+/// Private DHT fixtures use loopback/RFC1918 endpoints; production does not
+/// follow those records unless the harness-only opt-in is explicit.  The
+/// universal malformed-address rule is in `record::valid_dht_addr`.
+fn dht_addr_allowed(addr: SocketAddr) -> bool {
+    if !record::valid_dht_addr(addr) {
+        return false;
+    }
+    let non_public = match addr.ip() {
+        IpAddr::V4(ip) => ip.is_loopback() || ip.is_private(),
+        IpAddr::V6(ip) => ip.is_loopback() || ip.is_unique_local(),
+    };
+    !non_public || std::env::var("P2PCHAT_ALLOW_NONPUBLIC_DHT_ADDRS").as_deref() == Ok("1")
 }
 
 /// How long to wait before attempt `attempt` (counting from 0), or `None` once
@@ -681,7 +726,11 @@ impl Node {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         if *observed != addr {
+            let previous = *observed;
             *observed = addr;
+            if m17_trace() {
+                eprintln!("m17 trace observed address changed old={previous:?} new={addr:?}");
+            }
             if addr.is_some() {
                 self.republish.notify_one();
             }
@@ -734,24 +783,133 @@ impl Node {
             return Err(NotFound.into());
         };
 
-        let (addr, error) = match self.dial_record(&record, peer).await {
-            Ok(peer) => return Ok(peer),
-            Err((_, error)) if fatal(&error) => return Err(error),
-            Err(failed) => failed,
+        // Do not put the fresh lookup behind a dial to an address the peer may
+        // just have left.  A network change publishes a strictly newer record;
+        // race that evidence with the old dial and cancel the old attempt when
+        // the newer address arrives.  If no newer evidence arrives, retain the
+        // M12 diagnosis below rather than calling silence a move.
+        let trace_m17 = m17_trace();
+        let newer = newer_record_until(
+            Arc::clone(dht),
+            peer,
+            &record,
+            Instant::now() + dial_timeout(),
+            NEWER_RECORD_POLL_MAX,
+            false,
+        );
+        let stale_addr = record.body.addrs.first().copied();
+        let stale_dial = async {
+            if trace_m17 {
+                eprintln!("m17 trace stale dial started peer={peer} addr={stale_addr:?}");
+                tracing::info!(%peer, ?stale_addr, "m17 trace stale dial started");
+            }
+            let outcome = self.dial_record(&record, peer).await;
+            if trace_m17 {
+                eprintln!(
+                    "m17 trace stale dial finished peer={peer} ok={}",
+                    outcome.is_ok()
+                );
+                tracing::info!(
+                    %peer,
+                    ?stale_addr,
+                    ok = outcome.is_ok(),
+                    "m17 trace stale dial finished"
+                );
+            }
+            outcome
         };
-        let newer = dht.lookup_newer(peer, record.body.seq).await.value;
+        tokio::pin!(newer);
+        tokio::pin!(stale_dial);
+
+        let (addr, error, newer) = tokio::select! {
+            // If the old dial and signed evidence of a move become ready in
+            // the same scheduler turn, do not report the old-address failure
+            // first.  The evidence branch cancels that stale dial.
+            biased;
+            newer = &mut newer => match newer {
+                Some(newer) => {
+                    if trace_m17 {
+                        eprintln!("m17 trace redial started peer={peer} seq={}", newer.body.seq);
+                        tracing::info!(
+                            %peer,
+                            seq = newer.body.seq,
+                            addrs = ?newer.body.addrs,
+                            "m17 trace redial started"
+                        );
+                    }
+                    match self.dial_record(&newer, peer).await {
+                        Ok(peer) => return Ok(peer),
+                        Err((_, error)) if fatal(&error) => return Err(error),
+                        Err((addr, error)) => (addr, error, Some(newer)),
+                    }
+                }
+                // The lookup deadline is the old dial's deadline too.  There
+                // is no second wait here; this is the no-newer M12 path.
+                None => match stale_dial.await {
+                    Ok(peer) => return Ok(peer),
+                    Err((_, error)) if fatal(&error) => return Err(error),
+                Err((addr, error)) => {
+                    // `newer` can reach its old-dial deadline a scheduler
+                    // turn before the stale dial reports its failure.  This
+                    // is the same post-deadline move case as the sibling
+                    // select arm below, so it must start the same watcher.
+                    watch_moved_record(Arc::clone(self), Arc::clone(dht), peer, record.clone());
+                    (addr, error, None)
+                }
+                },
+            },
+            dialled = &mut stale_dial => match dialled {
+                Ok(peer) => return Ok(peer),
+                Err((_, error)) if fatal(&error) => return Err(error),
+                Err((addr, error)) => {
+                    // Preserve the caller's dial deadline for an actually
+                    // unreachable peer, but do not lose a move whose
+                    // republish lands just after that deadline.  The watcher
+                    // only acts on a signed, changed record.
+                    watch_moved_record(Arc::clone(self), Arc::clone(dht), peer, record.clone());
+                    (addr, error, None)
+                }
+            },
+        };
+        // The concurrent path deliberately returns only a record whose
+        // addresses changed.  Re-read once for the diagnostic path so a
+        // same-address republish still refreshes M12's age calculation, and
+        // a record that won the race by a few milliseconds is still used.
+        let newer = match newer {
+            Some(newer) => Some(newer),
+            None => dht.lookup_newer(peer, record.body.seq).await.value,
+        };
         let diagnosis = diagnose(&record, newer.as_ref(), invite::now());
         let reason = explain(addr, dial_timeout(), &diagnosis);
         tracing::warn!(%peer, %addr, seq = record.body.seq, ?diagnosis, %error, "dial from the record failed");
         match newer {
             Some(newer) if matches!(diagnosis, Diagnosis::Stale { .. }) => {
-                let _ = self.events.try_send(Event::DialFailed {
-                    peer,
-                    reason: reason.clone(),
-                });
-                self.dial_record(&newer, peer).await.map_err(|(_, again)| {
-                    anyhow!("{reason}; the newer address failed too: {again:#}")
-                })
+                if trace_m17 {
+                    eprintln!(
+                        "m17 trace redial started after stale-dial result peer={peer} seq={}",
+                        newer.body.seq
+                    );
+                    tracing::info!(
+                        %peer,
+                        seq = newer.body.seq,
+                        addrs = ?newer.body.addrs,
+                        "m17 trace redial started after stale-dial result"
+                    );
+                }
+                match self.dial_record(&newer, peer).await {
+                    Ok(peer) => Ok(peer),
+                    Err((_, again)) => {
+                        // A stale address that is immediately recovered is
+                        // not a failed connection. Only surface an event if
+                        // the newer signed address failed too.
+                        let combined = format!("{reason}; the newer address failed too: {again:#}");
+                        let _ = self.events.try_send(Event::DialFailed {
+                            peer,
+                            reason: combined.clone(),
+                        });
+                        Err(anyhow!(combined))
+                    }
+                }
             }
             _ => Err(anyhow!(reason)),
         }
@@ -766,6 +924,13 @@ impl Node {
     ) -> std::result::Result<UserId, (SocketAddr, anyhow::Error)> {
         let mut last = None;
         for &addr in &record.body.addrs {
+            if !dht_addr_allowed(addr) {
+                last = Some((
+                    addr,
+                    anyhow!("DHT record address is not permitted by local address policy"),
+                ));
+                continue;
+            }
             match self.dial(addr, Some(peer)).await {
                 Ok(peer) => return Ok(peer),
                 Err(error) if fatal(&error) => return Err((addr, error)),
@@ -1389,6 +1554,116 @@ async fn poll_status(node: &Arc<Node>, peer: UserId, addr: SocketAddr, first: Du
     }
 }
 
+/// Looks for signed evidence that `current` has been superseded until the
+/// concurrent stale-address dial gives up.  A probe that has already asked
+/// old replicas can spend its tail on dead contacts and can never observe a
+/// record stored after those asks.  Bound each probe and schedule the next at
+/// one-second cadence rather than sleeping after the previous probe
+/// completes. This permits at most twenty probes in a twenty-second stale
+/// dial, while a slow lookup cannot push the next start onto the deadline.
+fn watch_moved_record(node: Arc<Node>, dht: Arc<Dht>, peer: UserId, current: AddressRecord) {
+    tokio::spawn(async move {
+        let Some(newer) = newer_record_until(
+            dht,
+            peer,
+            &current,
+            Instant::now() + MOVED_RECORD_WATCH,
+            MOVED_RECORD_POLL_MAX,
+            true,
+        )
+        .await
+        else {
+            return;
+        };
+        if m17_trace() {
+            eprintln!(
+                "m17 trace redial started after stale-dial deadline peer={peer} seq={}",
+                newer.body.seq
+            );
+        }
+        if let Err((addr, error)) = node.dial_record(&newer, peer).await {
+            tracing::debug!(%peer, %addr, %error, "moved-record redial failed");
+        }
+    });
+}
+
+async fn newer_record_until(
+    dht: Arc<Dht>,
+    peer: UserId,
+    current: &AddressRecord,
+    deadline: Instant,
+    poll_max: Duration,
+    bootstrap: bool,
+) -> Option<AddressRecord> {
+    let trace = m17_trace();
+    let traced_at = Instant::now();
+    let mut next = traced_at;
+    let mut cadence = NEWER_RECORD_POLL_MIN;
+    let mut attempt = 0_u32;
+    let mut lookups = JoinSet::new();
+    loop {
+        if Instant::now() >= deadline {
+            lookups.abort_all();
+            return None;
+        }
+
+        while Instant::now() >= next && lookups.len() < NEWER_RECORD_LOOKUPS_IN_FLIGHT {
+            attempt += 1;
+            let this_attempt = attempt;
+            let interval = cadence;
+            next += interval;
+            cadence = (cadence * 2).min(poll_max);
+            if trace {
+                eprintln!(
+                    "m17 trace newer lookup started peer={peer} attempt={this_attempt} cadence_ms={} elapsed_ms={}",
+                    interval.as_millis(),
+                    traced_at.elapsed().as_millis(),
+                );
+            }
+            let dht = Arc::clone(&dht);
+            let current_seq = current.body.seq;
+            lookups.spawn(async move {
+                let found = if bootstrap {
+                    tokio::time::timeout(
+                        NEWER_RECORD_LOOKUP_TIMEOUT,
+                        dht.lookup_newer_bootstrap(peer, current_seq),
+                    )
+                    .await
+                } else {
+                    tokio::time::timeout(
+                        NEWER_RECORD_LOOKUP_TIMEOUT,
+                        dht.lookup_newer(peer, current_seq),
+                    )
+                    .await
+                };
+                let found = found.ok();
+                let rpcs = found.as_ref().map_or(0, |found| found.rpcs);
+                let value = found.and_then(|found| found.value);
+                (this_attempt, rpcs, value)
+            });
+        }
+
+        let wake = next.min(deadline);
+        tokio::select! {
+            Some(done) = lookups.join_next(), if !lookups.is_empty() => {
+                let Ok((this_attempt, rpcs, found)) = done else { continue; };
+                if trace {
+                    eprintln!(
+                        "m17 trace newer lookup finished peer={peer} attempt={this_attempt} elapsed_ms={} rpcs={rpcs} found_newer={}",
+                        traced_at.elapsed().as_millis(),
+                        found.is_some(),
+                    );
+                }
+                if let Some(record) = found.filter(|record| record.body.addrs != current.body.addrs) {
+                    lookups.abort_all();
+                    return Some(record);
+                }
+            }
+            _ = tokio::time::sleep_until(wake.into()) => {}
+        }
+    }
+}
+
 /// §10's backoff loop: dial, wait longer, dial again, give up at the budget.
 ///
 /// Every attempt re-reads the address and re-checks the registry, because ten
@@ -1478,18 +1753,26 @@ async fn publish(node: Arc<Node>, dht: Arc<Dht>) {
             tracing::info!("no record published: no dial-back has reached this node and no private address is configured");
         } else {
             seq = session::now_ms().max(seq + 1);
-            match record::create(&node.identity, addrs.clone(), seq, invite::now()) {
+            let published_at = invite::now();
+            match record::create(&node.identity, addrs.clone(), seq, published_at) {
                 Ok(record) => {
                     let started = Instant::now();
                     let stored = dht.publish(record).await.len();
                     // What `netem/dht.py` times gate 1 and gate 2 from.
                     tracing::info!(
                         seq,
+                        published_at,
                         ?addrs,
                         stored,
                         elapsed_ms = started.elapsed().as_millis() as u64,
                         "record published"
                     );
+                    if m17_trace() {
+                        eprintln!(
+                    "m17 trace publish completed seq={seq} stored={stored} elapsed_ms={} addrs={addrs:?}",
+                    started.elapsed().as_millis(),
+                );
+                    }
                     if stored == 0 {
                         wait = PUBLISH_RETRY;
                     }
@@ -1666,6 +1949,39 @@ mod tests {
                 "attempt {attempt}",
             );
         }
+    }
+
+    /// M17a's stale-dial relookup cadence starts a probe every second. Keep
+    /// this independent of the integration gate so a slower cap cannot hide
+    /// behind a lucky first lookup on loopback.
+    #[test]
+    fn newer_record_retries_cap_at_five_seconds() {
+        let mut cadence = NEWER_RECORD_POLL_MIN;
+        for expected in [1_u64; 6] {
+            assert_eq!(cadence, Duration::from_secs(expected));
+            cadence = (cadence * 2).min(NEWER_RECORD_POLL_MAX);
+        }
+    }
+
+    /// Starting a later probe is not authority to cancel an earlier one. A
+    /// lookup can be traversing stale replicas when the next cadence tick
+    /// arrives; losing it is exactly the M17a failure this scheduler avoids.
+    #[tokio::test]
+    async fn a_new_probe_does_not_cancel_an_inflight_lookup() {
+        use tokio::sync::oneshot;
+
+        let (finish_first, first) = oneshot::channel::<u8>();
+        let mut lookups = JoinSet::new();
+        lookups.spawn(async move { first.await.expect("first probe released") });
+        tokio::task::yield_now().await;
+        assert_eq!(lookups.len(), 1, "first probe is in flight");
+
+        // This is the scheduler operation performed at the next cadence
+        // tick. It deliberately does not call `abort_all`.
+        lookups.spawn(async { 2_u8 });
+        assert_eq!(lookups.join_next().await.unwrap().unwrap(), 2);
+        finish_first.send(1).expect("first probe was not cancelled");
+        assert_eq!(lookups.join_next().await.unwrap().unwrap(), 1);
     }
 
     /// Past the end of it the interval stops growing and starts scattering.

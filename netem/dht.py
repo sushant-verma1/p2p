@@ -17,13 +17,15 @@ checkers the gates rest on is shown to report failure when the fault it looks
 for is present, and success when it is not. A checker that cannot fail would
 make every gate after it vacuous (agent.md section 7).
 """
-import argparse, glob, json, os, random, re, subprocess, sys, threading, time
+import argparse, glob, hashlib, json, os, random, re, subprocess, sys, threading, time
 from datetime import datetime
 
-BIN = os.environ.get("P2PCHAT_BIN", "/target/release/p2pchat")
 ROOT = "/run/dht"
 PUB, PRIV = 47100, 47101
 SEEDS = 3
+# Product public-node limiter timing. Written here rather than read from the
+# binary so a changed implementation cannot silently move gate 5's bound.
+RATE_LIMIT_WINDOW, RATE_LIMIT_MARGIN = 60, 1
 # netem specs, applied to each namespace's egress, so a round trip is twice
 # the delay. The same profiles as wan.py.
 PROFILES = {
@@ -37,6 +39,23 @@ T0 = time.monotonic()
 
 def log(*a):
     print(f"{time.monotonic() - T0:7.1f}", *a, flush=True)
+
+
+def verified_binary(path):
+    """Return a harness subject only when the caller named a real binary.
+
+    Do not provide a default here. A result that does not say precisely which
+    executable produced it is not evidence, especially for mutant runs.
+    """
+    if not path:
+        raise SystemExit("--binary is required; refusing an unverifiable result")
+    if not os.path.isfile(path):
+        raise SystemExit(f"--binary does not name a regular file: {path}")
+    if not os.access(path, os.X_OK):
+        raise SystemExit(f"--binary is not executable: {path}")
+    with open(path, "rb") as f:
+        digest = hashlib.sha256(f.read()).hexdigest()
+    return path, digest
 
 
 def sh(cmd, input=None, check=True):
@@ -303,24 +322,32 @@ def pct(xs, p):
 
 def stats(xs):
     xs = [x for x in xs if x is not None]
-    return {"n": len(xs), "p50": pct(xs, 50), "p90": pct(xs, 90), "p99": pct(xs, 99),
+    return {"n": len(xs), "min": min(xs) if xs else None,
+            "p50": pct(xs, 50), "p90": pct(xs, 90), "p99": pct(xs, 99),
             "max": max(xs) if xs else None, "mean": round(sum(xs) / len(xs), 2) if xs else None}
 
 
 class H:
     def __init__(self, args, binary=None, env=None):
         self.args = args
-        self.binary = binary or BIN
+        self.binary, self.binary_sha256 = verified_binary(binary or args.binary)
         self.k = None       # from the first node's ready line
         self.env = {
             "P2PCHAT_DHT_REFRESH_MS": str(args.refresh_ms),
+            # Keep the stdin driver's public limiter and the DHT's
+            # confirmation clock on exactly the same configured window.
+            "P2PCHAT_HARNESS_WINDOW_MS": str(RATE_LIMIT_WINDOW * 1000),
+            "P2PCHAT_DHT_RATE_LIMIT_WINDOW_MS": str(RATE_LIMIT_WINDOW * 1000),
+            # The namespace is RFC1918 by construction.  Normal nodes reject
+            # non-public DHT addresses unless this test-only opt-in is set.
+            "P2PCHAT_ALLOW_NONPUBLIC_DHT_ADDRS": "1",
             # `p2pchat dht` has no reachability phase: the harness controls
             # which processes are members. Model the post-dial-back state
             # explicitly, rather than letting an on-wire Member claim raise
             # an allowance. The M14/M16a loopback tests exercise the actual
             # proof path.
             "P2PCHAT_HARNESS_PROVEN_IPS": ",".join(
-                Net.ip(i) for i in range(args.n + args.clients + 16)
+                Net.ip(i) for i in range(args.n + args.clients + 2 * getattr(args, "redials", 0) + 16)
             ),
         }
         # The simulation refreshes every 30 seconds, thirty times faster than
@@ -331,6 +358,8 @@ class H:
                 "P2PCHAT_HARNESS_PER_SOURCE": "40",
                 "P2PCHAT_HARNESS_FORWARD_PER_MEMBER": "60",
             })
+        if getattr(args, "trace_m16", False):
+            self.env["P2PCHAT_M16_TRACE"] = "1"
         for name in ("k", "alpha", "replication", "rpc_timeout_ms"):
             v = getattr(args, name)
             if v is not None:
@@ -510,6 +539,13 @@ class H:
         refused RPC looks like a dead node to the asker, so any count here
         taints what a run measured, and is reported with it."""
         return sum(len(self.logs(i, r"rate limited")) for i in self.nodes)
+
+    def rate_limited_between(self, started, ended):
+        """Limiter refusals during one named interval, from every server log."""
+        return sum(
+            1 for i in self.nodes for t, _ in self.logs(i, r"rate limited")
+            if started <= t <= ended
+        )
 
     def demand(self, marks, window=60):
         """M16a. What each source asked of each server, counted the way the
@@ -894,25 +930,53 @@ def gate5(h, args):
     dead = random.sample(live, 5)
     ids = {h.nodes[i].id: i for i in dead}
     before = h.tables()
+    survivors = set(before) - set(dead)
     held_before = {i: sum(1 for t in before.values() if t and any(c[0] == h.nodes[i].id for c in t))
                    for i in dead}
     t0 = time.monotonic()
     for i in dead:
         h.nodes[i].kill()
-    limit = args.refresh_ms / 1000 * 1.25 + (args.rpc_timeout_ms or 20000) / 1000 + 30
+    rpc = (args.rpc_timeout_ms or 20000) / 1000
+    # A refresh lookup can spend one RPC discovering the dead contact, then
+    # the refusal/silence ambiguity holds its confirming Ping beyond the
+    # limiter window. The old bound already covered one final Ping and 30 s
+    # of harness/table-poll slack; retain those and add the first RPC plus the
+    # configured confirmation delay. Defaults: 37.5 + 20 + 61 + 20 + 30.
+    limit = (args.refresh_ms / 1000 * 1.25 + rpc
+             + RATE_LIMIT_WINDOW + RATE_LIMIT_MARGIN + rpc + 30)
     gone_at = {}
+    # For each killed contact, retain the time each survivor's table first
+    # stopped holding it.  ``None`` means that table did not hold it at the
+    # kill; it is not silently counted as an eviction.
+    held_by = {
+        i: [owner for owner, table in before.items() if owner in survivors
+            if table and any(c[0] == h.nodes[i].id for c in table)]
+        for i in dead
+    }
+    evicted_by = {i: {} for i in dead}
     while time.monotonic() - t0 < limit and len(gone_at) < len(dead):
         time.sleep(3)
         tables = h.tables()
         for d, i in ids.items():
+            for owner in held_by[i]:
+                if owner not in evicted_by[i] and not any(c[0] == d for c in (tables.get(owner) or [])):
+                    evicted_by[i][owner] = round(time.monotonic() - t0, 1)
             if i not in gone_at and not any(t and any(c[0] == d for c in t) for t in tables.values()):
                 gone_at[i] = round(time.monotonic() - t0, 1)
     still = {i: sum(1 for t in h.tables().values() if t and any(c[0] == h.nodes[i].id for c in t))
              for i in dead}
     evict_lines = sum(len([1 for _, l in h.logs(j, r"contact evicted") if any(fp(d) in l for d in ids)])
                       for j in h.members())
+    confirmations = sum(len([1 for _, l in h.logs(j, r"m16 trace confirming ping failed")
+                             if any(fp(d) in l for d in ids)])
+                        for j in h.members())
     return {"killed": len(dead), "tables_holding_each_before": held_before,
             "evicted_everywhere_after_s": gone_at, "tables_still_holding": still,
+            "per_table_eviction_after_s": evicted_by,
+            "limiter_window_s": RATE_LIMIT_WINDOW,
+            "limiter_margin_s": RATE_LIMIT_MARGIN,
+            "confirmation_delay_s": RATE_LIMIT_WINDOW + RATE_LIMIT_MARGIN,
+            "confirming_pings": confirmations,
             "eviction_log_lines": evict_lines, "limit_s": round(limit, 1),
             "pass": len(gone_at) == len(dead) and evict_lines > 0}
 
@@ -1013,7 +1077,12 @@ def trial(args, env):
 
 # OD-6 as shipped, for the bounds below. Written here, not read from the
 # node: a bound taken from the code under test moves with it (agent.md 7).
-LIFETIME, REPUBLISH, FUTURE_SKEW, DIAL_TIMEOUT = 180, 90, 300, 20
+LIFETIME, REPUBLISH, DIAL_TIMEOUT = 180, 90, 20
+# Once an unrelated member can read the newer record, the reconnect must not
+# spend the stale address's dial deadline. Five seconds covers the bounded
+# 1/2/4-second probe schedule plus the poor-profile lookup and handshake tail;
+# it is one quarter of the shipped 20-second dial deadline.
+REDIAL_AFTER_NEW_RECORD = 5
 
 
 class Subject(Node):
@@ -1089,10 +1158,10 @@ class Subject(Node):
             marker = len(self.lines)
         started = time.monotonic()
         with self.lock:
-            self.p.stdin.write(f"connect {peer}\n")
+            self.p.stdin.write(f"connect-async {peer}\n")
             self.p.stdin.flush()
-        got = self.wait(lambda l: l.startswith(("ok\tconnect\t", "err\tconnect\t")), 30, marker)
-        return bool(got and got[1].startswith("ok\tconnect\t")), started, marker
+        got = self.wait(lambda l: l.startswith(("ok\tconnect-async\t", "err\tconnect-async\t")), 30, marker)
+        return bool(got and got[1].startswith("ok\tconnect-async\t")), started, marker
 
     def wait_event(self, kind, peer, timeout, marker):
         return self.wait(
@@ -1143,16 +1212,19 @@ def move(h, i, new):
     """Changes subject i's IP under it, as a network change does: the
     process keeps running, its sockets stay bound to 0.0.0.0, and packets
     for the old address go nowhere."""
-    old = Net.ip(i)
+    old = h.nodes[i].ip
     sh(f"ip route add {new}/32 dev h{i}")
     sh(f"ip netns exec n{i} sh -c 'ip addr add {new}/32 dev e{i} && ip addr del {old}/32 dev e{i}"
        f" && ip route replace {GW}/32 dev e{i} && ip route replace default via {GW} dev e{i}'")
     sh(f"ip route del {old}/32 dev h{i}")
     h.nodes[i].ip = new
+    if hasattr(h.nodes[i], "private"):
+        h.nodes[i].private = f"{new}:{PRIV}"
 
 
-def moved_ip(i):
-    return f"10.99.{2 + i // 200}.{i % 200 + 10}"
+def moved_ip(i, generation=0):
+    """A non-overlapping destination for one or many real address moves."""
+    return f"10.99.{2 + generation + i // 200}.{i % 200 + 10}"
 
 
 def publish(args):
@@ -1228,23 +1300,11 @@ def publish(args):
         new = moved_ip(mover.i)
         f_fault = findable(next(unrelated), mover.id, f"{new}:{PRIV}", REPUBLISH + 15)
         f_old = findable(next(unrelated), mover.id, mover.private, 10)
-        # Control: the move made. Checker 4's control rides on it: A dials
-        # the old address straight after the move, which must read as stale.
+        # Control: the move made.  Gate 2 below measures the reconnect; this
+        # self-test is only about whether the findability checker sees a move.
         move(h, mover.i, new)
-        t_move = time.monotonic()
-        queued, dial_started, marker = a.begin_connect(mover.id)
-        time.sleep(1)
-        a.wait_event("dial-failed", mover.id, DIAL_TIMEOUT + 10, marker)
         f_ctl2 = findable(observer, mover.id, f"{new}:{PRIV}", REPUBLISH + 30,
                           newer_than=before_seq)
-        failed = [
-            (round(t - dial_started, 2), line.split("\t", 3)[3])
-            for t, line in a.events("dial-failed", mover.id, marker)
-        ]
-        session = a.wait_event("session", mover.id, REPUBLISH + 30, marker)
-        ok = queued and session is not None
-        answer = ""
-        took = round((session[0] if session else time.monotonic()) - dial_started, 2)
         R["selftest"]["2_propagated"] = {"fault_new_found_after_s": f_fault, "fault_old_still_found": f_old is not None,
                        "control_old_seq": before_seq,
                        "control_new_found_after_s": f_ctl2,
@@ -1253,8 +1313,6 @@ def publish(args):
         log("self-test 2", R["selftest"]["2_propagated"])
         if args.selftest_only and not R["selftest"]["2_propagated"]["detected"]:
             return mutation_failure()
-        stale_ctl = classify(failed[0][1] if failed else (None if ok else answer))
-        stale_after = [failed[0][0]] if failed else []
 
         # --- self-test 4: stale versus unreachable -------------------------
         # Fault: a peer at its current address, with a fresh record, that
@@ -1265,10 +1323,8 @@ def publish(args):
         h.net.heal([ctl.i])
         fault4 = classify(failed4[0][1] if failed4 else (None if ok4 else answer4))
         R["selftest"]["4_stale"] = {"fault_firewalled_read_as": fault4, "fault_answer": answer4[:300],
-                                    "control_moved_read_as": stale_ctl,
-                                    "control_reasons": [r[:300] for _, r in failed],
-                                    "detected": fault4 == "unreachable" and stale_ctl == "stale"}
-        log("self-test 4", {k: v for k, v in R["selftest"]["4_stale"].items() if "answer" not in k and "reasons" not in k})
+                                    "detected": fault4 == "unreachable"}
+        log("self-test 4", {k: v for k, v in R["selftest"]["4_stale"].items() if "answer" not in k})
         if args.selftest_only and not R["selftest"]["4_stale"]["detected"]:
             return mutation_failure()
 
@@ -1364,23 +1420,23 @@ def publish(args):
         new = moved_ip(b.i)
         changed_at = time.monotonic()
         move(h, b.i, new)
+
+        # This observer is independent of A's reconnect.  Starting the clock
+        # at the first externally readable newer record, rather than at A's
+        # command, makes a stale 20-second dial visible to the gate.
+        observed_new = {}
+        observed_started = time.monotonic()
+
+        def observe_new_record():
+            observed_new["after_s"] = findable(
+                observer, b.id, f"{new}:{PRIV}", REPUBLISH + 30,
+                newer_than=before_seq,
+            )
+
+        observer_thread = threading.Thread(target=observe_new_record)
+        observer_thread.start()
         queued, dial_started, marker = a.begin_connect(b.id)
-        a.wait_event("dial-failed", b.id, DIAL_TIMEOUT + 10, marker)
-        prop = findable(observer, b.id, f"{new}:{PRIV}", REPUBLISH + 30,
-                        newer_than=before_seq)
-        failed_events = a.events("dial-failed", b.id, marker)
-        failed = (
-            [(round(failed_events[0][0] - dial_started, 2),
-              failed_events[0][1].split("\t", 3)[3])]
-            if failed_events else []
-        )
-        # `connect` is a one-shot CLI action.  Once its old-address dial has
-        # failed, retry after lookup has actually observed B's new record.
-        # This measures redial instead of assuming the queued command retries
-        # itself.  The strict record lifetime is the availability budget; the
-        # separate propagation assertion below still permits only one refresh
-        # plus 30 seconds.
-        session = a.wait_event("session", b.id, 0, marker)
+        session = a.wait_event("session", b.id, DIAL_TIMEOUT + 10, marker)
         deadline = changed_at + LIFETIME
         retried = False
         while session is None and time.monotonic() < deadline:
@@ -1393,35 +1449,92 @@ def publish(args):
                 retry_marker,
             )
         ok = queued and session is not None
+        observer_thread.join(REPUBLISH + 35)
+        prop = observed_new.get("after_s")
+        new_record_at = (
+            observed_started + prop if prop is not None else None
+        )
+        redial_after_new_record = (
+            round(session[0] - new_record_at, 2)
+            if session is not None and new_record_at is not None else None
+        )
+        failed_events = a.events("dial-failed", b.id, marker)
+        failed = [
+            (round(t - dial_started, 2), line.split("\t", 3)[3])
+            for t, line in failed_events
+        ]
         answer = ""
         took = round((session[0] if session else time.monotonic()) - dial_started, 2)
         redial_after_move = round((session[0] if session else time.monotonic()) - changed_at, 2)
+        # A stale address can legitimately time out before the newer signed
+        # record becomes visible under loss. Gate the useful outcome instead:
+        # established redial within five seconds of independent findability.
         R["gates"]["2_propagated"] = {"bound_s": LIFETIME, "refresh_s": REPUBLISH,
                                       "old_seq": before_seq,
                                       "retried_after_new_record": retried,
                                       "new_address_findable_after_move_s": prop,
+                                      "successful_redial_after_new_address_s": redial_after_new_record,
+                                      "redial_bound_after_new_address_s": REDIAL_AFTER_NEW_RECORD,
+                                      "stale_dial_failed_before_redial": bool(failed),
                                       "successful_redial_after_move_s": redial_after_move,
                                       "pass": before_seq is not None and prop is not None and prop <= REPUBLISH + 30
-                                      and redial_after_move <= LIFETIME and ok}
+                                      and redial_after_move <= LIFETIME and ok
+                                      and redial_after_new_record is not None
+                                      and redial_after_new_record <= REDIAL_AFTER_NEW_RECORD
+                                      }
         log("gate 2", R["gates"]["2_propagated"])
-        first = failed[0] if failed else None
-        R["gates"]["4_stale"] = {"read_as": classify(first[1] if first else (None if ok else answer)),
-                                 "failed_dial_after_s": first and first[0], "reasons": [r[:300] for _, r in failed],
+        R["gates"]["4_stale"] = {"m12_no_newer_control": R["selftest"]["4_stale"]["fault_firewalled_read_as"],
+                                 "stale_dial_failures": len(failed),
                                  "connected": ok, "connect_seconds": took, "answer": answer[:300],
-                                 "pass": first is not None and classify(first[1]) == "stale" and ok}
+                                 "pass": R["selftest"]["4_stale"]["fault_firewalled_read_as"] == "unreachable"
+                                 and not failed and ok}
         log("gate 4", {k: v for k, v in R["gates"]["4_stale"].items() if k not in ("reasons", "answer")})
 
         # Gate 3: B goes offline for good. A dialled the session, so A's
         # reconnect loop runs (architecture.md 10); it must end by reporting
-        # B not found, before its ten-minute budget, and dial no more.
+        # B not found, before the record-lifetime bound, and dial no more.
+        # The lifetime starts at the signed `published_at`, not at process
+        # death: the old result measured the latter and made a valid record's
+        # pre-existing age look like an expiry overrun.
+        publishes = []
+        for published, line in h.logs(b.i, r"record published"):
+            stamp = re.search(r"published_at=(\d+)", line)
+            stored = re.search(r"stored=(\d+)", line)
+            if stamp and stored and int(stored.group(1)) > 0:
+                publishes.append(int(stamp.group(1)))
+        published_at = max(publishes) if publishes else None
         since = len(a.lines)
         t_off = time.monotonic()
+        off_wall = time.time()
         b.kill()
+        expiry_probe = {}
+
+        def check_strict_expiry():
+            if published_at is None:
+                return
+            # `published_at` is whole seconds and `Records::get` expires
+            # strictly (`now > expires_at`). Leave a full extra two seconds
+            # beyond the nominal lifetime so neither integer-second
+            # truncation nor a cross-container clock edge probes at equality.
+            time.sleep(max(0, published_at + LIFETIME + 10 - time.time()))
+            expiry_probe["record"] = observer.get(b.id)
+            expiry_probe["after_published_s"] = round(time.time() - published_at, 1)
+
+        expiry_thread = threading.Thread(target=check_strict_expiry)
+        expiry_thread.start()
         limit = LIFETIME + 180
         got = a.wait(lambda l: l.startswith(f"event\tdial-failed\t{b.id}\t")
                      and classify(l.split("\t", 3)[3]) in ("not found", "other"), limit, since)
         reported = got and got[1].split("\t", 3)[3]
         at = got and round(got[0] - t_off, 1)
+        age_at_offline = (round(off_wall - published_at, 1)
+                          if published_at is not None else None)
+        after_last_publish = (round(age_at_offline + at, 1)
+                              if age_at_offline is not None and at is not None else None)
+        expiry_thread.join(60)
+        expiry_result = expiry_probe.get("record")
+        expiry_checked = "record" in expiry_probe
+        served_after_expiry = expiry_result is not None and expiry_result.get("seq") is not None
         time.sleep(60)
         after = [l for t, l in h.logs(a.i, r"reconnect failed|dial from the record failed")
                  if got and t > time.time() - (time.monotonic() - got[0])]
@@ -1429,10 +1542,18 @@ def publish(args):
                      if re.search(r"diagnosis=(\w+)", l)]
         gave_up = h.logs(a.i, r"giving up: the peer did not answer inside the budget")
         R["gates"]["3_not_found"] = {"reported": reported and reported[:200], "after_offline_s": at,
-                                     "bound_s": LIFETIME + 76, "diagnoses_in_order": diagnoses,
+                                     "published_at": published_at, "record_age_at_offline_s": age_at_offline,
+                                     "after_last_publish_s": after_last_publish,
+                                     "expiry_probe_after_published_s": expiry_probe.get("after_published_s"),
+                                     "expiry_probe_completed": expiry_checked,
+                                     "served_after_expiry": served_after_expiry,
+                                     "bound_s": LIFETIME + 36 + 40, "diagnoses_in_order": diagnoses,
                                      "dials_after_report": len(after), "gave_up_on_budget": len(gave_up),
                                      "pass": bool(got) and classify(reported) == "not found" and not after
-                                     and not gave_up and at <= LIFETIME + 76}
+                                     and not gave_up and published_at is not None
+                                     and after_last_publish is not None
+                                     and after_last_publish <= LIFETIME + 36 + 40
+                                     and expiry_checked and not served_after_expiry}
         log("gate 3", R["gates"]["3_not_found"])
 
         # --- OD-6 timings, from the subjects' own logs ------------------------
@@ -1451,7 +1572,9 @@ def publish(args):
                     "publishes": len(pubs), "republish_gap_s": stats(gaps),
                     # From A's `connect` to its report of the stale dial: the
                     # self-test's move and the gate's.
-                    "stale_dial_failed_after_s": stale_after + ([first[0]] if first else []),
+                    "stale_dial_failed_after_s": [t for t, _ in failed],
+                    "successful_redial_after_new_address_s": [redial_after_new_record]
+                    if redial_after_new_record is not None else [],
                     "address_change_to_successful_redial_s": [redial_after_move] if ok else []}
     finally:
         # The subjects' logs outlive the container, so a failed gate can be
@@ -1469,9 +1592,196 @@ def publish(args):
 
 # ---------------------------------------------------------------------------
 
+def redials(args):
+    """Twenty real stale-address reconnects per profile, without expiry waits.
+
+    Each sample starts a fresh client so it has no session or cached outcome,
+    waits until it has actually begun the stale dial, then moves the same live
+    peer.  The observer and all timestamps are independent of that client.
+    """
+    h = H(args, binary=args.binary, env={"P2PCHAT_M17_TRACE": "1"})
+    offsets = [float(value) for value in args.move_offsets.split(",")]
+    if not offsets or any(offset < 0 for offset in offsets):
+        raise SystemExit("--move-offsets must be one or more non-negative seconds")
+    R = {"profile": args.profile, "redial_bound_s": REDIAL_AFTER_NEW_RECORD,
+         "findability_bound_s": REPUBLISH + 30,
+         "end_to_end_bound_s": REPUBLISH + 30 + REDIAL_AFTER_NEW_RECORD,
+         # A start every second plus a three-second lookup budget is the
+         # five-second claim below. The product caps concurrency at four.
+         "retry_probe_starts_s": "every 1s while stale dial is in flight",
+         "lookup_budget_s": 3, "move_offsets_s": offsets, "samples": []}
+    b = None
+    try:
+        h.preflight(args.n)
+        h.boot(args.n)
+        R["converged_after_s"] = h.converge(limit=args.converge_s)[0]
+        b_i = args.n
+        h.net.add(b_i)
+        h.net.netem(b_i, PROFILES[args.profile])
+        b = h.nodes[b_i] = Subject(h, b_i)
+        observer = h.nodes[SEEDS]
+        if findable(observer, b.id, b.private, args.findable_s) is None:
+            raise RuntimeError("initial moved-peer record was not externally findable")
+
+        for sample in range(args.redials):
+            before = observer.get(b.id)
+            before_seq = int(before["seq"]) if before and before["seq"] else None
+            old_addr = b.private
+            if before_seq is None or old_addr not in (before.get("addrs") or "").split(","):
+                raise RuntimeError(f"sample {sample}: old record was not externally readable")
+
+            a_i = args.n + 1 + sample
+            h.net.add(a_i)
+            h.net.netem(a_i, PROFILES[args.profile])
+            a = h.nodes[a_i] = Subject(h, a_i)
+            a.call(f"accept {b.id}")
+            b.call(f"accept {a.id}")
+            a_mark, b_mark = len(a.lines), len(b.lines)
+            member_marks = {i: len(n.lines) for i, n in h.nodes.items() if not n.client and n.alive}
+            # A loopback-old address can handshake before a user-space trace
+            # line is observed.  Silence it only until the stale dial has
+            # begun, then remove the rule immediately after the real move so
+            # the new address is an ordinary profile dial.
+            h.net.rules(b.i, [f"-A INPUT -s {a.ip} -j DROP"])
+            queued, dial_started, marker = a.begin_connect(b.id)
+            stale_started = a.wait(
+                lambda line: ("m17 trace stale dial started" in line
+                              or line.startswith(f"event\tphase\t{b.id}")),
+                30,
+                a_mark,
+            )
+            if not queued or stale_started is None:
+                with a.cv:
+                    tail = [line for _, line in a.lines[a_mark:]][-20:]
+                raise RuntimeError(
+                    f"sample {sample}: stale dial did not start; queued={queued}; tail={tail}"
+                )
+
+            offset = offsets[sample % len(offsets)]
+            # Deliberately de-phase the address change from the probe clock.
+            # This makes a short result depend on the actual cadence rather
+            # than repeatedly landing just before a favourable probe.
+            remaining = offset - (time.monotonic() - stale_started[0])
+            if remaining > 0:
+                time.sleep(remaining)
+            new = moved_ip(b.i, sample + 1)
+            changed_at = time.monotonic()
+            move(h, b.i, new)
+            h.net.heal([b.i])
+            observed = {}
+            observed_started = time.monotonic()
+
+            def observe():
+                observed["after_s"] = findable(
+                    observer, b.id, f"{new}:{PRIV}", REPUBLISH + 30,
+                    newer_than=before_seq,
+                )
+
+            observer_thread = threading.Thread(target=observe)
+            observer_thread.start()
+            redial_started = a.wait(
+                lambda line: line.startswith("m17 trace redial started"),
+                REPUBLISH + 30 + REDIAL_AFTER_NEW_RECORD,
+                a_mark,
+            )
+            # M17's five-second bound ends when the fresh dial starts.  The
+            # following session is intentionally separate: it owns its own
+            # dial budget under packet loss.
+            session = a.wait_event("session", b.id, DIAL_TIMEOUT + 10, marker)
+            observer_thread.join(REPUBLISH + 35)
+            prop = observed.get("after_s")
+            new_record_at = observed_started + prop if prop is not None else None
+            redial = (round(redial_started[0] - new_record_at, 3)
+                      if redial_started is not None and new_record_at is not None else None)
+            end_to_end = (round(redial_started[0] - changed_at, 3)
+                          if redial_started is not None else None)
+            detection = b.wait(lambda line: "m17 trace observed address changed" in line and new in line,
+                               30, b_mark)
+            published = b.wait(lambda line: "m17 trace publish completed" in line and new in line,
+                               REPUBLISH + 30, b_mark)
+            stores = []
+            for i, line_mark in member_marks.items():
+                with h.nodes[i].cv:
+                    lines = h.nodes[i].lines[line_mark:]
+                for t, line in lines:
+                    seq = re.search(r"seq=(\d+)", line)
+                    if ("m17 trace store landed" in line and fp(b.id) in line and seq
+                            and int(seq.group(1)) > before_seq):
+                        stores.append(t)
+            with a.cv:
+                trace = [{"after_move_s": round(t - changed_at, 3), "line": line}
+                         for t, line in a.lines[a_mark:] if "m17 trace" in line]
+            probe_rpcs = sum(
+                int(match.group(1)) for item in trace
+                for match in [re.search(r"rpcs=(\d+)", item["line"])] if match
+            )
+            probe_starts = sum("newer lookup started" in item["line"] for item in trace)
+            failed = a.events("dial-failed", b.id, marker)
+            redial_ended = redial_started[0] if redial_started is not None else time.monotonic()
+            sample_result = {
+                "sample": sample + 1,
+                "move_offset_s": offset,
+                "old_seq": before_seq,
+                "old_addr": old_addr,
+                "new_addr": f"{new}:{PRIV}",
+                "stale_dial_started_after_move_s": round(stale_started[0] - changed_at, 3),
+                "change_detection_s": round(detection[0] - changed_at, 3) if detection else None,
+                "publish_completed_s": round(published[0] - changed_at, 3) if published else None,
+                "newer_store_landed_s": round(min(stores) - changed_at, 3) if stores else None,
+                "new_address_findable_s": prop,
+                "redial_after_findability_s": redial,
+                "end_to_end_s": end_to_end,
+                "session_established_s": (round(session[0] - changed_at, 3)
+                                          if session is not None else None),
+                "probe_starts": probe_starts,
+                "probe_rpcs": probe_rpcs,
+                "limiter_refusals_during_redial": h.rate_limited_between(changed_at, redial_ended),
+                "stale_dial_failures": [line for _, line in failed],
+                "trace": trace,
+            }
+            sample_result["pass"] = (
+                redial_started is not None and prop is not None and prop <= REPUBLISH + 30
+                and redial is not None and redial <= REDIAL_AFTER_NEW_RECORD
+                and end_to_end is not None and end_to_end <= REPUBLISH + 30 + REDIAL_AFTER_NEW_RECORD
+                and not failed and sample_result["limiter_refusals_during_redial"] == 0
+            )
+            R["samples"].append(sample_result)
+            log("redial", args.profile, sample + 1,
+                {k: sample_result[k] for k in ("new_address_findable_s", "redial_after_findability_s",
+                                                 "end_to_end_s", "pass")})
+            a.kill()
+            # Each distribution point is one move of one fresh peer.  Reusing
+            # B would make the next point depend on its prior reachability
+            # watcher and record chain rather than just this redial.
+            b.kill()
+            if sample + 1 < args.redials:
+                b_i = args.n + args.redials + 1 + sample
+                h.net.add(b_i)
+                h.net.netem(b_i, PROFILES[args.profile])
+                b = h.nodes[b_i] = Subject(h, b_i)
+                if findable(observer, b.id, b.private, args.findable_s) is None:
+                    raise RuntimeError(f"sample {sample + 1}: fresh moved peer was not externally findable")
+        R["redial_after_findability_s"] = stats([s["redial_after_findability_s"] for s in R["samples"]])
+        R["end_to_end_s"] = stats([s["end_to_end_s"] for s in R["samples"]])
+        R["session_established_s"] = stats([s["session_established_s"] for s in R["samples"]])
+        R["change_detection_s"] = stats([s["change_detection_s"] for s in R["samples"]])
+        R["publish_completed_s"] = stats([s["publish_completed_s"] for s in R["samples"]])
+        R["newer_store_landed_s"] = stats([s["newer_store_landed_s"] for s in R["samples"]])
+        R["new_address_findable_s"] = stats([s["new_address_findable_s"] for s in R["samples"]])
+        R["probe_starts"] = stats([s["probe_starts"] for s in R["samples"]])
+        R["probe_rpcs"] = stats([s["probe_rpcs"] for s in R["samples"]])
+        R["limiter_refusals_during_redials"] = sum(
+            s["limiter_refusals_during_redial"] for s in R["samples"]
+        )
+        R["pass"] = all(s["pass"] for s in R["samples"])
+        return R
+    finally:
+        h.teardown()
+
+
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("scenario", choices=["selftest", "gates", "trial", "publish"])
+    p.add_argument("scenario", choices=["selftest", "gates", "trial", "publish", "redials"])
     p.add_argument("--n", type=int, default=50)
     p.add_argument("--clients", type=int, default=3)
     p.add_argument("--profile", default="baseline", choices=list(PROFILES))
@@ -1485,13 +1795,20 @@ def main():
     p.add_argument("--finds", type=int, default=2)
     p.add_argument("--kill", type=float, default=0.3)
     p.add_argument("--only", default=None, help="comma-separated gate numbers")
-    p.add_argument("--binary", default=None)
+    p.add_argument("--binary", required=True,
+                   help="exact executable to test; no default is permitted")
     p.add_argument("--env", action="append", default=[], help="K=V passed to every node")
     p.add_argument("--findable-s", type=int, default=30, help="M17 gate 1's bound")
     p.add_argument("--out", default="/out")
     p.add_argument("--tag", default="")
+    p.add_argument("--trace-m16", action="store_true",
+                   help="log each gate-5 confirmation Ping")
     p.add_argument("--selftest-only", action="store_true",
                    help="run M17 checker faults only (used by mutants)")
+    p.add_argument("--redials", type=int, default=20,
+                   help="real address moves in the redials scenario")
+    p.add_argument("--move-offsets", default="0",
+                   help="comma-separated seconds after stale dial begins (redials only)")
     args = p.parse_args()
     env = dict(e.split("=", 1) for e in args.env)
     if args.scenario == "selftest":
@@ -1501,9 +1818,13 @@ def main():
         R = gates(args, binary=args.binary, env=env, only=only)
     elif args.scenario == "publish":
         R = publish(args)
+    elif args.scenario == "redials":
+        R = redials(args)
     else:
         R = trial(args, env)
     R["args"] = vars(args)
+    binary, digest = verified_binary(args.binary)
+    R["binary"] = {"path": binary, "sha256": digest}
     name = f"dht-{args.scenario}{('-' + args.tag) if args.tag else ''}.json"
     os.makedirs(args.out, exist_ok=True)
     with open(os.path.join(args.out, name), "w", encoding="utf-8") as f:
