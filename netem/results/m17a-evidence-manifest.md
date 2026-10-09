@@ -10,6 +10,12 @@ Those distributions used an unrelated observer's first read of the newer
 record as their reference and gated a redial *start*. They may contain
 negative observer-relative values and are retained only for auditability.
 
+Also superseded (a harness audit found that these runs could select a
+pre-move STORE with a newer sequence):
+
+- `dht-redials-m17a-causal-baseline.json`
+- `dht-redials-m17a-causal-typical.json`
+
 The replacement records one atomic on-disk sample at a time. Its causal
 reference is the member-side `STORE`-accepted timestamp and it reports, per
 profile and per sample, `move_to_session_established_s` and

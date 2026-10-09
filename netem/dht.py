@@ -1729,7 +1729,13 @@ def redials(args):
                     lines = h.nodes[i].lines[line_mark:]
                 for t, line in lines:
                     seq = re.search(r"seq=(\d+)", line)
-                    if ("m17 trace store landed" in line and fp(b.id) in line and seq
+                    # A client can publish a startup/reachability update just
+                    # before the measured move.  It has a newer sequence than
+                    # `before_seq` but cannot be the causal record for this
+                    # sample; accept only member-side STORE acceptance after
+                    # the move clock starts.
+                    if (t >= changed_at and "m17 trace store landed" in line
+                            and fp(b.id) in line and seq
                             and int(seq.group(1)) > before_seq):
                         stores.append(t)
             store_accepted_at = min(stores) if stores else None
