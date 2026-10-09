@@ -1,0 +1,2861 @@
+{
+ "profile": "baseline",
+ "redial_bound_s": 5,
+ "findability_bound_s": 120,
+ "end_to_end_bound_s": 125,
+ "causal_reference": "member-side STORE-accepted timestamp",
+ "gate_metric": "move_to_session_established_s",
+ "reported_metrics": [
+  "move_to_session_established_s",
+  "store_accepted_to_session_established_s"
+ ],
+ "retry_probe_starts_s": "every 1s while stale dial is in flight",
+ "lookup_budget_s": 3,
+ "move_offsets_s": [
+  0.1,
+  0.3,
+  0.5,
+  0.7,
+  0.9,
+  2.0,
+  5.0,
+  9.0,
+  14.0
+ ],
+ "samples": [
+  {
+   "sample": 1,
+   "move_offset_s": 0.1,
+   "old_seq": 1791559888175,
+   "old_addr": "10.99.0.60:47101",
+   "new_addr": "10.99.3.60:47101",
+   "stale_dial_started_after_move_s": -0.1,
+   "change_detection_s": 9.289,
+   "publish_completed_s": 9.3,
+   "newer_store_accepted_s": 9.298,
+   "move_to_session_established_s": 9.906,
+   "store_accepted_to_session_established_s": 0.608,
+   "probe_starts": 11,
+   "probe_rpcs": 308,
+   "limiter_refusals_during_redial": 0,
+   "stale_dial_failures": [],
+   "trace": [
+    {
+     "after_move_s": -0.12,
+     "line": "m17 trace observed address changed old=None new=Some(10.99.0.61:47101)"
+    },
+    {
+     "after_move_s": -0.115,
+     "line": "m17 trace publish completed seq=1791559888757 stored=8 elapsed_ms=12 addrs=[10.99.0.61:47101]"
+    },
+    {
+     "after_move_s": -0.103,
+     "line": "m17 trace publish completed seq=1791559888770 stored=8 elapsed_ms=11 addrs=[10.99.0.61:47101]"
+    },
+    {
+     "after_move_s": -0.1,
+     "line": "m17 trace newer lookup started peer=af54 ce55 7766 6962 attempt=1 cadence_ms=1000 elapsed_ms=0"
+    },
+    {
+     "after_move_s": -0.1,
+     "line": "m17 trace stale dial started peer=af54 ce55 7766 6962 addr=Some(10.99.0.60:47101)"
+    },
+    {
+     "after_move_s": -0.083,
+     "line": "m17 trace newer lookup finished peer=af54 ce55 7766 6962 attempt=1 elapsed_ms=17 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 0.901,
+     "line": "m17 trace newer lookup started peer=af54 ce55 7766 6962 attempt=2 cadence_ms=1000 elapsed_ms=1000"
+    },
+    {
+     "after_move_s": 0.916,
+     "line": "m17 trace newer lookup finished peer=af54 ce55 7766 6962 attempt=2 elapsed_ms=1016 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 1.901,
+     "line": "m17 trace newer lookup started peer=af54 ce55 7766 6962 attempt=3 cadence_ms=1000 elapsed_ms=2001"
+    },
+    {
+     "after_move_s": 1.916,
+     "line": "m17 trace newer lookup finished peer=af54 ce55 7766 6962 attempt=3 elapsed_ms=2016 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 2.901,
+     "line": "m17 trace newer lookup started peer=af54 ce55 7766 6962 attempt=4 cadence_ms=1000 elapsed_ms=3000"
+    },
+    {
+     "after_move_s": 2.917,
+     "line": "m17 trace newer lookup finished peer=af54 ce55 7766 6962 attempt=4 elapsed_ms=3016 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 3.901,
+     "line": "m17 trace newer lookup started peer=af54 ce55 7766 6962 attempt=5 cadence_ms=1000 elapsed_ms=4001"
+    },
+    {
+     "after_move_s": 3.917,
+     "line": "m17 trace newer lookup finished peer=af54 ce55 7766 6962 attempt=5 elapsed_ms=4017 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 4.902,
+     "line": "m17 trace newer lookup started peer=af54 ce55 7766 6962 attempt=6 cadence_ms=1000 elapsed_ms=5001"
+    },
+    {
+     "after_move_s": 4.917,
+     "line": "m17 trace newer lookup finished peer=af54 ce55 7766 6962 attempt=6 elapsed_ms=5017 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 5.902,
+     "line": "m17 trace newer lookup started peer=af54 ce55 7766 6962 attempt=7 cadence_ms=1000 elapsed_ms=6001"
+    },
+    {
+     "after_move_s": 5.92,
+     "line": "m17 trace newer lookup finished peer=af54 ce55 7766 6962 attempt=7 elapsed_ms=6020 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 6.901,
+     "line": "m17 trace newer lookup started peer=af54 ce55 7766 6962 attempt=8 cadence_ms=1000 elapsed_ms=7001"
+    },
+    {
+     "after_move_s": 6.917,
+     "line": "m17 trace newer lookup finished peer=af54 ce55 7766 6962 attempt=8 elapsed_ms=7017 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 7.901,
+     "line": "m17 trace newer lookup started peer=af54 ce55 7766 6962 attempt=9 cadence_ms=1000 elapsed_ms=8001"
+    },
+    {
+     "after_move_s": 7.917,
+     "line": "m17 trace newer lookup finished peer=af54 ce55 7766 6962 attempt=9 elapsed_ms=8016 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 8.901,
+     "line": "m17 trace newer lookup started peer=af54 ce55 7766 6962 attempt=10 cadence_ms=1000 elapsed_ms=9001"
+    },
+    {
+     "after_move_s": 8.919,
+     "line": "m17 trace newer lookup finished peer=af54 ce55 7766 6962 attempt=10 elapsed_ms=9019 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 9.901,
+     "line": "m17 trace newer lookup started peer=af54 ce55 7766 6962 attempt=11 cadence_ms=1000 elapsed_ms=10001"
+    },
+    {
+     "after_move_s": 9.904,
+     "line": "m17 trace newer lookup finished peer=af54 ce55 7766 6962 attempt=11 elapsed_ms=10003 rpcs=8 found_newer=true"
+    },
+    {
+     "after_move_s": 9.904,
+     "line": "m17 trace redial started peer=af54 ce55 7766 6962 seq=1791559898172"
+    }
+   ],
+   "pass": true
+  },
+  {
+   "sample": 2,
+   "move_offset_s": 0.3,
+   "old_seq": 1791559898920,
+   "old_addr": "10.99.0.81:47101",
+   "new_addr": "10.99.4.81:47101",
+   "stale_dial_started_after_move_s": -0.3,
+   "change_detection_s": 9.101,
+   "publish_completed_s": 9.113,
+   "newer_store_accepted_s": 9.111,
+   "move_to_session_established_s": 9.708,
+   "store_accepted_to_session_established_s": 0.598,
+   "probe_starts": 11,
+   "probe_rpcs": 308,
+   "limiter_refusals_during_redial": 0,
+   "stale_dial_failures": [],
+   "trace": [
+    {
+     "after_move_s": -0.321,
+     "line": "m17 trace observed address changed old=None new=Some(10.99.0.62:47101)"
+    },
+    {
+     "after_move_s": -0.316,
+     "line": "m17 trace publish completed seq=1791559899490 stored=8 elapsed_ms=12 addrs=[10.99.0.62:47101]"
+    },
+    {
+     "after_move_s": -0.304,
+     "line": "m17 trace publish completed seq=1791559899503 stored=8 elapsed_ms=12 addrs=[10.99.0.62:47101]"
+    },
+    {
+     "after_move_s": -0.3,
+     "line": "m17 trace newer lookup started peer=0a8c 2462 530f d0f2 attempt=1 cadence_ms=1000 elapsed_ms=0"
+    },
+    {
+     "after_move_s": -0.3,
+     "line": "m17 trace stale dial started peer=0a8c 2462 530f d0f2 addr=Some(10.99.0.81:47101)"
+    },
+    {
+     "after_move_s": -0.285,
+     "line": "m17 trace newer lookup finished peer=0a8c 2462 530f d0f2 attempt=1 elapsed_ms=15 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 0.7,
+     "line": "m17 trace newer lookup started peer=0a8c 2462 530f d0f2 attempt=2 cadence_ms=1000 elapsed_ms=1000"
+    },
+    {
+     "after_move_s": 0.716,
+     "line": "m17 trace newer lookup finished peer=0a8c 2462 530f d0f2 attempt=2 elapsed_ms=1016 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 1.701,
+     "line": "m17 trace newer lookup started peer=0a8c 2462 530f d0f2 attempt=3 cadence_ms=1000 elapsed_ms=2001"
+    },
+    {
+     "after_move_s": 1.724,
+     "line": "m17 trace newer lookup finished peer=0a8c 2462 530f d0f2 attempt=3 elapsed_ms=2024 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 2.7,
+     "line": "m17 trace newer lookup started peer=0a8c 2462 530f d0f2 attempt=4 cadence_ms=1000 elapsed_ms=3000"
+    },
+    {
+     "after_move_s": 2.716,
+     "line": "m17 trace newer lookup finished peer=0a8c 2462 530f d0f2 attempt=4 elapsed_ms=3016 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 3.7,
+     "line": "m17 trace newer lookup started peer=0a8c 2462 530f d0f2 attempt=5 cadence_ms=1000 elapsed_ms=4000"
+    },
+    {
+     "after_move_s": 3.717,
+     "line": "m17 trace newer lookup finished peer=0a8c 2462 530f d0f2 attempt=5 elapsed_ms=4016 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 4.701,
+     "line": "m17 trace newer lookup started peer=0a8c 2462 530f d0f2 attempt=6 cadence_ms=1000 elapsed_ms=5000"
+    },
+    {
+     "after_move_s": 4.717,
+     "line": "m17 trace newer lookup finished peer=0a8c 2462 530f d0f2 attempt=6 elapsed_ms=5016 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 5.701,
+     "line": "m17 trace newer lookup started peer=0a8c 2462 530f d0f2 attempt=7 cadence_ms=1000 elapsed_ms=6000"
+    },
+    {
+     "after_move_s": 5.72,
+     "line": "m17 trace newer lookup finished peer=0a8c 2462 530f d0f2 attempt=7 elapsed_ms=6020 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 6.7,
+     "line": "m17 trace newer lookup started peer=0a8c 2462 530f d0f2 attempt=8 cadence_ms=1000 elapsed_ms=7000"
+    },
+    {
+     "after_move_s": 6.722,
+     "line": "m17 trace newer lookup finished peer=0a8c 2462 530f d0f2 attempt=8 elapsed_ms=7022 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 7.701,
+     "line": "m17 trace newer lookup started peer=0a8c 2462 530f d0f2 attempt=9 cadence_ms=1000 elapsed_ms=8001"
+    },
+    {
+     "after_move_s": 7.715,
+     "line": "m17 trace newer lookup finished peer=0a8c 2462 530f d0f2 attempt=9 elapsed_ms=8015 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 8.7,
+     "line": "m17 trace newer lookup started peer=0a8c 2462 530f d0f2 attempt=10 cadence_ms=1000 elapsed_ms=9000"
+    },
+    {
+     "after_move_s": 8.717,
+     "line": "m17 trace newer lookup finished peer=0a8c 2462 530f d0f2 attempt=10 elapsed_ms=9016 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 9.701,
+     "line": "m17 trace newer lookup started peer=0a8c 2462 530f d0f2 attempt=11 cadence_ms=1000 elapsed_ms=10000"
+    },
+    {
+     "after_move_s": 9.703,
+     "line": "m17 trace newer lookup finished peer=0a8c 2462 530f d0f2 attempt=11 elapsed_ms=10003 rpcs=8 found_newer=true"
+    },
+    {
+     "after_move_s": 9.703,
+     "line": "m17 trace redial started peer=0a8c 2462 530f d0f2 seq=1791559908920"
+    }
+   ],
+   "pass": true
+  },
+  {
+   "sample": 3,
+   "move_offset_s": 0.5,
+   "old_seq": 1791559909643,
+   "old_addr": "10.99.0.82:47101",
+   "new_addr": "10.99.5.82:47101",
+   "stale_dial_started_after_move_s": -0.5,
+   "change_detection_s": 8.905,
+   "publish_completed_s": 8.916,
+   "newer_store_accepted_s": 8.915,
+   "move_to_session_established_s": 9.508,
+   "store_accepted_to_session_established_s": 0.593,
+   "probe_starts": 11,
+   "probe_rpcs": 298,
+   "limiter_refusals_during_redial": 0,
+   "stale_dial_failures": [],
+   "trace": [
+    {
+     "after_move_s": -0.521,
+     "line": "m17 trace observed address changed old=None new=Some(10.99.0.63:47101)"
+    },
+    {
+     "after_move_s": -0.515,
+     "line": "m17 trace publish completed seq=1791559910212 stored=8 elapsed_ms=11 addrs=[10.99.0.63:47101]"
+    },
+    {
+     "after_move_s": -0.504,
+     "line": "m17 trace publish completed seq=1791559910223 stored=8 elapsed_ms=11 addrs=[10.99.0.63:47101]"
+    },
+    {
+     "after_move_s": -0.5,
+     "line": "m17 trace newer lookup started peer=f92a adf0 8bd9 0dde attempt=1 cadence_ms=1000 elapsed_ms=0"
+    },
+    {
+     "after_move_s": -0.5,
+     "line": "m17 trace stale dial started peer=f92a adf0 8bd9 0dde addr=Some(10.99.0.82:47101)"
+    },
+    {
+     "after_move_s": -0.484,
+     "line": "m17 trace newer lookup finished peer=f92a adf0 8bd9 0dde attempt=1 elapsed_ms=15 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 0.501,
+     "line": "m17 trace newer lookup started peer=f92a adf0 8bd9 0dde attempt=2 cadence_ms=1000 elapsed_ms=1001"
+    },
+    {
+     "after_move_s": 0.517,
+     "line": "m17 trace newer lookup finished peer=f92a adf0 8bd9 0dde attempt=2 elapsed_ms=1017 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 1.5,
+     "line": "m17 trace newer lookup started peer=f92a adf0 8bd9 0dde attempt=3 cadence_ms=1000 elapsed_ms=2000"
+    },
+    {
+     "after_move_s": 1.516,
+     "line": "m17 trace newer lookup finished peer=f92a adf0 8bd9 0dde attempt=3 elapsed_ms=2016 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 2.501,
+     "line": "m17 trace newer lookup started peer=f92a adf0 8bd9 0dde attempt=4 cadence_ms=1000 elapsed_ms=3000"
+    },
+    {
+     "after_move_s": 2.524,
+     "line": "m17 trace newer lookup finished peer=f92a adf0 8bd9 0dde attempt=4 elapsed_ms=3024 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 3.501,
+     "line": "m17 trace newer lookup started peer=f92a adf0 8bd9 0dde attempt=5 cadence_ms=1000 elapsed_ms=4000"
+    },
+    {
+     "after_move_s": 3.517,
+     "line": "m17 trace newer lookup finished peer=f92a adf0 8bd9 0dde attempt=5 elapsed_ms=4017 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 4.501,
+     "line": "m17 trace newer lookup started peer=f92a adf0 8bd9 0dde attempt=6 cadence_ms=1000 elapsed_ms=5000"
+    },
+    {
+     "after_move_s": 4.518,
+     "line": "m17 trace newer lookup finished peer=f92a adf0 8bd9 0dde attempt=6 elapsed_ms=5018 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 5.501,
+     "line": "m17 trace newer lookup started peer=f92a adf0 8bd9 0dde attempt=7 cadence_ms=1000 elapsed_ms=6000"
+    },
+    {
+     "after_move_s": 5.513,
+     "line": "m17 trace newer lookup finished peer=f92a adf0 8bd9 0dde attempt=7 elapsed_ms=6013 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 6.501,
+     "line": "m17 trace newer lookup started peer=f92a adf0 8bd9 0dde attempt=8 cadence_ms=1000 elapsed_ms=7001"
+    },
+    {
+     "after_move_s": 6.516,
+     "line": "m17 trace newer lookup finished peer=f92a adf0 8bd9 0dde attempt=8 elapsed_ms=7015 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 7.501,
+     "line": "m17 trace newer lookup started peer=f92a adf0 8bd9 0dde attempt=9 cadence_ms=1000 elapsed_ms=8001"
+    },
+    {
+     "after_move_s": 7.516,
+     "line": "m17 trace newer lookup finished peer=f92a adf0 8bd9 0dde attempt=9 elapsed_ms=8016 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 8.501,
+     "line": "m17 trace newer lookup started peer=f92a adf0 8bd9 0dde attempt=10 cadence_ms=1000 elapsed_ms=9001"
+    },
+    {
+     "after_move_s": 8.517,
+     "line": "m17 trace newer lookup finished peer=f92a adf0 8bd9 0dde attempt=10 elapsed_ms=9017 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 9.501,
+     "line": "m17 trace newer lookup started peer=f92a adf0 8bd9 0dde attempt=11 cadence_ms=1000 elapsed_ms=10001"
+    },
+    {
+     "after_move_s": 9.505,
+     "line": "m17 trace newer lookup finished peer=f92a adf0 8bd9 0dde attempt=11 elapsed_ms=10004 rpcs=8 found_newer=true"
+    },
+    {
+     "after_move_s": 9.505,
+     "line": "m17 trace redial started peer=f92a adf0 8bd9 0dde seq=1791559919644"
+    }
+   ],
+   "pass": true
+  },
+  {
+   "sample": 4,
+   "move_offset_s": 0.7,
+   "old_seq": 1791559920387,
+   "old_addr": "10.99.0.83:47101",
+   "new_addr": "10.99.6.83:47101",
+   "stale_dial_started_after_move_s": -0.7,
+   "change_detection_s": 8.716,
+   "publish_completed_s": 8.727,
+   "newer_store_accepted_s": 8.726,
+   "move_to_session_established_s": 9.309,
+   "store_accepted_to_session_established_s": 0.584,
+   "probe_starts": 11,
+   "probe_rpcs": 318,
+   "limiter_refusals_during_redial": 0,
+   "stale_dial_failures": [],
+   "trace": [
+    {
+     "after_move_s": -0.72,
+     "line": "m17 trace observed address changed old=None new=Some(10.99.0.64:47101)"
+    },
+    {
+     "after_move_s": -0.712,
+     "line": "m17 trace publish completed seq=1791559920946 stored=8 elapsed_ms=13 addrs=[10.99.0.64:47101]"
+    },
+    {
+     "after_move_s": -0.7,
+     "line": "m17 trace newer lookup started peer=bf8e f7f1 272d 7a7f attempt=1 cadence_ms=1000 elapsed_ms=0"
+    },
+    {
+     "after_move_s": -0.7,
+     "line": "m17 trace stale dial started peer=bf8e f7f1 272d 7a7f addr=Some(10.99.0.83:47101)"
+    },
+    {
+     "after_move_s": -0.698,
+     "line": "m17 trace publish completed seq=1791559920959 stored=8 elapsed_ms=14 addrs=[10.99.0.64:47101]"
+    },
+    {
+     "after_move_s": -0.683,
+     "line": "m17 trace newer lookup finished peer=bf8e f7f1 272d 7a7f attempt=1 elapsed_ms=17 rpcs=31 found_newer=false"
+    },
+    {
+     "after_move_s": 0.302,
+     "line": "m17 trace newer lookup started peer=bf8e f7f1 272d 7a7f attempt=2 cadence_ms=1000 elapsed_ms=1001"
+    },
+    {
+     "after_move_s": 0.318,
+     "line": "m17 trace newer lookup finished peer=bf8e f7f1 272d 7a7f attempt=2 elapsed_ms=1018 rpcs=31 found_newer=false"
+    },
+    {
+     "after_move_s": 1.301,
+     "line": "m17 trace newer lookup started peer=bf8e f7f1 272d 7a7f attempt=3 cadence_ms=1000 elapsed_ms=2001"
+    },
+    {
+     "after_move_s": 1.316,
+     "line": "m17 trace newer lookup finished peer=bf8e f7f1 272d 7a7f attempt=3 elapsed_ms=2016 rpcs=31 found_newer=false"
+    },
+    {
+     "after_move_s": 2.301,
+     "line": "m17 trace newer lookup started peer=bf8e f7f1 272d 7a7f attempt=4 cadence_ms=1000 elapsed_ms=3001"
+    },
+    {
+     "after_move_s": 2.316,
+     "line": "m17 trace newer lookup finished peer=bf8e f7f1 272d 7a7f attempt=4 elapsed_ms=3016 rpcs=31 found_newer=false"
+    },
+    {
+     "after_move_s": 3.301,
+     "line": "m17 trace newer lookup started peer=bf8e f7f1 272d 7a7f attempt=5 cadence_ms=1000 elapsed_ms=4001"
+    },
+    {
+     "after_move_s": 3.318,
+     "line": "m17 trace newer lookup finished peer=bf8e f7f1 272d 7a7f attempt=5 elapsed_ms=4017 rpcs=31 found_newer=false"
+    },
+    {
+     "after_move_s": 4.301,
+     "line": "m17 trace newer lookup started peer=bf8e f7f1 272d 7a7f attempt=6 cadence_ms=1000 elapsed_ms=5001"
+    },
+    {
+     "after_move_s": 4.319,
+     "line": "m17 trace newer lookup finished peer=bf8e f7f1 272d 7a7f attempt=6 elapsed_ms=5019 rpcs=31 found_newer=false"
+    },
+    {
+     "after_move_s": 5.301,
+     "line": "m17 trace newer lookup started peer=bf8e f7f1 272d 7a7f attempt=7 cadence_ms=1000 elapsed_ms=6001"
+    },
+    {
+     "after_move_s": 5.317,
+     "line": "m17 trace newer lookup finished peer=bf8e f7f1 272d 7a7f attempt=7 elapsed_ms=6017 rpcs=31 found_newer=false"
+    },
+    {
+     "after_move_s": 6.301,
+     "line": "m17 trace newer lookup started peer=bf8e f7f1 272d 7a7f attempt=8 cadence_ms=1000 elapsed_ms=7001"
+    },
+    {
+     "after_move_s": 6.319,
+     "line": "m17 trace newer lookup finished peer=bf8e f7f1 272d 7a7f attempt=8 elapsed_ms=7018 rpcs=31 found_newer=false"
+    },
+    {
+     "after_move_s": 7.301,
+     "line": "m17 trace newer lookup started peer=bf8e f7f1 272d 7a7f attempt=9 cadence_ms=1000 elapsed_ms=8001"
+    },
+    {
+     "after_move_s": 7.318,
+     "line": "m17 trace newer lookup finished peer=bf8e f7f1 272d 7a7f attempt=9 elapsed_ms=8018 rpcs=31 found_newer=false"
+    },
+    {
+     "after_move_s": 8.301,
+     "line": "m17 trace newer lookup started peer=bf8e f7f1 272d 7a7f attempt=10 cadence_ms=1000 elapsed_ms=9001"
+    },
+    {
+     "after_move_s": 8.316,
+     "line": "m17 trace newer lookup finished peer=bf8e f7f1 272d 7a7f attempt=10 elapsed_ms=9016 rpcs=31 found_newer=false"
+    },
+    {
+     "after_move_s": 9.301,
+     "line": "m17 trace newer lookup started peer=bf8e f7f1 272d 7a7f attempt=11 cadence_ms=1000 elapsed_ms=10001"
+    },
+    {
+     "after_move_s": 9.305,
+     "line": "m17 trace newer lookup finished peer=bf8e f7f1 272d 7a7f attempt=11 elapsed_ms=10005 rpcs=8 found_newer=true"
+    },
+    {
+     "after_move_s": 9.305,
+     "line": "m17 trace redial started peer=bf8e f7f1 272d 7a7f seq=1791559930386"
+    }
+   ],
+   "pass": true
+  },
+  {
+   "sample": 5,
+   "move_offset_s": 0.9,
+   "old_seq": 1791559931107,
+   "old_addr": "10.99.0.84:47101",
+   "new_addr": "10.99.7.84:47101",
+   "stale_dial_started_after_move_s": -0.9,
+   "change_detection_s": 8.483,
+   "publish_completed_s": 8.494,
+   "newer_store_accepted_s": 8.493,
+   "move_to_session_established_s": 9.109,
+   "store_accepted_to_session_established_s": 0.616,
+   "probe_starts": 11,
+   "probe_rpcs": 308,
+   "limiter_refusals_during_redial": 0,
+   "stale_dial_failures": [],
+   "trace": [
+    {
+     "after_move_s": -0.923,
+     "line": "m17 trace observed address changed old=None new=Some(10.99.0.65:47101)"
+    },
+    {
+     "after_move_s": -0.916,
+     "line": "m17 trace publish completed seq=1791559931693 stored=8 elapsed_ms=11 addrs=[10.99.0.65:47101]"
+    },
+    {
+     "after_move_s": -0.905,
+     "line": "m17 trace publish completed seq=1791559931705 stored=8 elapsed_ms=11 addrs=[10.99.0.65:47101]"
+    },
+    {
+     "after_move_s": -0.901,
+     "line": "m17 trace newer lookup started peer=0f2f b65d 488d e08e attempt=1 cadence_ms=1000 elapsed_ms=0"
+    },
+    {
+     "after_move_s": -0.9,
+     "line": "m17 trace stale dial started peer=0f2f b65d 488d e08e addr=Some(10.99.0.84:47101)"
+    },
+    {
+     "after_move_s": -0.885,
+     "line": "m17 trace newer lookup finished peer=0f2f b65d 488d e08e attempt=1 elapsed_ms=15 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 0.101,
+     "line": "m17 trace newer lookup started peer=0f2f b65d 488d e08e attempt=2 cadence_ms=1000 elapsed_ms=1001"
+    },
+    {
+     "after_move_s": 0.116,
+     "line": "m17 trace newer lookup finished peer=0f2f b65d 488d e08e attempt=2 elapsed_ms=1016 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 1.101,
+     "line": "m17 trace newer lookup started peer=0f2f b65d 488d e08e attempt=3 cadence_ms=1000 elapsed_ms=2001"
+    },
+    {
+     "after_move_s": 1.116,
+     "line": "m17 trace newer lookup finished peer=0f2f b65d 488d e08e attempt=3 elapsed_ms=2016 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 2.101,
+     "line": "m17 trace newer lookup started peer=0f2f b65d 488d e08e attempt=4 cadence_ms=1000 elapsed_ms=3001"
+    },
+    {
+     "after_move_s": 2.117,
+     "line": "m17 trace newer lookup finished peer=0f2f b65d 488d e08e attempt=4 elapsed_ms=3018 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 3.101,
+     "line": "m17 trace newer lookup started peer=0f2f b65d 488d e08e attempt=5 cadence_ms=1000 elapsed_ms=4001"
+    },
+    {
+     "after_move_s": 3.116,
+     "line": "m17 trace newer lookup finished peer=0f2f b65d 488d e08e attempt=5 elapsed_ms=4017 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 4.101,
+     "line": "m17 trace newer lookup started peer=0f2f b65d 488d e08e attempt=6 cadence_ms=1000 elapsed_ms=5001"
+    },
+    {
+     "after_move_s": 4.117,
+     "line": "m17 trace newer lookup finished peer=0f2f b65d 488d e08e attempt=6 elapsed_ms=5017 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 5.101,
+     "line": "m17 trace newer lookup started peer=0f2f b65d 488d e08e attempt=7 cadence_ms=1000 elapsed_ms=6001"
+    },
+    {
+     "after_move_s": 5.116,
+     "line": "m17 trace newer lookup finished peer=0f2f b65d 488d e08e attempt=7 elapsed_ms=6016 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 6.101,
+     "line": "m17 trace newer lookup started peer=0f2f b65d 488d e08e attempt=8 cadence_ms=1000 elapsed_ms=7001"
+    },
+    {
+     "after_move_s": 6.116,
+     "line": "m17 trace newer lookup finished peer=0f2f b65d 488d e08e attempt=8 elapsed_ms=7016 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 7.101,
+     "line": "m17 trace newer lookup started peer=0f2f b65d 488d e08e attempt=9 cadence_ms=1000 elapsed_ms=8001"
+    },
+    {
+     "after_move_s": 7.119,
+     "line": "m17 trace newer lookup finished peer=0f2f b65d 488d e08e attempt=9 elapsed_ms=8019 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 8.101,
+     "line": "m17 trace newer lookup started peer=0f2f b65d 488d e08e attempt=10 cadence_ms=1000 elapsed_ms=9001"
+    },
+    {
+     "after_move_s": 8.117,
+     "line": "m17 trace newer lookup finished peer=0f2f b65d 488d e08e attempt=10 elapsed_ms=9017 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 9.101,
+     "line": "m17 trace newer lookup started peer=0f2f b65d 488d e08e attempt=11 cadence_ms=1000 elapsed_ms=10001"
+    },
+    {
+     "after_move_s": 9.104,
+     "line": "m17 trace newer lookup finished peer=0f2f b65d 488d e08e attempt=11 elapsed_ms=10004 rpcs=8 found_newer=true"
+    },
+    {
+     "after_move_s": 9.104,
+     "line": "m17 trace redial started peer=0f2f b65d 488d e08e seq=1791559941104"
+    }
+   ],
+   "pass": true
+  },
+  {
+   "sample": 6,
+   "move_offset_s": 2.0,
+   "old_seq": 1791559941858,
+   "old_addr": "10.99.0.85:47101",
+   "new_addr": "10.99.8.85:47101",
+   "stale_dial_started_after_move_s": -2.0,
+   "change_detection_s": 7.401,
+   "publish_completed_s": 7.412,
+   "newer_store_accepted_s": 7.411,
+   "move_to_session_established_s": 8.006,
+   "store_accepted_to_session_established_s": 0.595,
+   "probe_starts": 11,
+   "probe_rpcs": 308,
+   "limiter_refusals_during_redial": 0,
+   "stale_dial_failures": [],
+   "trace": [
+    {
+     "after_move_s": -2.024,
+     "line": "m17 trace observed address changed old=None new=Some(10.99.0.66:47101)"
+    },
+    {
+     "after_move_s": -2.016,
+     "line": "m17 trace publish completed seq=1791559942428 stored=8 elapsed_ms=12 addrs=[10.99.0.66:47101]"
+    },
+    {
+     "after_move_s": -2.005,
+     "line": "m17 trace publish completed seq=1791559942441 stored=8 elapsed_ms=10 addrs=[10.99.0.66:47101]"
+    },
+    {
+     "after_move_s": -2.0,
+     "line": "m17 trace newer lookup started peer=11e2 4be1 8b78 8283 attempt=1 cadence_ms=1000 elapsed_ms=0"
+    },
+    {
+     "after_move_s": -2.0,
+     "line": "m17 trace stale dial started peer=11e2 4be1 8b78 8283 addr=Some(10.99.0.85:47101)"
+    },
+    {
+     "after_move_s": -1.985,
+     "line": "m17 trace newer lookup finished peer=11e2 4be1 8b78 8283 attempt=1 elapsed_ms=14 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": -0.999,
+     "line": "m17 trace newer lookup started peer=11e2 4be1 8b78 8283 attempt=2 cadence_ms=1000 elapsed_ms=1001"
+    },
+    {
+     "after_move_s": -0.981,
+     "line": "m17 trace newer lookup finished peer=11e2 4be1 8b78 8283 attempt=2 elapsed_ms=1019 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 0.005,
+     "line": "m17 trace newer lookup started peer=11e2 4be1 8b78 8283 attempt=3 cadence_ms=1000 elapsed_ms=2001"
+    },
+    {
+     "after_move_s": 0.033,
+     "line": "m17 trace newer lookup finished peer=11e2 4be1 8b78 8283 attempt=3 elapsed_ms=2033 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 1.002,
+     "line": "m17 trace newer lookup started peer=11e2 4be1 8b78 8283 attempt=4 cadence_ms=1000 elapsed_ms=3001"
+    },
+    {
+     "after_move_s": 1.019,
+     "line": "m17 trace newer lookup finished peer=11e2 4be1 8b78 8283 attempt=4 elapsed_ms=3019 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 2.001,
+     "line": "m17 trace newer lookup started peer=11e2 4be1 8b78 8283 attempt=5 cadence_ms=1000 elapsed_ms=4000"
+    },
+    {
+     "after_move_s": 2.019,
+     "line": "m17 trace newer lookup finished peer=11e2 4be1 8b78 8283 attempt=5 elapsed_ms=4019 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 3.001,
+     "line": "m17 trace newer lookup started peer=11e2 4be1 8b78 8283 attempt=6 cadence_ms=1000 elapsed_ms=5000"
+    },
+    {
+     "after_move_s": 3.013,
+     "line": "m17 trace newer lookup finished peer=11e2 4be1 8b78 8283 attempt=6 elapsed_ms=5013 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 4.001,
+     "line": "m17 trace newer lookup started peer=11e2 4be1 8b78 8283 attempt=7 cadence_ms=1000 elapsed_ms=6001"
+    },
+    {
+     "after_move_s": 4.015,
+     "line": "m17 trace newer lookup finished peer=11e2 4be1 8b78 8283 attempt=7 elapsed_ms=6015 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 5.001,
+     "line": "m17 trace newer lookup started peer=11e2 4be1 8b78 8283 attempt=8 cadence_ms=1000 elapsed_ms=7001"
+    },
+    {
+     "after_move_s": 5.014,
+     "line": "m17 trace newer lookup finished peer=11e2 4be1 8b78 8283 attempt=8 elapsed_ms=7014 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 6.002,
+     "line": "m17 trace newer lookup started peer=11e2 4be1 8b78 8283 attempt=9 cadence_ms=1000 elapsed_ms=8001"
+    },
+    {
+     "after_move_s": 6.017,
+     "line": "m17 trace newer lookup finished peer=11e2 4be1 8b78 8283 attempt=9 elapsed_ms=8017 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 7.001,
+     "line": "m17 trace newer lookup started peer=11e2 4be1 8b78 8283 attempt=10 cadence_ms=1000 elapsed_ms=9001"
+    },
+    {
+     "after_move_s": 7.017,
+     "line": "m17 trace newer lookup finished peer=11e2 4be1 8b78 8283 attempt=10 elapsed_ms=9017 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 8.001,
+     "line": "m17 trace newer lookup started peer=11e2 4be1 8b78 8283 attempt=11 cadence_ms=1000 elapsed_ms=10000"
+    },
+    {
+     "after_move_s": 8.004,
+     "line": "m17 trace newer lookup finished peer=11e2 4be1 8b78 8283 attempt=11 elapsed_ms=10004 rpcs=8 found_newer=true"
+    },
+    {
+     "after_move_s": 8.004,
+     "line": "m17 trace redial started peer=11e2 4be1 8b78 8283 seq=1791559951858"
+    }
+   ],
+   "pass": true
+  },
+  {
+   "sample": 7,
+   "move_offset_s": 5.0,
+   "old_seq": 1791559952593,
+   "old_addr": "10.99.0.86:47101",
+   "new_addr": "10.99.9.86:47101",
+   "stale_dial_started_after_move_s": -5.0,
+   "change_detection_s": 4.408,
+   "publish_completed_s": 4.418,
+   "newer_store_accepted_s": 4.417,
+   "move_to_session_established_s": 5.009,
+   "store_accepted_to_session_established_s": 0.592,
+   "probe_starts": 11,
+   "probe_rpcs": 298,
+   "limiter_refusals_during_redial": 0,
+   "stale_dial_failures": [],
+   "trace": [
+    {
+     "after_move_s": -5.022,
+     "line": "m17 trace observed address changed old=None new=Some(10.99.0.67:47101)"
+    },
+    {
+     "after_move_s": -5.015,
+     "line": "m17 trace publish completed seq=1791559953157 stored=8 elapsed_ms=13 addrs=[10.99.0.67:47101]"
+    },
+    {
+     "after_move_s": -5.003,
+     "line": "m17 trace publish completed seq=1791559953170 stored=8 elapsed_ms=12 addrs=[10.99.0.67:47101]"
+    },
+    {
+     "after_move_s": -5.001,
+     "line": "m17 trace newer lookup started peer=e611 5622 83a9 4c1c attempt=1 cadence_ms=1000 elapsed_ms=0"
+    },
+    {
+     "after_move_s": -5.0,
+     "line": "m17 trace stale dial started peer=e611 5622 83a9 4c1c addr=Some(10.99.0.86:47101)"
+    },
+    {
+     "after_move_s": -4.984,
+     "line": "m17 trace newer lookup finished peer=e611 5622 83a9 4c1c attempt=1 elapsed_ms=16 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": -3.999,
+     "line": "m17 trace newer lookup started peer=e611 5622 83a9 4c1c attempt=2 cadence_ms=1000 elapsed_ms=1001"
+    },
+    {
+     "after_move_s": -3.986,
+     "line": "m17 trace newer lookup finished peer=e611 5622 83a9 4c1c attempt=2 elapsed_ms=1014 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": -2.999,
+     "line": "m17 trace newer lookup started peer=e611 5622 83a9 4c1c attempt=3 cadence_ms=1000 elapsed_ms=2001"
+    },
+    {
+     "after_move_s": -2.985,
+     "line": "m17 trace newer lookup finished peer=e611 5622 83a9 4c1c attempt=3 elapsed_ms=2015 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": -1.999,
+     "line": "m17 trace newer lookup started peer=e611 5622 83a9 4c1c attempt=4 cadence_ms=1000 elapsed_ms=3001"
+    },
+    {
+     "after_move_s": -1.983,
+     "line": "m17 trace newer lookup finished peer=e611 5622 83a9 4c1c attempt=4 elapsed_ms=3017 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": -0.999,
+     "line": "m17 trace newer lookup started peer=e611 5622 83a9 4c1c attempt=5 cadence_ms=1000 elapsed_ms=4001"
+    },
+    {
+     "after_move_s": -0.985,
+     "line": "m17 trace newer lookup finished peer=e611 5622 83a9 4c1c attempt=5 elapsed_ms=4015 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 0.001,
+     "line": "m17 trace newer lookup started peer=e611 5622 83a9 4c1c attempt=6 cadence_ms=1000 elapsed_ms=5001"
+    },
+    {
+     "after_move_s": 0.019,
+     "line": "m17 trace newer lookup finished peer=e611 5622 83a9 4c1c attempt=6 elapsed_ms=5019 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 1.001,
+     "line": "m17 trace newer lookup started peer=e611 5622 83a9 4c1c attempt=7 cadence_ms=1000 elapsed_ms=6001"
+    },
+    {
+     "after_move_s": 1.015,
+     "line": "m17 trace newer lookup finished peer=e611 5622 83a9 4c1c attempt=7 elapsed_ms=6015 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 2.001,
+     "line": "m17 trace newer lookup started peer=e611 5622 83a9 4c1c attempt=8 cadence_ms=1000 elapsed_ms=7001"
+    },
+    {
+     "after_move_s": 2.015,
+     "line": "m17 trace newer lookup finished peer=e611 5622 83a9 4c1c attempt=8 elapsed_ms=7015 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 3.002,
+     "line": "m17 trace newer lookup started peer=e611 5622 83a9 4c1c attempt=9 cadence_ms=1000 elapsed_ms=8002"
+    },
+    {
+     "after_move_s": 3.017,
+     "line": "m17 trace newer lookup finished peer=e611 5622 83a9 4c1c attempt=9 elapsed_ms=8017 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 4.001,
+     "line": "m17 trace newer lookup started peer=e611 5622 83a9 4c1c attempt=10 cadence_ms=1000 elapsed_ms=9001"
+    },
+    {
+     "after_move_s": 4.015,
+     "line": "m17 trace newer lookup finished peer=e611 5622 83a9 4c1c attempt=10 elapsed_ms=9015 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 5.001,
+     "line": "m17 trace newer lookup started peer=e611 5622 83a9 4c1c attempt=11 cadence_ms=1000 elapsed_ms=10001"
+    },
+    {
+     "after_move_s": 5.004,
+     "line": "m17 trace newer lookup finished peer=e611 5622 83a9 4c1c attempt=11 elapsed_ms=10004 rpcs=8 found_newer=true"
+    },
+    {
+     "after_move_s": 5.004,
+     "line": "m17 trace redial started peer=e611 5622 83a9 4c1c seq=1791559962594"
+    }
+   ],
+   "pass": true
+  },
+  {
+   "sample": 8,
+   "move_offset_s": 9.0,
+   "old_seq": 1791559963310,
+   "old_addr": "10.99.0.87:47101",
+   "new_addr": "10.99.10.87:47101",
+   "stale_dial_started_after_move_s": -9.0,
+   "change_detection_s": 0.413,
+   "publish_completed_s": 0.424,
+   "newer_store_accepted_s": 0.423,
+   "move_to_session_established_s": 1.008,
+   "store_accepted_to_session_established_s": 0.585,
+   "probe_starts": 11,
+   "probe_rpcs": 298,
+   "limiter_refusals_during_redial": 0,
+   "stale_dial_failures": [],
+   "trace": [
+    {
+     "after_move_s": -9.022,
+     "line": "m17 trace observed address changed old=None new=Some(10.99.0.68:47101)"
+    },
+    {
+     "after_move_s": -9.016,
+     "line": "m17 trace publish completed seq=1791559963869 stored=8 elapsed_ms=11 addrs=[10.99.0.68:47101]"
+    },
+    {
+     "after_move_s": -9.005,
+     "line": "m17 trace publish completed seq=1791559963881 stored=8 elapsed_ms=10 addrs=[10.99.0.68:47101]"
+    },
+    {
+     "after_move_s": -9.0,
+     "line": "m17 trace newer lookup started peer=9f70 1f99 54c4 dd91 attempt=1 cadence_ms=1000 elapsed_ms=0"
+    },
+    {
+     "after_move_s": -9.0,
+     "line": "m17 trace stale dial started peer=9f70 1f99 54c4 dd91 addr=Some(10.99.0.87:47101)"
+    },
+    {
+     "after_move_s": -8.985,
+     "line": "m17 trace newer lookup finished peer=9f70 1f99 54c4 dd91 attempt=1 elapsed_ms=15 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": -7.999,
+     "line": "m17 trace newer lookup started peer=9f70 1f99 54c4 dd91 attempt=2 cadence_ms=1000 elapsed_ms=1000"
+    },
+    {
+     "after_move_s": -7.983,
+     "line": "m17 trace newer lookup finished peer=9f70 1f99 54c4 dd91 attempt=2 elapsed_ms=1016 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": -6.999,
+     "line": "m17 trace newer lookup started peer=9f70 1f99 54c4 dd91 attempt=3 cadence_ms=1000 elapsed_ms=2000"
+    },
+    {
+     "after_move_s": -6.983,
+     "line": "m17 trace newer lookup finished peer=9f70 1f99 54c4 dd91 attempt=3 elapsed_ms=2017 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": -5.999,
+     "line": "m17 trace newer lookup started peer=9f70 1f99 54c4 dd91 attempt=4 cadence_ms=1000 elapsed_ms=3001"
+    },
+    {
+     "after_move_s": -5.983,
+     "line": "m17 trace newer lookup finished peer=9f70 1f99 54c4 dd91 attempt=4 elapsed_ms=3017 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": -4.999,
+     "line": "m17 trace newer lookup started peer=9f70 1f99 54c4 dd91 attempt=5 cadence_ms=1000 elapsed_ms=4001"
+    },
+    {
+     "after_move_s": -4.981,
+     "line": "m17 trace newer lookup finished peer=9f70 1f99 54c4 dd91 attempt=5 elapsed_ms=4019 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": -3.999,
+     "line": "m17 trace newer lookup started peer=9f70 1f99 54c4 dd91 attempt=6 cadence_ms=1000 elapsed_ms=5001"
+    },
+    {
+     "after_move_s": -3.98,
+     "line": "m17 trace newer lookup finished peer=9f70 1f99 54c4 dd91 attempt=6 elapsed_ms=5019 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": -2.999,
+     "line": "m17 trace newer lookup started peer=9f70 1f99 54c4 dd91 attempt=7 cadence_ms=1000 elapsed_ms=6001"
+    },
+    {
+     "after_move_s": -2.983,
+     "line": "m17 trace newer lookup finished peer=9f70 1f99 54c4 dd91 attempt=7 elapsed_ms=6017 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": -2.0,
+     "line": "m17 trace newer lookup started peer=9f70 1f99 54c4 dd91 attempt=8 cadence_ms=1000 elapsed_ms=7000"
+    },
+    {
+     "after_move_s": -1.986,
+     "line": "m17 trace newer lookup finished peer=9f70 1f99 54c4 dd91 attempt=8 elapsed_ms=7013 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": -0.999,
+     "line": "m17 trace newer lookup started peer=9f70 1f99 54c4 dd91 attempt=9 cadence_ms=1000 elapsed_ms=8001"
+    },
+    {
+     "after_move_s": -0.985,
+     "line": "m17 trace newer lookup finished peer=9f70 1f99 54c4 dd91 attempt=9 elapsed_ms=8014 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 0.001,
+     "line": "m17 trace newer lookup started peer=9f70 1f99 54c4 dd91 attempt=10 cadence_ms=1000 elapsed_ms=9000"
+    },
+    {
+     "after_move_s": 0.017,
+     "line": "m17 trace newer lookup finished peer=9f70 1f99 54c4 dd91 attempt=10 elapsed_ms=9017 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 1.001,
+     "line": "m17 trace newer lookup started peer=9f70 1f99 54c4 dd91 attempt=11 cadence_ms=1000 elapsed_ms=10000"
+    },
+    {
+     "after_move_s": 1.003,
+     "line": "m17 trace newer lookup finished peer=9f70 1f99 54c4 dd91 attempt=11 elapsed_ms=10003 rpcs=8 found_newer=true"
+    },
+    {
+     "after_move_s": 1.003,
+     "line": "m17 trace redial started peer=9f70 1f99 54c4 dd91 seq=1791559973309"
+    }
+   ],
+   "pass": true
+  },
+  {
+   "sample": 9,
+   "move_offset_s": 14.0,
+   "old_seq": 1791559974042,
+   "old_addr": "10.99.0.88:47101",
+   "new_addr": "10.99.11.88:47101",
+   "stale_dial_started_after_move_s": -14.0,
+   "change_detection_s": 5.42,
+   "publish_completed_s": 5.43,
+   "newer_store_accepted_s": 5.429,
+   "move_to_session_established_s": 6.008,
+   "store_accepted_to_session_established_s": 0.579,
+   "probe_starts": 21,
+   "probe_rpcs": 588,
+   "limiter_refusals_during_redial": 0,
+   "stale_dial_failures": [],
+   "trace": [
+    {
+     "after_move_s": -14.017,
+     "line": "m17 trace observed address changed old=None new=Some(10.99.0.69:47101)"
+    },
+    {
+     "after_move_s": -14.011,
+     "line": "m17 trace publish completed seq=1791559974607 stored=8 elapsed_ms=10 addrs=[10.99.0.69:47101]"
+    },
+    {
+     "after_move_s": -14.0,
+     "line": "m17 trace newer lookup started peer=8d18 335a e1e3 94f6 attempt=1 cadence_ms=1000 elapsed_ms=0"
+    },
+    {
+     "after_move_s": -14.0,
+     "line": "m17 trace stale dial started peer=8d18 335a e1e3 94f6 addr=Some(10.99.0.88:47101)"
+    },
+    {
+     "after_move_s": -14.0,
+     "line": "m17 trace publish completed seq=1791559974618 stored=8 elapsed_ms=11 addrs=[10.99.0.69:47101]"
+    },
+    {
+     "after_move_s": -13.985,
+     "line": "m17 trace newer lookup finished peer=8d18 335a e1e3 94f6 attempt=1 elapsed_ms=15 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": -12.999,
+     "line": "m17 trace newer lookup started peer=8d18 335a e1e3 94f6 attempt=2 cadence_ms=1000 elapsed_ms=1001"
+    },
+    {
+     "after_move_s": -12.983,
+     "line": "m17 trace newer lookup finished peer=8d18 335a e1e3 94f6 attempt=2 elapsed_ms=1017 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": -11.998,
+     "line": "m17 trace newer lookup started peer=8d18 335a e1e3 94f6 attempt=3 cadence_ms=1000 elapsed_ms=2001"
+    },
+    {
+     "after_move_s": -11.985,
+     "line": "m17 trace newer lookup finished peer=8d18 335a e1e3 94f6 attempt=3 elapsed_ms=2015 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": -10.999,
+     "line": "m17 trace newer lookup started peer=8d18 335a e1e3 94f6 attempt=4 cadence_ms=1000 elapsed_ms=3001"
+    },
+    {
+     "after_move_s": -10.982,
+     "line": "m17 trace newer lookup finished peer=8d18 335a e1e3 94f6 attempt=4 elapsed_ms=3018 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": -9.999,
+     "line": "m17 trace newer lookup started peer=8d18 335a e1e3 94f6 attempt=5 cadence_ms=1000 elapsed_ms=4001"
+    },
+    {
+     "after_move_s": -9.984,
+     "line": "m17 trace newer lookup finished peer=8d18 335a e1e3 94f6 attempt=5 elapsed_ms=4016 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": -8.999,
+     "line": "m17 trace newer lookup started peer=8d18 335a e1e3 94f6 attempt=6 cadence_ms=1000 elapsed_ms=5001"
+    },
+    {
+     "after_move_s": -8.969,
+     "line": "m17 trace newer lookup finished peer=8d18 335a e1e3 94f6 attempt=6 elapsed_ms=5031 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": -7.999,
+     "line": "m17 trace newer lookup started peer=8d18 335a e1e3 94f6 attempt=7 cadence_ms=1000 elapsed_ms=6001"
+    },
+    {
+     "after_move_s": -7.981,
+     "line": "m17 trace newer lookup finished peer=8d18 335a e1e3 94f6 attempt=7 elapsed_ms=6019 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": -6.999,
+     "line": "m17 trace newer lookup started peer=8d18 335a e1e3 94f6 attempt=8 cadence_ms=1000 elapsed_ms=7001"
+    },
+    {
+     "after_move_s": -6.984,
+     "line": "m17 trace newer lookup finished peer=8d18 335a e1e3 94f6 attempt=8 elapsed_ms=7017 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": -5.999,
+     "line": "m17 trace newer lookup started peer=8d18 335a e1e3 94f6 attempt=9 cadence_ms=1000 elapsed_ms=8001"
+    },
+    {
+     "after_move_s": -5.983,
+     "line": "m17 trace newer lookup finished peer=8d18 335a e1e3 94f6 attempt=9 elapsed_ms=8017 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": -4.999,
+     "line": "m17 trace newer lookup started peer=8d18 335a e1e3 94f6 attempt=10 cadence_ms=1000 elapsed_ms=9001"
+    },
+    {
+     "after_move_s": -4.983,
+     "line": "m17 trace newer lookup finished peer=8d18 335a e1e3 94f6 attempt=10 elapsed_ms=9017 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": -3.999,
+     "line": "m17 trace newer lookup started peer=8d18 335a e1e3 94f6 attempt=11 cadence_ms=1000 elapsed_ms=10001"
+    },
+    {
+     "after_move_s": -3.984,
+     "line": "m17 trace newer lookup finished peer=8d18 335a e1e3 94f6 attempt=11 elapsed_ms=10016 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": -2.999,
+     "line": "m17 trace newer lookup started peer=8d18 335a e1e3 94f6 attempt=12 cadence_ms=1000 elapsed_ms=11001"
+    },
+    {
+     "after_move_s": -2.986,
+     "line": "m17 trace newer lookup finished peer=8d18 335a e1e3 94f6 attempt=12 elapsed_ms=11014 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": -1.999,
+     "line": "m17 trace newer lookup started peer=8d18 335a e1e3 94f6 attempt=13 cadence_ms=1000 elapsed_ms=12001"
+    },
+    {
+     "after_move_s": -1.985,
+     "line": "m17 trace newer lookup finished peer=8d18 335a e1e3 94f6 attempt=13 elapsed_ms=12016 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": -0.998,
+     "line": "m17 trace newer lookup started peer=8d18 335a e1e3 94f6 attempt=14 cadence_ms=1000 elapsed_ms=13002"
+    },
+    {
+     "after_move_s": -0.984,
+     "line": "m17 trace newer lookup finished peer=8d18 335a e1e3 94f6 attempt=14 elapsed_ms=13016 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 0.001,
+     "line": "m17 trace newer lookup started peer=8d18 335a e1e3 94f6 attempt=15 cadence_ms=1000 elapsed_ms=14001"
+    },
+    {
+     "after_move_s": 0.017,
+     "line": "m17 trace newer lookup finished peer=8d18 335a e1e3 94f6 attempt=15 elapsed_ms=14017 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 1.001,
+     "line": "m17 trace newer lookup started peer=8d18 335a e1e3 94f6 attempt=16 cadence_ms=1000 elapsed_ms=15001"
+    },
+    {
+     "after_move_s": 1.014,
+     "line": "m17 trace newer lookup finished peer=8d18 335a e1e3 94f6 attempt=16 elapsed_ms=15015 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 2.001,
+     "line": "m17 trace newer lookup started peer=8d18 335a e1e3 94f6 attempt=17 cadence_ms=1000 elapsed_ms=16001"
+    },
+    {
+     "after_move_s": 2.016,
+     "line": "m17 trace newer lookup finished peer=8d18 335a e1e3 94f6 attempt=17 elapsed_ms=16017 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 3.001,
+     "line": "m17 trace newer lookup started peer=8d18 335a e1e3 94f6 attempt=18 cadence_ms=1000 elapsed_ms=17001"
+    },
+    {
+     "after_move_s": 3.014,
+     "line": "m17 trace newer lookup finished peer=8d18 335a e1e3 94f6 attempt=18 elapsed_ms=17014 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 4.002,
+     "line": "m17 trace newer lookup started peer=8d18 335a e1e3 94f6 attempt=19 cadence_ms=1000 elapsed_ms=18002"
+    },
+    {
+     "after_move_s": 4.031,
+     "line": "m17 trace newer lookup finished peer=8d18 335a e1e3 94f6 attempt=19 elapsed_ms=18031 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 5.001,
+     "line": "m17 trace newer lookup started peer=8d18 335a e1e3 94f6 attempt=20 cadence_ms=1000 elapsed_ms=19001"
+    },
+    {
+     "after_move_s": 5.017,
+     "line": "m17 trace newer lookup finished peer=8d18 335a e1e3 94f6 attempt=20 elapsed_ms=19017 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 6.001,
+     "line": "m17 trace stale dial finished peer=8d18 335a e1e3 94f6 ok=false"
+    },
+    {
+     "after_move_s": 6.002,
+     "line": "m17 trace newer lookup started peer=8d18 335a e1e3 94f6 attempt=1 cadence_ms=1000 elapsed_ms=0"
+    },
+    {
+     "after_move_s": 6.005,
+     "line": "m17 trace redial started after stale-dial result peer=8d18 335a e1e3 94f6 seq=1791559994047"
+    },
+    {
+     "after_move_s": 6.006,
+     "line": "m17 trace newer lookup finished peer=8d18 335a e1e3 94f6 attempt=1 elapsed_ms=4 rpcs=8 found_newer=true"
+    },
+    {
+     "after_move_s": 6.006,
+     "line": "m17 trace redial started after stale-dial deadline peer=8d18 335a e1e3 94f6 seq=1791559994047"
+    }
+   ],
+   "pass": true
+  },
+  {
+   "sample": 10,
+   "move_offset_s": 0.1,
+   "old_seq": 1791559994773,
+   "old_addr": "10.99.0.89:47101",
+   "new_addr": "10.99.12.89:47101",
+   "stale_dial_started_after_move_s": -0.1,
+   "change_detection_s": 9.308,
+   "publish_completed_s": 9.318,
+   "newer_store_accepted_s": 9.317,
+   "move_to_session_established_s": 9.909,
+   "store_accepted_to_session_established_s": 0.592,
+   "probe_starts": 11,
+   "probe_rpcs": 298,
+   "limiter_refusals_during_redial": 0,
+   "stale_dial_failures": [],
+   "trace": [
+    {
+     "after_move_s": -0.122,
+     "line": "m17 trace observed address changed old=None new=Some(10.99.0.70:47101)"
+    },
+    {
+     "after_move_s": -0.118,
+     "line": "m17 trace publish completed seq=1791559995336 stored=8 elapsed_ms=10 addrs=[10.99.0.70:47101]"
+    },
+    {
+     "after_move_s": -0.106,
+     "line": "m17 trace publish completed seq=1791559995347 stored=8 elapsed_ms=11 addrs=[10.99.0.70:47101]"
+    },
+    {
+     "after_move_s": -0.1,
+     "line": "m17 trace newer lookup started peer=8a87 49a7 60e0 be49 attempt=1 cadence_ms=1000 elapsed_ms=0"
+    },
+    {
+     "after_move_s": -0.1,
+     "line": "m17 trace stale dial started peer=8a87 49a7 60e0 be49 addr=Some(10.99.0.89:47101)"
+    },
+    {
+     "after_move_s": -0.085,
+     "line": "m17 trace newer lookup finished peer=8a87 49a7 60e0 be49 attempt=1 elapsed_ms=15 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 0.901,
+     "line": "m17 trace newer lookup started peer=8a87 49a7 60e0 be49 attempt=2 cadence_ms=1000 elapsed_ms=1001"
+    },
+    {
+     "after_move_s": 0.917,
+     "line": "m17 trace newer lookup finished peer=8a87 49a7 60e0 be49 attempt=2 elapsed_ms=1016 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 1.902,
+     "line": "m17 trace newer lookup started peer=8a87 49a7 60e0 be49 attempt=3 cadence_ms=1000 elapsed_ms=2002"
+    },
+    {
+     "after_move_s": 1.915,
+     "line": "m17 trace newer lookup finished peer=8a87 49a7 60e0 be49 attempt=3 elapsed_ms=2015 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 2.901,
+     "line": "m17 trace newer lookup started peer=8a87 49a7 60e0 be49 attempt=4 cadence_ms=1000 elapsed_ms=3001"
+    },
+    {
+     "after_move_s": 2.915,
+     "line": "m17 trace newer lookup finished peer=8a87 49a7 60e0 be49 attempt=4 elapsed_ms=3014 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 3.902,
+     "line": "m17 trace newer lookup started peer=8a87 49a7 60e0 be49 attempt=5 cadence_ms=1000 elapsed_ms=4002"
+    },
+    {
+     "after_move_s": 3.917,
+     "line": "m17 trace newer lookup finished peer=8a87 49a7 60e0 be49 attempt=5 elapsed_ms=4017 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 4.902,
+     "line": "m17 trace newer lookup started peer=8a87 49a7 60e0 be49 attempt=6 cadence_ms=1000 elapsed_ms=5001"
+    },
+    {
+     "after_move_s": 4.916,
+     "line": "m17 trace newer lookup finished peer=8a87 49a7 60e0 be49 attempt=6 elapsed_ms=5016 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 5.902,
+     "line": "m17 trace newer lookup started peer=8a87 49a7 60e0 be49 attempt=7 cadence_ms=1000 elapsed_ms=6002"
+    },
+    {
+     "after_move_s": 5.915,
+     "line": "m17 trace newer lookup finished peer=8a87 49a7 60e0 be49 attempt=7 elapsed_ms=6015 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 6.901,
+     "line": "m17 trace newer lookup started peer=8a87 49a7 60e0 be49 attempt=8 cadence_ms=1000 elapsed_ms=7001"
+    },
+    {
+     "after_move_s": 6.916,
+     "line": "m17 trace newer lookup finished peer=8a87 49a7 60e0 be49 attempt=8 elapsed_ms=7016 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 7.902,
+     "line": "m17 trace newer lookup started peer=8a87 49a7 60e0 be49 attempt=9 cadence_ms=1000 elapsed_ms=8001"
+    },
+    {
+     "after_move_s": 7.918,
+     "line": "m17 trace newer lookup finished peer=8a87 49a7 60e0 be49 attempt=9 elapsed_ms=8018 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 8.901,
+     "line": "m17 trace newer lookup started peer=8a87 49a7 60e0 be49 attempt=10 cadence_ms=1000 elapsed_ms=9001"
+    },
+    {
+     "after_move_s": 8.921,
+     "line": "m17 trace newer lookup finished peer=8a87 49a7 60e0 be49 attempt=10 elapsed_ms=9021 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 9.902,
+     "line": "m17 trace newer lookup started peer=8a87 49a7 60e0 be49 attempt=11 cadence_ms=1000 elapsed_ms=10002"
+    },
+    {
+     "after_move_s": 9.905,
+     "line": "m17 trace newer lookup finished peer=8a87 49a7 60e0 be49 attempt=11 elapsed_ms=10004 rpcs=8 found_newer=true"
+    },
+    {
+     "after_move_s": 9.905,
+     "line": "m17 trace redial started peer=8a87 49a7 60e0 be49 seq=1791560004774"
+    }
+   ],
+   "pass": true
+  },
+  {
+   "sample": 11,
+   "move_offset_s": 0.3,
+   "old_seq": 1791560005522,
+   "old_addr": "10.99.0.90:47101",
+   "new_addr": "10.99.13.90:47101",
+   "stale_dial_started_after_move_s": -0.3,
+   "change_detection_s": 9.108,
+   "publish_completed_s": 9.118,
+   "newer_store_accepted_s": 9.117,
+   "move_to_session_established_s": 9.708,
+   "store_accepted_to_session_established_s": 0.591,
+   "probe_starts": 11,
+   "probe_rpcs": 306,
+   "limiter_refusals_during_redial": 0,
+   "stale_dial_failures": [],
+   "trace": [
+    {
+     "after_move_s": -0.317,
+     "line": "m17 trace observed address changed old=None new=Some(10.99.0.71:47101)"
+    },
+    {
+     "after_move_s": -0.312,
+     "line": "m17 trace publish completed seq=1791560006093 stored=8 elapsed_ms=11 addrs=[10.99.0.71:47101]"
+    },
+    {
+     "after_move_s": -0.302,
+     "line": "m17 trace publish completed seq=1791560006104 stored=8 elapsed_ms=9 addrs=[10.99.0.71:47101]"
+    },
+    {
+     "after_move_s": -0.3,
+     "line": "m17 trace newer lookup started peer=5b12 99ec a35b 9887 attempt=1 cadence_ms=1000 elapsed_ms=0"
+    },
+    {
+     "after_move_s": -0.3,
+     "line": "m17 trace stale dial started peer=5b12 99ec a35b 9887 addr=Some(10.99.0.90:47101)"
+    },
+    {
+     "after_move_s": -0.286,
+     "line": "m17 trace newer lookup finished peer=5b12 99ec a35b 9887 attempt=1 elapsed_ms=14 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 0.701,
+     "line": "m17 trace newer lookup started peer=5b12 99ec a35b 9887 attempt=2 cadence_ms=1000 elapsed_ms=1000"
+    },
+    {
+     "after_move_s": 0.715,
+     "line": "m17 trace newer lookup finished peer=5b12 99ec a35b 9887 attempt=2 elapsed_ms=1015 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 1.701,
+     "line": "m17 trace newer lookup started peer=5b12 99ec a35b 9887 attempt=3 cadence_ms=1000 elapsed_ms=2000"
+    },
+    {
+     "after_move_s": 1.715,
+     "line": "m17 trace newer lookup finished peer=5b12 99ec a35b 9887 attempt=3 elapsed_ms=2014 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 2.701,
+     "line": "m17 trace newer lookup started peer=5b12 99ec a35b 9887 attempt=4 cadence_ms=1000 elapsed_ms=3000"
+    },
+    {
+     "after_move_s": 2.716,
+     "line": "m17 trace newer lookup finished peer=5b12 99ec a35b 9887 attempt=4 elapsed_ms=3016 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 3.7,
+     "line": "m17 trace newer lookup started peer=5b12 99ec a35b 9887 attempt=5 cadence_ms=1000 elapsed_ms=4000"
+    },
+    {
+     "after_move_s": 3.716,
+     "line": "m17 trace newer lookup finished peer=5b12 99ec a35b 9887 attempt=5 elapsed_ms=4015 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 4.701,
+     "line": "m17 trace newer lookup started peer=5b12 99ec a35b 9887 attempt=6 cadence_ms=1000 elapsed_ms=5000"
+    },
+    {
+     "after_move_s": 4.717,
+     "line": "m17 trace newer lookup finished peer=5b12 99ec a35b 9887 attempt=6 elapsed_ms=5017 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 5.701,
+     "line": "m17 trace newer lookup started peer=5b12 99ec a35b 9887 attempt=7 cadence_ms=1000 elapsed_ms=6001"
+    },
+    {
+     "after_move_s": 5.715,
+     "line": "m17 trace newer lookup finished peer=5b12 99ec a35b 9887 attempt=7 elapsed_ms=6015 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 6.7,
+     "line": "m17 trace newer lookup started peer=5b12 99ec a35b 9887 attempt=8 cadence_ms=1000 elapsed_ms=7000"
+    },
+    {
+     "after_move_s": 6.715,
+     "line": "m17 trace newer lookup finished peer=5b12 99ec a35b 9887 attempt=8 elapsed_ms=7015 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 7.7,
+     "line": "m17 trace newer lookup started peer=5b12 99ec a35b 9887 attempt=9 cadence_ms=1000 elapsed_ms=8000"
+    },
+    {
+     "after_move_s": 7.719,
+     "line": "m17 trace newer lookup finished peer=5b12 99ec a35b 9887 attempt=9 elapsed_ms=8019 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 8.701,
+     "line": "m17 trace newer lookup started peer=5b12 99ec a35b 9887 attempt=10 cadence_ms=1000 elapsed_ms=9000"
+    },
+    {
+     "after_move_s": 8.714,
+     "line": "m17 trace newer lookup finished peer=5b12 99ec a35b 9887 attempt=10 elapsed_ms=9014 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 9.7,
+     "line": "m17 trace newer lookup started peer=5b12 99ec a35b 9887 attempt=11 cadence_ms=1000 elapsed_ms=10000"
+    },
+    {
+     "after_move_s": 9.702,
+     "line": "m17 trace newer lookup finished peer=5b12 99ec a35b 9887 attempt=11 elapsed_ms=10002 rpcs=6 found_newer=true"
+    },
+    {
+     "after_move_s": 9.702,
+     "line": "m17 trace redial started peer=5b12 99ec a35b 9887 seq=1791560015521"
+    }
+   ],
+   "pass": true
+  },
+  {
+   "sample": 12,
+   "move_offset_s": 0.5,
+   "old_seq": 1791560016281,
+   "old_addr": "10.99.0.91:47101",
+   "new_addr": "10.99.14.91:47101",
+   "stale_dial_started_after_move_s": -0.5,
+   "change_detection_s": 8.91,
+   "publish_completed_s": 8.92,
+   "newer_store_accepted_s": 8.92,
+   "move_to_session_established_s": 9.509,
+   "store_accepted_to_session_established_s": 0.59,
+   "probe_starts": 11,
+   "probe_rpcs": 318,
+   "limiter_refusals_during_redial": 0,
+   "stale_dial_failures": [],
+   "trace": [
+    {
+     "after_move_s": -0.521,
+     "line": "m17 trace observed address changed old=None new=Some(10.99.0.72:47101)"
+    },
+    {
+     "after_move_s": -0.514,
+     "line": "m17 trace publish completed seq=1791560016845 stored=8 elapsed_ms=12 addrs=[10.99.0.72:47101]"
+    },
+    {
+     "after_move_s": -0.503,
+     "line": "m17 trace publish completed seq=1791560016857 stored=8 elapsed_ms=10 addrs=[10.99.0.72:47101]"
+    },
+    {
+     "after_move_s": -0.5,
+     "line": "m17 trace newer lookup started peer=a232 6af7 cd29 c6b0 attempt=1 cadence_ms=1000 elapsed_ms=0"
+    },
+    {
+     "after_move_s": -0.5,
+     "line": "m17 trace stale dial started peer=a232 6af7 cd29 c6b0 addr=Some(10.99.0.91:47101)"
+    },
+    {
+     "after_move_s": -0.483,
+     "line": "m17 trace newer lookup finished peer=a232 6af7 cd29 c6b0 attempt=1 elapsed_ms=17 rpcs=31 found_newer=false"
+    },
+    {
+     "after_move_s": 0.501,
+     "line": "m17 trace newer lookup started peer=a232 6af7 cd29 c6b0 attempt=2 cadence_ms=1000 elapsed_ms=1001"
+    },
+    {
+     "after_move_s": 0.518,
+     "line": "m17 trace newer lookup finished peer=a232 6af7 cd29 c6b0 attempt=2 elapsed_ms=1018 rpcs=31 found_newer=false"
+    },
+    {
+     "after_move_s": 1.502,
+     "line": "m17 trace newer lookup started peer=a232 6af7 cd29 c6b0 attempt=3 cadence_ms=1000 elapsed_ms=2002"
+    },
+    {
+     "after_move_s": 1.52,
+     "line": "m17 trace newer lookup finished peer=a232 6af7 cd29 c6b0 attempt=3 elapsed_ms=2020 rpcs=31 found_newer=false"
+    },
+    {
+     "after_move_s": 2.501,
+     "line": "m17 trace newer lookup started peer=a232 6af7 cd29 c6b0 attempt=4 cadence_ms=1000 elapsed_ms=3001"
+    },
+    {
+     "after_move_s": 2.518,
+     "line": "m17 trace newer lookup finished peer=a232 6af7 cd29 c6b0 attempt=4 elapsed_ms=3018 rpcs=31 found_newer=false"
+    },
+    {
+     "after_move_s": 3.502,
+     "line": "m17 trace newer lookup started peer=a232 6af7 cd29 c6b0 attempt=5 cadence_ms=1000 elapsed_ms=4001"
+    },
+    {
+     "after_move_s": 3.52,
+     "line": "m17 trace newer lookup finished peer=a232 6af7 cd29 c6b0 attempt=5 elapsed_ms=4020 rpcs=31 found_newer=false"
+    },
+    {
+     "after_move_s": 4.502,
+     "line": "m17 trace newer lookup started peer=a232 6af7 cd29 c6b0 attempt=6 cadence_ms=1000 elapsed_ms=5002"
+    },
+    {
+     "after_move_s": 4.53,
+     "line": "m17 trace newer lookup finished peer=a232 6af7 cd29 c6b0 attempt=6 elapsed_ms=5030 rpcs=31 found_newer=false"
+    },
+    {
+     "after_move_s": 5.501,
+     "line": "m17 trace newer lookup started peer=a232 6af7 cd29 c6b0 attempt=7 cadence_ms=1000 elapsed_ms=6001"
+    },
+    {
+     "after_move_s": 5.524,
+     "line": "m17 trace newer lookup finished peer=a232 6af7 cd29 c6b0 attempt=7 elapsed_ms=6024 rpcs=31 found_newer=false"
+    },
+    {
+     "after_move_s": 6.502,
+     "line": "m17 trace newer lookup started peer=a232 6af7 cd29 c6b0 attempt=8 cadence_ms=1000 elapsed_ms=7002"
+    },
+    {
+     "after_move_s": 6.518,
+     "line": "m17 trace newer lookup finished peer=a232 6af7 cd29 c6b0 attempt=8 elapsed_ms=7018 rpcs=31 found_newer=false"
+    },
+    {
+     "after_move_s": 7.502,
+     "line": "m17 trace newer lookup started peer=a232 6af7 cd29 c6b0 attempt=9 cadence_ms=1000 elapsed_ms=8002"
+    },
+    {
+     "after_move_s": 7.523,
+     "line": "m17 trace newer lookup finished peer=a232 6af7 cd29 c6b0 attempt=9 elapsed_ms=8023 rpcs=31 found_newer=false"
+    },
+    {
+     "after_move_s": 8.501,
+     "line": "m17 trace newer lookup started peer=a232 6af7 cd29 c6b0 attempt=10 cadence_ms=1000 elapsed_ms=9001"
+    },
+    {
+     "after_move_s": 8.519,
+     "line": "m17 trace newer lookup finished peer=a232 6af7 cd29 c6b0 attempt=10 elapsed_ms=9019 rpcs=31 found_newer=false"
+    },
+    {
+     "after_move_s": 9.501,
+     "line": "m17 trace newer lookup started peer=a232 6af7 cd29 c6b0 attempt=11 cadence_ms=1000 elapsed_ms=10001"
+    },
+    {
+     "after_move_s": 9.505,
+     "line": "m17 trace newer lookup finished peer=a232 6af7 cd29 c6b0 attempt=11 elapsed_ms=10005 rpcs=8 found_newer=true"
+    },
+    {
+     "after_move_s": 9.505,
+     "line": "m17 trace redial started peer=a232 6af7 cd29 c6b0 seq=1791560026282"
+    }
+   ],
+   "pass": true
+  },
+  {
+   "sample": 13,
+   "move_offset_s": 0.7,
+   "old_seq": 1791560027030,
+   "old_addr": "10.99.0.92:47101",
+   "new_addr": "10.99.15.92:47101",
+   "stale_dial_started_after_move_s": -0.7,
+   "change_detection_s": 8.7,
+   "publish_completed_s": 8.711,
+   "newer_store_accepted_s": 8.709,
+   "move_to_session_established_s": 9.309,
+   "store_accepted_to_session_established_s": 0.601,
+   "probe_starts": 11,
+   "probe_rpcs": 308,
+   "limiter_refusals_during_redial": 0,
+   "stale_dial_failures": [],
+   "trace": [
+    {
+     "after_move_s": -0.712,
+     "line": "m17 trace observed address changed old=None new=Some(10.99.0.73:47101)"
+    },
+    {
+     "after_move_s": -0.706,
+     "line": "m17 trace publish completed seq=1791560027610 stored=8 elapsed_ms=11 addrs=[10.99.0.73:47101]"
+    },
+    {
+     "after_move_s": -0.7,
+     "line": "m17 trace newer lookup started peer=1378 d9d8 db6a 6dd2 attempt=1 cadence_ms=1000 elapsed_ms=0"
+    },
+    {
+     "after_move_s": -0.7,
+     "line": "m17 trace stale dial started peer=1378 d9d8 db6a 6dd2 addr=Some(10.99.0.92:47101)"
+    },
+    {
+     "after_move_s": -0.686,
+     "line": "m17 trace publish completed seq=1791560027622 stored=8 elapsed_ms=20 addrs=[10.99.0.73:47101]"
+    },
+    {
+     "after_move_s": -0.675,
+     "line": "m17 trace newer lookup finished peer=1378 d9d8 db6a 6dd2 attempt=1 elapsed_ms=25 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 0.301,
+     "line": "m17 trace newer lookup started peer=1378 d9d8 db6a 6dd2 attempt=2 cadence_ms=1000 elapsed_ms=1001"
+    },
+    {
+     "after_move_s": 0.317,
+     "line": "m17 trace newer lookup finished peer=1378 d9d8 db6a 6dd2 attempt=2 elapsed_ms=1017 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 1.301,
+     "line": "m17 trace newer lookup started peer=1378 d9d8 db6a 6dd2 attempt=3 cadence_ms=1000 elapsed_ms=2001"
+    },
+    {
+     "after_move_s": 1.316,
+     "line": "m17 trace newer lookup finished peer=1378 d9d8 db6a 6dd2 attempt=3 elapsed_ms=2017 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 2.301,
+     "line": "m17 trace newer lookup started peer=1378 d9d8 db6a 6dd2 attempt=4 cadence_ms=1000 elapsed_ms=3001"
+    },
+    {
+     "after_move_s": 2.317,
+     "line": "m17 trace newer lookup finished peer=1378 d9d8 db6a 6dd2 attempt=4 elapsed_ms=3017 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 3.301,
+     "line": "m17 trace newer lookup started peer=1378 d9d8 db6a 6dd2 attempt=5 cadence_ms=1000 elapsed_ms=4001"
+    },
+    {
+     "after_move_s": 3.318,
+     "line": "m17 trace newer lookup finished peer=1378 d9d8 db6a 6dd2 attempt=5 elapsed_ms=4018 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 4.301,
+     "line": "m17 trace newer lookup started peer=1378 d9d8 db6a 6dd2 attempt=6 cadence_ms=1000 elapsed_ms=5002"
+    },
+    {
+     "after_move_s": 4.315,
+     "line": "m17 trace newer lookup finished peer=1378 d9d8 db6a 6dd2 attempt=6 elapsed_ms=5015 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 5.301,
+     "line": "m17 trace newer lookup started peer=1378 d9d8 db6a 6dd2 attempt=7 cadence_ms=1000 elapsed_ms=6002"
+    },
+    {
+     "after_move_s": 5.316,
+     "line": "m17 trace newer lookup finished peer=1378 d9d8 db6a 6dd2 attempt=7 elapsed_ms=6016 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 6.3,
+     "line": "m17 trace newer lookup started peer=1378 d9d8 db6a 6dd2 attempt=8 cadence_ms=1000 elapsed_ms=7001"
+    },
+    {
+     "after_move_s": 6.315,
+     "line": "m17 trace newer lookup finished peer=1378 d9d8 db6a 6dd2 attempt=8 elapsed_ms=7016 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 7.301,
+     "line": "m17 trace newer lookup started peer=1378 d9d8 db6a 6dd2 attempt=9 cadence_ms=1000 elapsed_ms=8001"
+    },
+    {
+     "after_move_s": 7.315,
+     "line": "m17 trace newer lookup finished peer=1378 d9d8 db6a 6dd2 attempt=9 elapsed_ms=8015 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 8.301,
+     "line": "m17 trace newer lookup started peer=1378 d9d8 db6a 6dd2 attempt=10 cadence_ms=1000 elapsed_ms=9001"
+    },
+    {
+     "after_move_s": 8.314,
+     "line": "m17 trace newer lookup finished peer=1378 d9d8 db6a 6dd2 attempt=10 elapsed_ms=9014 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 9.301,
+     "line": "m17 trace newer lookup started peer=1378 d9d8 db6a 6dd2 attempt=11 cadence_ms=1000 elapsed_ms=10002"
+    },
+    {
+     "after_move_s": 9.304,
+     "line": "m17 trace newer lookup finished peer=1378 d9d8 db6a 6dd2 attempt=11 elapsed_ms=10004 rpcs=8 found_newer=true"
+    },
+    {
+     "after_move_s": 9.304,
+     "line": "m17 trace redial started peer=1378 d9d8 db6a 6dd2 seq=1791560037029"
+    }
+   ],
+   "pass": true
+  },
+  {
+   "sample": 14,
+   "move_offset_s": 0.9,
+   "old_seq": 1791560037792,
+   "old_addr": "10.99.0.93:47101",
+   "new_addr": "10.99.16.93:47101",
+   "stale_dial_started_after_move_s": -0.9,
+   "change_detection_s": 8.517,
+   "publish_completed_s": 8.53,
+   "newer_store_accepted_s": 8.529,
+   "move_to_session_established_s": 9.11,
+   "store_accepted_to_session_established_s": 0.581,
+   "probe_starts": 11,
+   "probe_rpcs": 303,
+   "limiter_refusals_during_redial": 0,
+   "stale_dial_failures": [],
+   "trace": [
+    {
+     "after_move_s": -0.917,
+     "line": "m17 trace observed address changed old=None new=Some(10.99.0.74:47101)"
+    },
+    {
+     "after_move_s": -0.91,
+     "line": "m17 trace publish completed seq=1791560038354 stored=8 elapsed_ms=11 addrs=[10.99.0.74:47101]"
+    },
+    {
+     "after_move_s": -0.9,
+     "line": "m17 trace newer lookup started peer=5d76 439c f546 910c attempt=1 cadence_ms=1000 elapsed_ms=0"
+    },
+    {
+     "after_move_s": -0.9,
+     "line": "m17 trace stale dial started peer=5d76 439c f546 910c addr=Some(10.99.0.93:47101)"
+    },
+    {
+     "after_move_s": -0.899,
+     "line": "m17 trace publish completed seq=1791560038365 stored=8 elapsed_ms=11 addrs=[10.99.0.74:47101]"
+    },
+    {
+     "after_move_s": -0.885,
+     "line": "m17 trace newer lookup finished peer=5d76 439c f546 910c attempt=1 elapsed_ms=15 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 0.102,
+     "line": "m17 trace newer lookup started peer=5d76 439c f546 910c attempt=2 cadence_ms=1000 elapsed_ms=1002"
+    },
+    {
+     "after_move_s": 0.115,
+     "line": "m17 trace newer lookup finished peer=5d76 439c f546 910c attempt=2 elapsed_ms=1015 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 1.102,
+     "line": "m17 trace newer lookup started peer=5d76 439c f546 910c attempt=3 cadence_ms=1000 elapsed_ms=2001"
+    },
+    {
+     "after_move_s": 1.116,
+     "line": "m17 trace newer lookup finished peer=5d76 439c f546 910c attempt=3 elapsed_ms=2016 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 2.101,
+     "line": "m17 trace newer lookup started peer=5d76 439c f546 910c attempt=4 cadence_ms=1000 elapsed_ms=3001"
+    },
+    {
+     "after_move_s": 2.116,
+     "line": "m17 trace newer lookup finished peer=5d76 439c f546 910c attempt=4 elapsed_ms=3016 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 3.102,
+     "line": "m17 trace newer lookup started peer=5d76 439c f546 910c attempt=5 cadence_ms=1000 elapsed_ms=4001"
+    },
+    {
+     "after_move_s": 3.116,
+     "line": "m17 trace newer lookup finished peer=5d76 439c f546 910c attempt=5 elapsed_ms=4016 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 4.101,
+     "line": "m17 trace newer lookup started peer=5d76 439c f546 910c attempt=6 cadence_ms=1000 elapsed_ms=5001"
+    },
+    {
+     "after_move_s": 4.115,
+     "line": "m17 trace newer lookup finished peer=5d76 439c f546 910c attempt=6 elapsed_ms=5015 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 5.101,
+     "line": "m17 trace newer lookup started peer=5d76 439c f546 910c attempt=7 cadence_ms=1000 elapsed_ms=6001"
+    },
+    {
+     "after_move_s": 5.12,
+     "line": "m17 trace newer lookup finished peer=5d76 439c f546 910c attempt=7 elapsed_ms=6020 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 6.101,
+     "line": "m17 trace newer lookup started peer=5d76 439c f546 910c attempt=8 cadence_ms=1000 elapsed_ms=7001"
+    },
+    {
+     "after_move_s": 6.117,
+     "line": "m17 trace newer lookup finished peer=5d76 439c f546 910c attempt=8 elapsed_ms=7017 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 7.101,
+     "line": "m17 trace newer lookup started peer=5d76 439c f546 910c attempt=9 cadence_ms=1000 elapsed_ms=8001"
+    },
+    {
+     "after_move_s": 7.116,
+     "line": "m17 trace newer lookup finished peer=5d76 439c f546 910c attempt=9 elapsed_ms=8015 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 8.101,
+     "line": "m17 trace newer lookup started peer=5d76 439c f546 910c attempt=10 cadence_ms=1000 elapsed_ms=9001"
+    },
+    {
+     "after_move_s": 8.118,
+     "line": "m17 trace newer lookup finished peer=5d76 439c f546 910c attempt=10 elapsed_ms=9018 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 9.102,
+     "line": "m17 trace newer lookup started peer=5d76 439c f546 910c attempt=11 cadence_ms=1000 elapsed_ms=10001"
+    },
+    {
+     "after_move_s": 9.103,
+     "line": "m17 trace newer lookup finished peer=5d76 439c f546 910c attempt=11 elapsed_ms=10003 rpcs=3 found_newer=true"
+    },
+    {
+     "after_move_s": 9.104,
+     "line": "m17 trace redial started peer=5d76 439c f546 910c seq=1791560047793"
+    }
+   ],
+   "pass": true
+  },
+  {
+   "sample": 15,
+   "move_offset_s": 2.0,
+   "old_seq": 1791560048535,
+   "old_addr": "10.99.0.94:47101",
+   "new_addr": "10.99.17.94:47101",
+   "stale_dial_started_after_move_s": -2.0,
+   "change_detection_s": 7.409,
+   "publish_completed_s": 7.42,
+   "newer_store_accepted_s": 7.419,
+   "move_to_session_established_s": 8.005,
+   "store_accepted_to_session_established_s": 0.586,
+   "probe_starts": 11,
+   "probe_rpcs": 297,
+   "limiter_refusals_during_redial": 0,
+   "stale_dial_failures": [],
+   "trace": [
+    {
+     "after_move_s": -2.019,
+     "line": "m17 trace observed address changed old=None new=Some(10.99.0.75:47101)"
+    },
+    {
+     "after_move_s": -2.014,
+     "line": "m17 trace publish completed seq=1791560049106 stored=8 elapsed_ms=11 addrs=[10.99.0.75:47101]"
+    },
+    {
+     "after_move_s": -2.003,
+     "line": "m17 trace publish completed seq=1791560049117 stored=8 elapsed_ms=10 addrs=[10.99.0.75:47101]"
+    },
+    {
+     "after_move_s": -2.0,
+     "line": "m17 trace newer lookup started peer=d038 64a4 845e 541c attempt=1 cadence_ms=1000 elapsed_ms=0"
+    },
+    {
+     "after_move_s": -2.0,
+     "line": "m17 trace stale dial started peer=d038 64a4 845e 541c addr=Some(10.99.0.94:47101)"
+    },
+    {
+     "after_move_s": -1.986,
+     "line": "m17 trace newer lookup finished peer=d038 64a4 845e 541c attempt=1 elapsed_ms=14 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": -0.999,
+     "line": "m17 trace newer lookup started peer=d038 64a4 845e 541c attempt=2 cadence_ms=1000 elapsed_ms=1000"
+    },
+    {
+     "after_move_s": -0.982,
+     "line": "m17 trace newer lookup finished peer=d038 64a4 845e 541c attempt=2 elapsed_ms=1018 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 0.001,
+     "line": "m17 trace newer lookup started peer=d038 64a4 845e 541c attempt=3 cadence_ms=1000 elapsed_ms=2001"
+    },
+    {
+     "after_move_s": 0.018,
+     "line": "m17 trace newer lookup finished peer=d038 64a4 845e 541c attempt=3 elapsed_ms=2018 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 1.001,
+     "line": "m17 trace newer lookup started peer=d038 64a4 845e 541c attempt=4 cadence_ms=1000 elapsed_ms=3000"
+    },
+    {
+     "after_move_s": 1.014,
+     "line": "m17 trace newer lookup finished peer=d038 64a4 845e 541c attempt=4 elapsed_ms=3014 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 2.001,
+     "line": "m17 trace newer lookup started peer=d038 64a4 845e 541c attempt=5 cadence_ms=1000 elapsed_ms=4001"
+    },
+    {
+     "after_move_s": 2.015,
+     "line": "m17 trace newer lookup finished peer=d038 64a4 845e 541c attempt=5 elapsed_ms=4015 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 3.001,
+     "line": "m17 trace newer lookup started peer=d038 64a4 845e 541c attempt=6 cadence_ms=1000 elapsed_ms=5001"
+    },
+    {
+     "after_move_s": 3.015,
+     "line": "m17 trace newer lookup finished peer=d038 64a4 845e 541c attempt=6 elapsed_ms=5015 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 4.001,
+     "line": "m17 trace newer lookup started peer=d038 64a4 845e 541c attempt=7 cadence_ms=1000 elapsed_ms=6001"
+    },
+    {
+     "after_move_s": 4.015,
+     "line": "m17 trace newer lookup finished peer=d038 64a4 845e 541c attempt=7 elapsed_ms=6015 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 5.0,
+     "line": "m17 trace newer lookup started peer=d038 64a4 845e 541c attempt=8 cadence_ms=1000 elapsed_ms=7000"
+    },
+    {
+     "after_move_s": 5.016,
+     "line": "m17 trace newer lookup finished peer=d038 64a4 845e 541c attempt=8 elapsed_ms=7016 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 6.001,
+     "line": "m17 trace newer lookup started peer=d038 64a4 845e 541c attempt=9 cadence_ms=1000 elapsed_ms=8000"
+    },
+    {
+     "after_move_s": 6.014,
+     "line": "m17 trace newer lookup finished peer=d038 64a4 845e 541c attempt=9 elapsed_ms=8013 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 7.001,
+     "line": "m17 trace newer lookup started peer=d038 64a4 845e 541c attempt=10 cadence_ms=1000 elapsed_ms=9001"
+    },
+    {
+     "after_move_s": 7.016,
+     "line": "m17 trace newer lookup finished peer=d038 64a4 845e 541c attempt=10 elapsed_ms=9016 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 8.0,
+     "line": "m17 trace newer lookup started peer=d038 64a4 845e 541c attempt=11 cadence_ms=1000 elapsed_ms=10000"
+    },
+    {
+     "after_move_s": 8.003,
+     "line": "m17 trace newer lookup finished peer=d038 64a4 845e 541c attempt=11 elapsed_ms=10003 rpcs=7 found_newer=true"
+    },
+    {
+     "after_move_s": 8.003,
+     "line": "m17 trace redial started peer=d038 64a4 845e 541c seq=1791560058540"
+    }
+   ],
+   "pass": true
+  },
+  {
+   "sample": 16,
+   "move_offset_s": 5.0,
+   "old_seq": 1791560059299,
+   "old_addr": "10.99.0.95:47101",
+   "new_addr": "10.99.18.95:47101",
+   "stale_dial_started_after_move_s": -5.0,
+   "change_detection_s": 4.408,
+   "publish_completed_s": 4.418,
+   "newer_store_accepted_s": 4.416,
+   "move_to_session_established_s": 5.006,
+   "store_accepted_to_session_established_s": 0.59,
+   "probe_starts": 11,
+   "probe_rpcs": 303,
+   "limiter_refusals_during_redial": 0,
+   "stale_dial_failures": [],
+   "trace": [
+    {
+     "after_move_s": -5.019,
+     "line": "m17 trace observed address changed old=None new=Some(10.99.0.76:47101)"
+    },
+    {
+     "after_move_s": -5.014,
+     "line": "m17 trace publish completed seq=1791560059870 stored=8 elapsed_ms=9 addrs=[10.99.0.76:47101]"
+    },
+    {
+     "after_move_s": -5.003,
+     "line": "m17 trace publish completed seq=1791560059880 stored=8 elapsed_ms=11 addrs=[10.99.0.76:47101]"
+    },
+    {
+     "after_move_s": -5.0,
+     "line": "m17 trace newer lookup started peer=5b65 2618 f43b 3518 attempt=1 cadence_ms=1000 elapsed_ms=0"
+    },
+    {
+     "after_move_s": -5.0,
+     "line": "m17 trace stale dial started peer=5b65 2618 f43b 3518 addr=Some(10.99.0.95:47101)"
+    },
+    {
+     "after_move_s": -4.984,
+     "line": "m17 trace newer lookup finished peer=5b65 2618 f43b 3518 attempt=1 elapsed_ms=16 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": -3.998,
+     "line": "m17 trace newer lookup started peer=5b65 2618 f43b 3518 attempt=2 cadence_ms=1000 elapsed_ms=1002"
+    },
+    {
+     "after_move_s": -3.985,
+     "line": "m17 trace newer lookup finished peer=5b65 2618 f43b 3518 attempt=2 elapsed_ms=1015 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": -2.999,
+     "line": "m17 trace newer lookup started peer=5b65 2618 f43b 3518 attempt=3 cadence_ms=1000 elapsed_ms=2001"
+    },
+    {
+     "after_move_s": -2.982,
+     "line": "m17 trace newer lookup finished peer=5b65 2618 f43b 3518 attempt=3 elapsed_ms=2017 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": -1.998,
+     "line": "m17 trace newer lookup started peer=5b65 2618 f43b 3518 attempt=4 cadence_ms=1000 elapsed_ms=3001"
+    },
+    {
+     "after_move_s": -1.983,
+     "line": "m17 trace newer lookup finished peer=5b65 2618 f43b 3518 attempt=4 elapsed_ms=3017 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": -0.999,
+     "line": "m17 trace newer lookup started peer=5b65 2618 f43b 3518 attempt=5 cadence_ms=1000 elapsed_ms=4001"
+    },
+    {
+     "after_move_s": -0.986,
+     "line": "m17 trace newer lookup finished peer=5b65 2618 f43b 3518 attempt=5 elapsed_ms=4014 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 0.001,
+     "line": "m17 trace newer lookup started peer=5b65 2618 f43b 3518 attempt=6 cadence_ms=1000 elapsed_ms=5001"
+    },
+    {
+     "after_move_s": 0.018,
+     "line": "m17 trace newer lookup finished peer=5b65 2618 f43b 3518 attempt=6 elapsed_ms=5018 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 1.001,
+     "line": "m17 trace newer lookup started peer=5b65 2618 f43b 3518 attempt=7 cadence_ms=1000 elapsed_ms=6001"
+    },
+    {
+     "after_move_s": 1.027,
+     "line": "m17 trace newer lookup finished peer=5b65 2618 f43b 3518 attempt=7 elapsed_ms=6027 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 2.001,
+     "line": "m17 trace newer lookup started peer=5b65 2618 f43b 3518 attempt=8 cadence_ms=1000 elapsed_ms=7001"
+    },
+    {
+     "after_move_s": 2.016,
+     "line": "m17 trace newer lookup finished peer=5b65 2618 f43b 3518 attempt=8 elapsed_ms=7016 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 3.001,
+     "line": "m17 trace newer lookup started peer=5b65 2618 f43b 3518 attempt=9 cadence_ms=1000 elapsed_ms=8001"
+    },
+    {
+     "after_move_s": 3.016,
+     "line": "m17 trace newer lookup finished peer=5b65 2618 f43b 3518 attempt=9 elapsed_ms=8016 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 4.001,
+     "line": "m17 trace newer lookup started peer=5b65 2618 f43b 3518 attempt=10 cadence_ms=1000 elapsed_ms=9001"
+    },
+    {
+     "after_move_s": 4.014,
+     "line": "m17 trace newer lookup finished peer=5b65 2618 f43b 3518 attempt=10 elapsed_ms=9014 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 5.002,
+     "line": "m17 trace newer lookup started peer=5b65 2618 f43b 3518 attempt=11 cadence_ms=1000 elapsed_ms=10001"
+    },
+    {
+     "after_move_s": 5.004,
+     "line": "m17 trace newer lookup finished peer=5b65 2618 f43b 3518 attempt=11 elapsed_ms=10003 rpcs=3 found_newer=true"
+    },
+    {
+     "after_move_s": 5.004,
+     "line": "m17 trace redial started peer=5b65 2618 f43b 3518 seq=1791560069302"
+    }
+   ],
+   "pass": true
+  },
+  {
+   "sample": 17,
+   "move_offset_s": 9.0,
+   "old_seq": 1791560070075,
+   "old_addr": "10.99.0.96:47101",
+   "new_addr": "10.99.19.96:47101",
+   "stale_dial_started_after_move_s": -9.0,
+   "change_detection_s": 0.42,
+   "publish_completed_s": 0.43,
+   "newer_store_accepted_s": 0.429,
+   "move_to_session_established_s": 1.006,
+   "store_accepted_to_session_established_s": 0.577,
+   "probe_starts": 11,
+   "probe_rpcs": 308,
+   "limiter_refusals_during_redial": 0,
+   "stale_dial_failures": [],
+   "trace": [
+    {
+     "after_move_s": -9.019,
+     "line": "m17 trace observed address changed old=None new=Some(10.99.0.77:47101)"
+    },
+    {
+     "after_move_s": -9.014,
+     "line": "m17 trace publish completed seq=1791560070634 stored=8 elapsed_ms=10 addrs=[10.99.0.77:47101]"
+    },
+    {
+     "after_move_s": -9.004,
+     "line": "m17 trace publish completed seq=1791560070645 stored=8 elapsed_ms=9 addrs=[10.99.0.77:47101]"
+    },
+    {
+     "after_move_s": -9.0,
+     "line": "m17 trace newer lookup started peer=a989 60b0 2fb4 1ab5 attempt=1 cadence_ms=1000 elapsed_ms=0"
+    },
+    {
+     "after_move_s": -9.0,
+     "line": "m17 trace stale dial started peer=a989 60b0 2fb4 1ab5 addr=Some(10.99.0.96:47101)"
+    },
+    {
+     "after_move_s": -8.985,
+     "line": "m17 trace newer lookup finished peer=a989 60b0 2fb4 1ab5 attempt=1 elapsed_ms=15 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": -7.999,
+     "line": "m17 trace newer lookup started peer=a989 60b0 2fb4 1ab5 attempt=2 cadence_ms=1000 elapsed_ms=1000"
+    },
+    {
+     "after_move_s": -7.983,
+     "line": "m17 trace newer lookup finished peer=a989 60b0 2fb4 1ab5 attempt=2 elapsed_ms=1017 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": -6.999,
+     "line": "m17 trace newer lookup started peer=a989 60b0 2fb4 1ab5 attempt=3 cadence_ms=1000 elapsed_ms=2000"
+    },
+    {
+     "after_move_s": -6.983,
+     "line": "m17 trace newer lookup finished peer=a989 60b0 2fb4 1ab5 attempt=3 elapsed_ms=2017 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": -6.0,
+     "line": "m17 trace newer lookup started peer=a989 60b0 2fb4 1ab5 attempt=4 cadence_ms=1000 elapsed_ms=3000"
+    },
+    {
+     "after_move_s": -5.984,
+     "line": "m17 trace newer lookup finished peer=a989 60b0 2fb4 1ab5 attempt=4 elapsed_ms=3016 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": -4.999,
+     "line": "m17 trace newer lookup started peer=a989 60b0 2fb4 1ab5 attempt=5 cadence_ms=1000 elapsed_ms=4000"
+    },
+    {
+     "after_move_s": -4.984,
+     "line": "m17 trace newer lookup finished peer=a989 60b0 2fb4 1ab5 attempt=5 elapsed_ms=4016 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": -4.0,
+     "line": "m17 trace newer lookup started peer=a989 60b0 2fb4 1ab5 attempt=6 cadence_ms=1000 elapsed_ms=5000"
+    },
+    {
+     "after_move_s": -3.984,
+     "line": "m17 trace newer lookup finished peer=a989 60b0 2fb4 1ab5 attempt=6 elapsed_ms=5016 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": -3.0,
+     "line": "m17 trace newer lookup started peer=a989 60b0 2fb4 1ab5 attempt=7 cadence_ms=1000 elapsed_ms=6000"
+    },
+    {
+     "after_move_s": -2.986,
+     "line": "m17 trace newer lookup finished peer=a989 60b0 2fb4 1ab5 attempt=7 elapsed_ms=6014 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": -1.999,
+     "line": "m17 trace newer lookup started peer=a989 60b0 2fb4 1ab5 attempt=8 cadence_ms=1000 elapsed_ms=7000"
+    },
+    {
+     "after_move_s": -1.985,
+     "line": "m17 trace newer lookup finished peer=a989 60b0 2fb4 1ab5 attempt=8 elapsed_ms=7015 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": -0.999,
+     "line": "m17 trace newer lookup started peer=a989 60b0 2fb4 1ab5 attempt=9 cadence_ms=1000 elapsed_ms=8000"
+    },
+    {
+     "after_move_s": -0.984,
+     "line": "m17 trace newer lookup finished peer=a989 60b0 2fb4 1ab5 attempt=9 elapsed_ms=8016 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 0.001,
+     "line": "m17 trace newer lookup started peer=a989 60b0 2fb4 1ab5 attempt=10 cadence_ms=1000 elapsed_ms=9000"
+    },
+    {
+     "after_move_s": 0.03,
+     "line": "m17 trace newer lookup finished peer=a989 60b0 2fb4 1ab5 attempt=10 elapsed_ms=9030 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 1.0,
+     "line": "m17 trace newer lookup started peer=a989 60b0 2fb4 1ab5 attempt=11 cadence_ms=1000 elapsed_ms=10000"
+    },
+    {
+     "after_move_s": 1.003,
+     "line": "m17 trace newer lookup finished peer=a989 60b0 2fb4 1ab5 attempt=11 elapsed_ms=10003 rpcs=8 found_newer=true"
+    },
+    {
+     "after_move_s": 1.004,
+     "line": "m17 trace redial started peer=a989 60b0 2fb4 1ab5 seq=1791560080077"
+    }
+   ],
+   "pass": true
+  },
+  {
+   "sample": 18,
+   "move_offset_s": 14.0,
+   "old_seq": 1791560080824,
+   "old_addr": "10.99.0.97:47101",
+   "new_addr": "10.99.20.97:47101",
+   "stale_dial_started_after_move_s": -14.0,
+   "change_detection_s": 5.405,
+   "publish_completed_s": 5.415,
+   "newer_store_accepted_s": 5.414,
+   "move_to_session_established_s": 6.008,
+   "store_accepted_to_session_established_s": 0.594,
+   "probe_starts": 21,
+   "probe_rpcs": 634,
+   "limiter_refusals_during_redial": 0,
+   "stale_dial_failures": [],
+   "trace": [
+    {
+     "after_move_s": -14.016,
+     "line": "m17 trace observed address changed old=None new=Some(10.99.0.78:47101)"
+    },
+    {
+     "after_move_s": -14.01,
+     "line": "m17 trace publish completed seq=1791560081394 stored=8 elapsed_ms=12 addrs=[10.99.0.78:47101]"
+    },
+    {
+     "after_move_s": -14.0,
+     "line": "m17 trace newer lookup started peer=72ae e6cf 170d 9ae2 attempt=1 cadence_ms=1000 elapsed_ms=0"
+    },
+    {
+     "after_move_s": -14.0,
+     "line": "m17 trace stale dial started peer=72ae e6cf 170d 9ae2 addr=Some(10.99.0.97:47101)"
+    },
+    {
+     "after_move_s": -13.996,
+     "line": "m17 trace publish completed seq=1791560081407 stored=8 elapsed_ms=14 addrs=[10.99.0.78:47101]"
+    },
+    {
+     "after_move_s": -13.974,
+     "line": "m17 trace newer lookup finished peer=72ae e6cf 170d 9ae2 attempt=1 elapsed_ms=26 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": -12.999,
+     "line": "m17 trace newer lookup started peer=72ae e6cf 170d 9ae2 attempt=2 cadence_ms=1000 elapsed_ms=1000"
+    },
+    {
+     "after_move_s": -12.983,
+     "line": "m17 trace newer lookup finished peer=72ae e6cf 170d 9ae2 attempt=2 elapsed_ms=1018 rpcs=32 found_newer=false"
+    },
+    {
+     "after_move_s": -11.999,
+     "line": "m17 trace newer lookup started peer=72ae e6cf 170d 9ae2 attempt=3 cadence_ms=1000 elapsed_ms=2001"
+    },
+    {
+     "after_move_s": -11.974,
+     "line": "m17 trace newer lookup finished peer=72ae e6cf 170d 9ae2 attempt=3 elapsed_ms=2026 rpcs=32 found_newer=false"
+    },
+    {
+     "after_move_s": -10.998,
+     "line": "m17 trace newer lookup started peer=72ae e6cf 170d 9ae2 attempt=4 cadence_ms=1000 elapsed_ms=3001"
+    },
+    {
+     "after_move_s": -10.978,
+     "line": "m17 trace newer lookup finished peer=72ae e6cf 170d 9ae2 attempt=4 elapsed_ms=3022 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": -9.999,
+     "line": "m17 trace newer lookup started peer=72ae e6cf 170d 9ae2 attempt=5 cadence_ms=1000 elapsed_ms=4001"
+    },
+    {
+     "after_move_s": -9.985,
+     "line": "m17 trace newer lookup finished peer=72ae e6cf 170d 9ae2 attempt=5 elapsed_ms=4015 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": -8.999,
+     "line": "m17 trace newer lookup started peer=72ae e6cf 170d 9ae2 attempt=6 cadence_ms=1000 elapsed_ms=5001"
+    },
+    {
+     "after_move_s": -8.981,
+     "line": "m17 trace newer lookup finished peer=72ae e6cf 170d 9ae2 attempt=6 elapsed_ms=5019 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": -7.999,
+     "line": "m17 trace newer lookup started peer=72ae e6cf 170d 9ae2 attempt=7 cadence_ms=1000 elapsed_ms=6001"
+    },
+    {
+     "after_move_s": -7.985,
+     "line": "m17 trace newer lookup finished peer=72ae e6cf 170d 9ae2 attempt=7 elapsed_ms=6015 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": -6.999,
+     "line": "m17 trace newer lookup started peer=72ae e6cf 170d 9ae2 attempt=8 cadence_ms=1000 elapsed_ms=7001"
+    },
+    {
+     "after_move_s": -6.984,
+     "line": "m17 trace newer lookup finished peer=72ae e6cf 170d 9ae2 attempt=8 elapsed_ms=7016 rpcs=32 found_newer=false"
+    },
+    {
+     "after_move_s": -5.998,
+     "line": "m17 trace newer lookup started peer=72ae e6cf 170d 9ae2 attempt=9 cadence_ms=1000 elapsed_ms=8001"
+    },
+    {
+     "after_move_s": -5.983,
+     "line": "m17 trace newer lookup finished peer=72ae e6cf 170d 9ae2 attempt=9 elapsed_ms=8017 rpcs=32 found_newer=false"
+    },
+    {
+     "after_move_s": -4.999,
+     "line": "m17 trace newer lookup started peer=72ae e6cf 170d 9ae2 attempt=10 cadence_ms=1000 elapsed_ms=9001"
+    },
+    {
+     "after_move_s": -4.983,
+     "line": "m17 trace newer lookup finished peer=72ae e6cf 170d 9ae2 attempt=10 elapsed_ms=9017 rpcs=32 found_newer=false"
+    },
+    {
+     "after_move_s": -3.999,
+     "line": "m17 trace newer lookup started peer=72ae e6cf 170d 9ae2 attempt=11 cadence_ms=1000 elapsed_ms=10001"
+    },
+    {
+     "after_move_s": -3.984,
+     "line": "m17 trace newer lookup finished peer=72ae e6cf 170d 9ae2 attempt=11 elapsed_ms=10016 rpcs=32 found_newer=false"
+    },
+    {
+     "after_move_s": -2.999,
+     "line": "m17 trace newer lookup started peer=72ae e6cf 170d 9ae2 attempt=12 cadence_ms=1000 elapsed_ms=11001"
+    },
+    {
+     "after_move_s": -2.981,
+     "line": "m17 trace newer lookup finished peer=72ae e6cf 170d 9ae2 attempt=12 elapsed_ms=11019 rpcs=32 found_newer=false"
+    },
+    {
+     "after_move_s": -1.999,
+     "line": "m17 trace newer lookup started peer=72ae e6cf 170d 9ae2 attempt=13 cadence_ms=1000 elapsed_ms=12001"
+    },
+    {
+     "after_move_s": -1.983,
+     "line": "m17 trace newer lookup finished peer=72ae e6cf 170d 9ae2 attempt=13 elapsed_ms=12017 rpcs=32 found_newer=false"
+    },
+    {
+     "after_move_s": -0.999,
+     "line": "m17 trace newer lookup started peer=72ae e6cf 170d 9ae2 attempt=14 cadence_ms=1000 elapsed_ms=13001"
+    },
+    {
+     "after_move_s": -0.977,
+     "line": "m17 trace newer lookup finished peer=72ae e6cf 170d 9ae2 attempt=14 elapsed_ms=13023 rpcs=32 found_newer=false"
+    },
+    {
+     "after_move_s": 0.001,
+     "line": "m17 trace newer lookup started peer=72ae e6cf 170d 9ae2 attempt=15 cadence_ms=1000 elapsed_ms=14001"
+    },
+    {
+     "after_move_s": 0.019,
+     "line": "m17 trace newer lookup finished peer=72ae e6cf 170d 9ae2 attempt=15 elapsed_ms=14019 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 1.001,
+     "line": "m17 trace newer lookup started peer=72ae e6cf 170d 9ae2 attempt=16 cadence_ms=1000 elapsed_ms=15001"
+    },
+    {
+     "after_move_s": 1.015,
+     "line": "m17 trace newer lookup finished peer=72ae e6cf 170d 9ae2 attempt=16 elapsed_ms=15015 rpcs=32 found_newer=false"
+    },
+    {
+     "after_move_s": 2.001,
+     "line": "m17 trace newer lookup started peer=72ae e6cf 170d 9ae2 attempt=17 cadence_ms=1000 elapsed_ms=16001"
+    },
+    {
+     "after_move_s": 2.017,
+     "line": "m17 trace newer lookup finished peer=72ae e6cf 170d 9ae2 attempt=17 elapsed_ms=16017 rpcs=32 found_newer=false"
+    },
+    {
+     "after_move_s": 3.001,
+     "line": "m17 trace newer lookup started peer=72ae e6cf 170d 9ae2 attempt=18 cadence_ms=1000 elapsed_ms=17001"
+    },
+    {
+     "after_move_s": 3.027,
+     "line": "m17 trace newer lookup finished peer=72ae e6cf 170d 9ae2 attempt=18 elapsed_ms=17027 rpcs=31 found_newer=false"
+    },
+    {
+     "after_move_s": 4.001,
+     "line": "m17 trace newer lookup started peer=72ae e6cf 170d 9ae2 attempt=19 cadence_ms=1000 elapsed_ms=18001"
+    },
+    {
+     "after_move_s": 4.014,
+     "line": "m17 trace newer lookup finished peer=72ae e6cf 170d 9ae2 attempt=19 elapsed_ms=18015 rpcs=31 found_newer=false"
+    },
+    {
+     "after_move_s": 5.001,
+     "line": "m17 trace newer lookup started peer=72ae e6cf 170d 9ae2 attempt=20 cadence_ms=1000 elapsed_ms=19001"
+    },
+    {
+     "after_move_s": 5.015,
+     "line": "m17 trace newer lookup finished peer=72ae e6cf 170d 9ae2 attempt=20 elapsed_ms=19015 rpcs=31 found_newer=false"
+    },
+    {
+     "after_move_s": 6.001,
+     "line": "m17 trace stale dial finished peer=72ae e6cf 170d 9ae2 ok=false"
+    },
+    {
+     "after_move_s": 6.001,
+     "line": "m17 trace newer lookup started peer=72ae e6cf 170d 9ae2 attempt=1 cadence_ms=1000 elapsed_ms=0"
+    },
+    {
+     "after_move_s": 6.005,
+     "line": "m17 trace redial started after stale-dial result peer=72ae e6cf 170d 9ae2 seq=1791560100822"
+    },
+    {
+     "after_move_s": 6.005,
+     "line": "m17 trace newer lookup finished peer=72ae e6cf 170d 9ae2 attempt=1 elapsed_ms=4 rpcs=9 found_newer=true"
+    },
+    {
+     "after_move_s": 6.005,
+     "line": "m17 trace redial started after stale-dial deadline peer=72ae e6cf 170d 9ae2 seq=1791560100822"
+    }
+   ],
+   "pass": true
+  },
+  {
+   "sample": 19,
+   "move_offset_s": 0.1,
+   "old_seq": 1791560101592,
+   "old_addr": "10.99.0.98:47101",
+   "new_addr": "10.99.21.98:47101",
+   "stale_dial_started_after_move_s": -0.102,
+   "change_detection_s": 9.312,
+   "publish_completed_s": 9.321,
+   "newer_store_accepted_s": 9.321,
+   "move_to_session_established_s": 9.907,
+   "store_accepted_to_session_established_s": 0.586,
+   "probe_starts": 11,
+   "probe_rpcs": 308,
+   "limiter_refusals_during_redial": 0,
+   "stale_dial_failures": [],
+   "trace": [
+    {
+     "after_move_s": -0.12,
+     "line": "m17 trace observed address changed old=None new=Some(10.99.0.79:47101)"
+    },
+    {
+     "after_move_s": -0.115,
+     "line": "m17 trace publish completed seq=1791560102156 stored=8 elapsed_ms=10 addrs=[10.99.0.79:47101]"
+    },
+    {
+     "after_move_s": -0.105,
+     "line": "m17 trace publish completed seq=1791560102167 stored=8 elapsed_ms=9 addrs=[10.99.0.79:47101]"
+    },
+    {
+     "after_move_s": -0.102,
+     "line": "m17 trace newer lookup started peer=1d76 7704 06a6 3142 attempt=1 cadence_ms=1000 elapsed_ms=0"
+    },
+    {
+     "after_move_s": -0.102,
+     "line": "m17 trace stale dial started peer=1d76 7704 06a6 3142 addr=Some(10.99.0.98:47101)"
+    },
+    {
+     "after_move_s": -0.086,
+     "line": "m17 trace newer lookup finished peer=1d76 7704 06a6 3142 attempt=1 elapsed_ms=15 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 0.9,
+     "line": "m17 trace newer lookup started peer=1d76 7704 06a6 3142 attempt=2 cadence_ms=1000 elapsed_ms=1001"
+    },
+    {
+     "after_move_s": 0.917,
+     "line": "m17 trace newer lookup finished peer=1d76 7704 06a6 3142 attempt=2 elapsed_ms=1018 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 1.899,
+     "line": "m17 trace newer lookup started peer=1d76 7704 06a6 3142 attempt=3 cadence_ms=1000 elapsed_ms=2000"
+    },
+    {
+     "after_move_s": 1.913,
+     "line": "m17 trace newer lookup finished peer=1d76 7704 06a6 3142 attempt=3 elapsed_ms=2014 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 2.9,
+     "line": "m17 trace newer lookup started peer=1d76 7704 06a6 3142 attempt=4 cadence_ms=1000 elapsed_ms=3001"
+    },
+    {
+     "after_move_s": 2.915,
+     "line": "m17 trace newer lookup finished peer=1d76 7704 06a6 3142 attempt=4 elapsed_ms=3016 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 3.9,
+     "line": "m17 trace newer lookup started peer=1d76 7704 06a6 3142 attempt=5 cadence_ms=1000 elapsed_ms=4001"
+    },
+    {
+     "after_move_s": 3.917,
+     "line": "m17 trace newer lookup finished peer=1d76 7704 06a6 3142 attempt=5 elapsed_ms=4018 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 4.9,
+     "line": "m17 trace newer lookup started peer=1d76 7704 06a6 3142 attempt=6 cadence_ms=1000 elapsed_ms=5001"
+    },
+    {
+     "after_move_s": 4.914,
+     "line": "m17 trace newer lookup finished peer=1d76 7704 06a6 3142 attempt=6 elapsed_ms=5015 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 5.9,
+     "line": "m17 trace newer lookup started peer=1d76 7704 06a6 3142 attempt=7 cadence_ms=1000 elapsed_ms=6000"
+    },
+    {
+     "after_move_s": 5.916,
+     "line": "m17 trace newer lookup finished peer=1d76 7704 06a6 3142 attempt=7 elapsed_ms=6017 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 6.9,
+     "line": "m17 trace newer lookup started peer=1d76 7704 06a6 3142 attempt=8 cadence_ms=1000 elapsed_ms=7001"
+    },
+    {
+     "after_move_s": 6.913,
+     "line": "m17 trace newer lookup finished peer=1d76 7704 06a6 3142 attempt=8 elapsed_ms=7014 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 7.9,
+     "line": "m17 trace newer lookup started peer=1d76 7704 06a6 3142 attempt=9 cadence_ms=1000 elapsed_ms=8001"
+    },
+    {
+     "after_move_s": 7.915,
+     "line": "m17 trace newer lookup finished peer=1d76 7704 06a6 3142 attempt=9 elapsed_ms=8016 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 8.9,
+     "line": "m17 trace newer lookup started peer=1d76 7704 06a6 3142 attempt=10 cadence_ms=1000 elapsed_ms=9001"
+    },
+    {
+     "after_move_s": 8.918,
+     "line": "m17 trace newer lookup finished peer=1d76 7704 06a6 3142 attempt=10 elapsed_ms=9019 rpcs=30 found_newer=false"
+    },
+    {
+     "after_move_s": 9.899,
+     "line": "m17 trace newer lookup started peer=1d76 7704 06a6 3142 attempt=11 cadence_ms=1000 elapsed_ms=10000"
+    },
+    {
+     "after_move_s": 9.902,
+     "line": "m17 trace newer lookup finished peer=1d76 7704 06a6 3142 attempt=11 elapsed_ms=10003 rpcs=8 found_newer=true"
+    },
+    {
+     "after_move_s": 9.902,
+     "line": "m17 trace redial started peer=1d76 7704 06a6 3142 seq=1791560111593"
+    }
+   ],
+   "pass": true
+  },
+  {
+   "sample": 20,
+   "move_offset_s": 0.3,
+   "old_seq": 1791560112356,
+   "old_addr": "10.99.0.99:47101",
+   "new_addr": "10.99.22.99:47101",
+   "stale_dial_started_after_move_s": -0.3,
+   "change_detection_s": 9.113,
+   "publish_completed_s": 9.125,
+   "newer_store_accepted_s": 9.123,
+   "move_to_session_established_s": 9.706,
+   "store_accepted_to_session_established_s": 0.583,
+   "probe_starts": 11,
+   "probe_rpcs": 298,
+   "limiter_refusals_during_redial": 0,
+   "stale_dial_failures": [],
+   "trace": [
+    {
+     "after_move_s": -0.317,
+     "line": "m17 trace observed address changed old=None new=Some(10.99.0.80:47101)"
+    },
+    {
+     "after_move_s": -0.31,
+     "line": "m17 trace publish completed seq=1791560112919 stored=8 elapsed_ms=12 addrs=[10.99.0.80:47101]"
+    },
+    {
+     "after_move_s": -0.3,
+     "line": "m17 trace newer lookup started peer=916f 42c7 6455 fe08 attempt=1 cadence_ms=1000 elapsed_ms=0"
+    },
+    {
+     "after_move_s": -0.3,
+     "line": "m17 trace stale dial started peer=916f 42c7 6455 fe08 addr=Some(10.99.0.99:47101)"
+    },
+    {
+     "after_move_s": -0.296,
+     "line": "m17 trace publish completed seq=1791560112932 stored=8 elapsed_ms=13 addrs=[10.99.0.80:47101]"
+    },
+    {
+     "after_move_s": -0.285,
+     "line": "m17 trace newer lookup finished peer=916f 42c7 6455 fe08 attempt=1 elapsed_ms=15 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 0.701,
+     "line": "m17 trace newer lookup started peer=916f 42c7 6455 fe08 attempt=2 cadence_ms=1000 elapsed_ms=1001"
+    },
+    {
+     "after_move_s": 0.719,
+     "line": "m17 trace newer lookup finished peer=916f 42c7 6455 fe08 attempt=2 elapsed_ms=1019 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 1.701,
+     "line": "m17 trace newer lookup started peer=916f 42c7 6455 fe08 attempt=3 cadence_ms=1000 elapsed_ms=2001"
+    },
+    {
+     "after_move_s": 1.717,
+     "line": "m17 trace newer lookup finished peer=916f 42c7 6455 fe08 attempt=3 elapsed_ms=2017 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 2.701,
+     "line": "m17 trace newer lookup started peer=916f 42c7 6455 fe08 attempt=4 cadence_ms=1000 elapsed_ms=3001"
+    },
+    {
+     "after_move_s": 2.715,
+     "line": "m17 trace newer lookup finished peer=916f 42c7 6455 fe08 attempt=4 elapsed_ms=3015 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 3.701,
+     "line": "m17 trace newer lookup started peer=916f 42c7 6455 fe08 attempt=5 cadence_ms=1000 elapsed_ms=4001"
+    },
+    {
+     "after_move_s": 3.717,
+     "line": "m17 trace newer lookup finished peer=916f 42c7 6455 fe08 attempt=5 elapsed_ms=4017 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 4.7,
+     "line": "m17 trace newer lookup started peer=916f 42c7 6455 fe08 attempt=6 cadence_ms=1000 elapsed_ms=5000"
+    },
+    {
+     "after_move_s": 4.715,
+     "line": "m17 trace newer lookup finished peer=916f 42c7 6455 fe08 attempt=6 elapsed_ms=5015 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 5.701,
+     "line": "m17 trace newer lookup started peer=916f 42c7 6455 fe08 attempt=7 cadence_ms=1000 elapsed_ms=6001"
+    },
+    {
+     "after_move_s": 5.717,
+     "line": "m17 trace newer lookup finished peer=916f 42c7 6455 fe08 attempt=7 elapsed_ms=6017 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 6.7,
+     "line": "m17 trace newer lookup started peer=916f 42c7 6455 fe08 attempt=8 cadence_ms=1000 elapsed_ms=7000"
+    },
+    {
+     "after_move_s": 6.714,
+     "line": "m17 trace newer lookup finished peer=916f 42c7 6455 fe08 attempt=8 elapsed_ms=7014 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 7.7,
+     "line": "m17 trace newer lookup started peer=916f 42c7 6455 fe08 attempt=9 cadence_ms=1000 elapsed_ms=8000"
+    },
+    {
+     "after_move_s": 7.717,
+     "line": "m17 trace newer lookup finished peer=916f 42c7 6455 fe08 attempt=9 elapsed_ms=8017 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 8.701,
+     "line": "m17 trace newer lookup started peer=916f 42c7 6455 fe08 attempt=10 cadence_ms=1000 elapsed_ms=9001"
+    },
+    {
+     "after_move_s": 8.719,
+     "line": "m17 trace newer lookup finished peer=916f 42c7 6455 fe08 attempt=10 elapsed_ms=9019 rpcs=29 found_newer=false"
+    },
+    {
+     "after_move_s": 9.701,
+     "line": "m17 trace newer lookup started peer=916f 42c7 6455 fe08 attempt=11 cadence_ms=1000 elapsed_ms=10001"
+    },
+    {
+     "after_move_s": 9.704,
+     "line": "m17 trace newer lookup finished peer=916f 42c7 6455 fe08 attempt=11 elapsed_ms=10004 rpcs=8 found_newer=true"
+    },
+    {
+     "after_move_s": 9.704,
+     "line": "m17 trace redial started peer=916f 42c7 6455 fe08 seq=1791560122355"
+    }
+   ],
+   "pass": true
+  }
+ ],
+ "converged_after_s": 0.0,
+ "binary": {
+  "path": "/target/release/p2pchat",
+  "sha256": "1408b91477cd5d514cf527d2c1a6e9ab9108c9d1df1046baa10c320bcbccf55d",
+  "source_commit": "6e456b7f80ddcb22e8e52d84d5cad578d3531e2e"
+ },
+ "clock_assumption": "containers share the host monotonic clock",
+ "move_to_session_established_s": {
+  "n": 20,
+  "min": 1.006,
+  "p50": 9.309,
+  "p90": 9.906,
+  "p99": 9.909,
+  "max": 9.909,
+  "mean": 7.74
+ },
+ "store_accepted_to_session_established_s": {
+  "n": 20,
+  "min": 0.577,
+  "p50": 0.591,
+  "p90": 0.601,
+  "p99": 0.616,
+  "max": 0.616,
+  "mean": 0.59
+ },
+ "change_detection_s": {
+  "n": 20,
+  "min": 0.413,
+  "p50": 8.7,
+  "p90": 9.289,
+  "p99": 9.312,
+  "max": 9.312,
+  "mean": 7.14
+ },
+ "publish_completed_s": {
+  "n": 20,
+  "min": 0.424,
+  "p50": 8.711,
+  "p90": 9.3,
+  "p99": 9.321,
+  "max": 9.321,
+  "mean": 7.15
+ },
+ "newer_store_accepted_s": {
+  "n": 20,
+  "min": 0.423,
+  "p50": 8.709,
+  "p90": 9.298,
+  "p99": 9.321,
+  "max": 9.321,
+  "mean": 7.15
+ },
+ "probe_starts": {
+  "n": 20,
+  "min": 11,
+  "p50": 11,
+  "p90": 11,
+  "p99": 21,
+  "max": 21,
+  "mean": 12.0
+ },
+ "probe_rpcs": {
+  "n": 20,
+  "min": 297,
+  "p50": 308,
+  "p90": 318,
+  "p99": 634,
+  "max": 634,
+  "mean": 335.65
+ },
+ "limiter_refusals_during_redials": 0,
+ "pass": true,
+ "args": {
+  "scenario": "redials",
+  "n": 50,
+  "clients": 3,
+  "profile": "baseline",
+  "k": null,
+  "alpha": null,
+  "replication": null,
+  "rpc_timeout_ms": null,
+  "refresh_ms": 30000,
+  "converge_s": 120,
+  "gets": 4,
+  "finds": 2,
+  "kill": 0.3,
+  "only": null,
+  "binary": "/target/release/p2pchat",
+  "env": [],
+  "findable_s": 30,
+  "out": "/out",
+  "tag": "m17a-causal2-baseline",
+  "trace_m16": false,
+  "selftest_only": false,
+  "redials": 20,
+  "move_offsets": "0.1,0.3,0.5,0.7,0.9,2,5,9,14",
+  "source_commit": "6e456b7f80ddcb22e8e52d84d5cad578d3531e2e"
+ }
+}

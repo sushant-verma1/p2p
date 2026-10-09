@@ -22,3 +22,9 @@ profile and per sample, `move_to_session_established_s` and
 `store_accepted_to_session_established_s`. The gate is on the former; neither
 metric accepts a negative value. Containers share the host monotonic clock;
 that is recorded beside the metric as an explicit harness assumption.
+
+Current gate-result artifacts:
+
+- `dht-redials-m17a-causal2-baseline.json`
+- `dht-redials-m17a-causal2-typical.json`
+- `dht-redials-m17a-causal2-poor.json`
