@@ -24,7 +24,8 @@ use std::time::{Duration, Instant};
 use quinn::{Connection, VarInt};
 
 use p2pchat_core::wire::{
-    DialBackRequest, PublicRequest, PublicResponse, DIAL_BACK_NONCE_LEN, PROTOCOL_VERSION,
+    DialBackRequest, ObserveRequest, PublicRequest, PublicResponse, DIAL_BACK_NONCE_LEN,
+    PROTOCOL_VERSION,
 };
 use p2pchat_net::public::{self, Limits};
 
@@ -75,6 +76,84 @@ pub enum Why {
     /// Arrived, from an IP this node sent to during the test — a member
     /// dialling for itself, which proves only that replies get in.
     ArrivedFromContacted,
+}
+
+/// The result of independent observations made after a local network change.
+/// It can publish an address, but never grants the member role.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum EarlyObserved {
+    Publish(SocketAddr),
+    SymmetricLike,
+    Unknown,
+}
+
+fn classify_observed(observations: &[(SocketAddr, Option<SocketAddr>)]) -> EarlyObserved {
+    let mut answers: HashMap<SocketAddr, HashSet<SocketAddr>> = HashMap::new();
+    for &(member, observed) in observations {
+        if let Some(observed) = observed {
+            answers.entry(observed).or_default().insert(member);
+        }
+    }
+    if let Some((&addr, _)) = answers.iter().find(|(_, members)| members.len() >= 2) {
+        return EarlyObserved::Publish(addr);
+    }
+    if answers.len() >= 2 {
+        EarlyObserved::SymmetricLike
+    } else {
+        EarlyObserved::Unknown
+    }
+}
+
+async fn observe(node: &Node, member: SocketAddr) -> Option<SocketAddr> {
+    let request = PublicRequest::Observe(ObserveRequest {
+        version: PROTOCOL_VERSION,
+    });
+    match public::request(
+        &node.private,
+        member,
+        &request,
+        Limits::default().request_timeout,
+    )
+    .await
+    {
+        Ok(PublicResponse::Observed { addr }) => Some(addr),
+        Ok(_) => None,
+        Err(error) => {
+            tracing::debug!(%member, %error, "member did not answer observation");
+            None
+        }
+    }
+}
+
+/// Run these from the private endpoint and do not await them from the
+/// reachability loop. The re-test can therefore take its full timeout without
+/// delaying publication of a two-member observation.
+fn observe_early(node: Arc<Node>, bootstrap: Vec<SocketAddr>) {
+    tokio::spawn(async move {
+        let mut pending = tokio::task::JoinSet::new();
+        for member in bootstrap {
+            let node = Arc::clone(&node);
+            pending.spawn(async move { (member, observe(&node, member).await) });
+        }
+        let mut observations = Vec::new();
+        while let Some(result) = pending.join_next().await {
+            if let Ok(observation) = result {
+                observations.push(observation);
+                if let EarlyObserved::Publish(addr) = classify_observed(&observations) {
+                    node.set_observed(Some(addr));
+                    tracing::info!(%addr, "published two-member observed address before re-test");
+                    return;
+                }
+            }
+        }
+        match classify_observed(&observations) {
+            EarlyObserved::SymmetricLike => {
+                tracing::info!("early observations disagree; symmetric-like mapping")
+            }
+            EarlyObserved::Unknown => tracing::info!("too few early observations; mapping unknown"),
+            EarlyObserved::Publish(_) => unreachable!("agreement returns above"),
+        }
+    });
 }
 
 /// The whole decision. `contacted` is every IP this node sent to during the
@@ -262,8 +341,11 @@ pub(crate) async fn watch(
         let now_on = network();
         if now_on != on {
             tracing::info!(from = ?on, to = ?now_on, "the network changed; testing reachability again");
-            node.set_role(Role::Client);
+            // Keep the previous role until this re-test completes. It is
+            // safer to be briefly stale about reachability than to continue
+            // publishing an address from the previous network.
             node.set_observed(None);
+            observe_early(Arc::clone(&node), bootstrap.clone());
             next = Instant::now();
         }
         on = now_on;
@@ -357,6 +439,28 @@ mod tests {
         assert_eq!(
             classify(&contacted, None),
             (Role::Client, Why::NoMemberAnswered)
+        );
+    }
+
+    #[test]
+    fn early_publish_requires_two_distinct_members_to_agree() {
+        let first = addr("198.51.100.1:47100");
+        let second = addr("198.51.100.2:47100");
+        let observed = addr("203.0.113.9:50123");
+        assert_eq!(
+            classify_observed(&[(first, Some(observed)), (second, Some(observed))]),
+            EarlyObserved::Publish(observed)
+        );
+        assert_eq!(
+            classify_observed(&[
+                (first, Some(observed)),
+                (second, Some(addr("203.0.113.9:50124"))),
+            ]),
+            EarlyObserved::SymmetricLike
+        );
+        assert_eq!(
+            classify_observed(&[(first, Some(observed))]),
+            EarlyObserved::Unknown
         );
     }
 

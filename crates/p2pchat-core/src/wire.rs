@@ -440,6 +440,15 @@ pub struct DialBackRequest {
 
 impl WireType for DialBackRequest {}
 
+/// Asks a public member which address it observed for this connection.  The
+/// caller supplies no address: the member derives it from the QUIC connection.
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
+pub struct ObserveRequest {
+    pub version: u8,
+}
+
+impl WireType for ObserveRequest {}
+
 /// "Dial this address back for me" — M14b, from one member to another.
 ///
 /// `target` is where the forwarding member saw a `DialBackRequest` come from,
@@ -577,6 +586,8 @@ pub enum PublicRequest {
     ForwardDialBack(ForwardDialBack),
     /// M16. Answered only by a member.
     Dht(DhtRequest),
+    /// M17a. Appended so existing request tags remain unchanged.
+    Observe(ObserveRequest),
 }
 
 impl WireType for PublicRequest {
@@ -588,6 +599,7 @@ impl WireType for PublicRequest {
             Self::DialBack(r) => r.validate(),
             Self::ForwardDialBack(r) => r.validate(),
             Self::Dht(r) => r.validate(),
+            Self::Observe(r) => r.validate(),
         }
     }
 }
@@ -626,6 +638,10 @@ pub enum PublicResponse {
     },
     /// M16.
     Dht(DhtResponse),
+    /// M17a. Appended so existing response tags remain unchanged.
+    Observed {
+        addr: SocketAddr,
+    },
 }
 
 impl WireType for PublicResponse {
@@ -639,6 +655,8 @@ impl WireType for PublicResponse {
             Self::State(..) => Err(CoreError::MisplacedAddr),
             Self::DialBack { .. } | Self::Forwarded { .. } => Ok(()),
             Self::Dht(r) => r.validate(),
+            Self::Observed { addr } if addr.ip().is_unspecified() => Err(CoreError::MisplacedAddr),
+            Self::Observed { .. } => Ok(()),
         }
     }
 }

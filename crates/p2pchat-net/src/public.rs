@@ -483,6 +483,16 @@ async fn answer(
             .as_ref()?
             .answer(request, from)
             .map(PublicResponse::Dht),
+
+        // `from` comes from the accepted QUIC connection, never from the
+        // request. This is deliberately a small public request: it goes
+        // through the same per-source connection limiter as every other one.
+        PublicRequest::Observe(request) => {
+            if request.version != PROTOCOL_VERSION {
+                return None;
+            }
+            Some(PublicResponse::Observed { addr: from })
+        }
     }
 }
 

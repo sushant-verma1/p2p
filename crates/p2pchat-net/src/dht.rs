@@ -533,6 +533,9 @@ pub enum Stop {
 #[derive(Debug)]
 pub struct Found {
     pub value: Option<AddressRecord>,
+    /// Members which actually returned the verified value. Reconnect probes
+    /// are restricted to this set, never to a merely learned contact.
+    pub value_holders: Vec<Contact>,
     /// The `k` closest contacts that answered, closest first.
     pub closest: Vec<Contact>,
     pub rpcs: usize,
@@ -795,6 +798,39 @@ impl Dht {
         self.lookup_seeded(target, true, true, Some(seq)).await
     }
 
+    /// One bounded `FIND_VALUE` probe to a member that returned this record.
+    /// This is the reconnect path's only post-resolve DHT request.
+    pub async fn probe_newer(&self, holder: Contact, target: UserId, seq: u64) -> Found {
+        let result = self.ask(holder.addr, DhtQuery::FindValue(target)).await;
+        let (value, failed_rpcs) = match result {
+            Ok(response) if response.id == holder.id => match response.answer {
+                DhtAnswer::Value(record)
+                    if record.body.user_id == target
+                        && record.body.seq > seq
+                        && record::verify(&record, invite::now()).is_ok() =>
+                {
+                    (Some(*record), 0)
+                }
+                _ => (None, 0),
+            },
+            Ok(_) => (None, 0),
+            Err(_) => (None, 1),
+        };
+        let stop = if value.is_some() {
+            Stop::Value
+        } else {
+            Stop::Exhausted
+        };
+        Found {
+            value,
+            value_holders: Vec::new(),
+            closest: vec![holder],
+            rpcs: 1,
+            failed_rpcs,
+            stop,
+        }
+    }
+
     async fn lookup_seeded(
         self: &Arc<Self>,
         target: UserId,
@@ -832,6 +868,7 @@ impl Dht {
         let mut rpcs = 0;
         let mut failed_rpcs = 0;
         let mut value = None;
+        let mut value_holders = Vec::new();
         loop {
             while asking.len() < alpha && rpcs < MAX_LOOKUP_RPCS {
                 let (who, addr) = if let Some(addr) = unnamed.pop() {
@@ -877,6 +914,7 @@ impl Dht {
                                 && newer_than.is_none_or(|seq| record.body.seq > seq)
                                 && record::verify(&record, invite::now()).is_ok() =>
                         {
+                            value_holders.push(responder);
                             value = Some(*record);
                             break;
                         }
@@ -970,6 +1008,7 @@ impl Dht {
             .collect();
         Found {
             value,
+            value_holders,
             closest,
             rpcs,
             failed_rpcs,

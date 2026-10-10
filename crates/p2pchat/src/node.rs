@@ -27,11 +27,12 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use anyhow::{anyhow, Context, Result};
 use quinn::{Connection, Endpoint, VarInt};
 use tokio::sync::{mpsc, Mutex};
+#[cfg(test)]
 use tokio::task::JoinSet;
 use tracing::Instrument;
 
 use p2pchat_core::wire::{
-    AddressRecord, ConnectionRequest, DeliveryStatus, RequestState, PROTOCOL_VERSION,
+    AddressRecord, ConnectionRequest, Contact, DeliveryStatus, RequestState, PROTOCOL_VERSION,
 };
 use p2pchat_core::{MessageId, UserId};
 use p2pchat_crypto::{
@@ -68,25 +69,102 @@ const POLL_MAX: Duration = Duration::from_secs(60);
 /// A moved peer normally republishes as soon as its reachability test observes
 /// the new address.  Keep looking while an old-address dial is in flight, but
 /// do not turn one reconnect into an unbounded stream of DHT traffic.
-const NEWER_RECORD_POLL_MIN: Duration = Duration::from_secs(1);
-/// Probe starts are never more than one second apart. Together with the
-/// three-second lookup budget below, that gives a five-second bound from an
-/// independently findable newer record to the fresh dial.
-const NEWER_RECORD_POLL_MAX: Duration = Duration::from_secs(1);
-const MOVED_RECORD_POLL_MAX: Duration = Duration::from_secs(1);
 /// Probe cadence is deliberately independent from this budget.  A one-second
 /// cadence must not abort an iterative DHT lookup before it can get past a
 /// stale replica; three seconds still leaves two seconds inside M17a's
 /// five-second post-findability bound.
 const NEWER_RECORD_LOOKUP_TIMEOUT: Duration = Duration::from_secs(3);
-/// Four slots cover a three-second lookup at a one-second cadence, plus one
-/// scheduler-tick of slack. Crucially, a new probe never cancels an older
-/// lookup: it ends only at its own budget or when a newer record is found.
-const NEWER_RECORD_LOOKUPS_IN_FLIGHT: usize = 4;
 /// Once the old dial has given up, a signed address change is still useful.
 /// This is deliberately a bounded background observation, rather than making
 /// the caller wait a republish interval for an ordinary unreachable peer.
 const MOVED_RECORD_WATCH: Duration = Duration::from_secs(record::REPUBLISH + 30);
+
+/// The reconnect path treats the eight DHT replicas as the complete holder
+/// set for one reconnect lifetime.  It never falls back to the lookup's
+/// twenty-contact shortlist for a diagnostic or a watcher.
+const RECONNECT_HOLDERS: usize = 8;
+
+/// A pure schedule for all reconnect DHT traffic.  The deployed stranger
+/// limiter is ten connections per minute; reconnect consumes at most half of
+/// that per holder, leaving the other half for ordinary traffic from a lone
+/// client sharing no CGNAT source address.
+#[cfg(test)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ReconnectRequestKind {
+    Resolve,
+    Probe,
+}
+
+#[cfg(test)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct ReconnectRequest {
+    at: Duration,
+    holder: usize,
+    kind: ReconnectRequestKind,
+}
+
+fn reconnect_probe_gap(holders: usize) -> Duration {
+    let limit = usize::try_from(Limits::default().per_source / 2).expect("u32 fits usize");
+    let slots = (limit - 1).saturating_mul(holders.max(1));
+    let millis = Limits::default().window.as_millis();
+    let gap = (millis + u128::try_from(slots).expect("usize fits u128") - 1)
+        / u128::try_from(slots).expect("usize fits u128");
+    Duration::from_millis(u64::try_from(gap).expect("minute gap fits u64"))
+}
+
+/// Resolving, scheduled probes, post-dial diagnostics, and the old 120-second
+/// watcher are all represented by this one stream.  A re-resolution starts on
+/// a window boundary and costs one request to each known holder; it is never
+/// an iterative request to a fresh twenty-contact shortlist.
+#[cfg(test)]
+fn reconnect_requests(holders: usize, lifetime: Duration) -> Vec<ReconnectRequest> {
+    let holders = holders.clamp(1, RECONNECT_HOLDERS);
+    let window = Limits::default().window;
+    let gap = reconnect_probe_gap(holders);
+    let mut requests = Vec::new();
+    let mut base = Duration::ZERO;
+    while base < lifetime {
+        for holder in 0..holders {
+            requests.push(ReconnectRequest {
+                at: base,
+                holder,
+                kind: ReconnectRequestKind::Resolve,
+            });
+        }
+        let mut slot = 1usize;
+        loop {
+            let at = base + gap * u32::try_from(slot).expect("ten-minute schedule fits u32");
+            if at >= (base + window).min(lifetime) {
+                break;
+            }
+            requests.push(ReconnectRequest {
+                at,
+                holder: (slot - 1) % holders,
+                kind: ReconnectRequestKind::Probe,
+            });
+            slot += 1;
+        }
+        base += window;
+    }
+    requests
+}
+
+#[cfg(test)]
+fn reconnect_within_half_allowance(requests: &[ReconnectRequest]) -> bool {
+    let window = Limits::default().window;
+    let half = usize::try_from(Limits::default().per_source / 2).expect("u32 fits usize");
+    requests.iter().all(|request| {
+        requests
+            .iter()
+            .filter(|other| {
+                other.holder == request.holder
+                    && other.at >= request.at
+                    && other.at < request.at + window
+            })
+            .count()
+            <= half
+    })
+}
 
 /// Enables the timestamped M17 trace used by the netem diagnostic run.  It is
 /// deliberately opt-in: reconnects are normal operation, not normally
@@ -198,6 +276,7 @@ pub fn diagnose(dialled: &AddressRecord, newer: Option<&AddressRecord>, now: u64
 /// A refusal occurs before TLS and has the same wire shape as a timeout.  An
 /// empty lookup containing one is uncertain, not proof that no newer record
 /// exists.
+#[cfg(test)]
 fn newer_record_lookup_uncertain(found: &p2pchat_net::dht::Found) -> bool {
     found.failed_rpcs != 0
 }
@@ -778,6 +857,8 @@ impl Node {
             anyhow!("no DHT: this node has no bootstrap list, so it can only dial an address")
         })?;
         let found = dht.lookup(peer, true).await;
+        let mut holders = found.value_holders;
+        holders.truncate(RECONNECT_HOLDERS);
         let Some(record) = found.value else {
             if found.closest.is_empty() {
                 // Nobody answered, which says nothing about the peer.
@@ -800,9 +881,8 @@ impl Node {
             Arc::clone(dht),
             peer,
             &record,
+            holders.clone(),
             Instant::now() + dial_timeout(),
-            NEWER_RECORD_POLL_MAX,
-            false,
         );
         let stale_addr = record.body.addrs.first().copied();
         let stale_dial = async {
@@ -860,7 +940,7 @@ impl Node {
                     // turn before the stale dial reports its failure.  This
                     // is the same post-deadline move case as the sibling
                     // select arm below, so it must start the same watcher.
-                    watch_moved_record(Arc::clone(self), Arc::clone(dht), peer, record.clone());
+                    watch_moved_record(Arc::clone(self), Arc::clone(dht), peer, record.clone(), holders.clone());
                     (addr, error, None)
                 }
                 },
@@ -873,7 +953,7 @@ impl Node {
                     // unreachable peer, but do not lose a move whose
                     // republish lands just after that deadline.  The watcher
                     // only acts on a signed, changed record.
-                    watch_moved_record(Arc::clone(self), Arc::clone(dht), peer, record.clone());
+                    watch_moved_record(Arc::clone(self), Arc::clone(dht), peer, record.clone(), holders.clone());
                     (addr, error, None)
                 }
             },
@@ -882,13 +962,13 @@ impl Node {
         // addresses changed.  Re-read once for the diagnostic path so a
         // same-address republish still refreshes M12's age calculation, and
         // a record that won the race by a few milliseconds is still used.
-        let (newer, failed_rpcs) = match newer {
+        let (newer, failed_rpcs): (Option<AddressRecord>, Option<usize>) = match newer {
             Some(newer) => (Some(newer), None),
-            None => {
-                let refreshed = dht.lookup_newer(peer, record.body.seq).await;
-                let uncertain = newer_record_lookup_uncertain(&refreshed);
-                (refreshed.value, uncertain.then_some(refreshed.failed_rpcs))
-            }
+            // The old post-dial "diagnostic" was another iterative lookup,
+            // so it could contact the whole twenty-node shortlist outside the
+            // reconnect budget. The scheduled holder probe above already
+            // supplied this diagnosis; do not add an unscheduled request.
+            None => (None, None),
         };
         if newer.is_none() && failed_rpcs.is_some() {
             let failed_rpcs = failed_rpcs.expect("checked above");
@@ -1313,7 +1393,8 @@ impl Node {
             p2pchat_core::wire::PublicResponse::Profile(_)
             | p2pchat_core::wire::PublicResponse::DialBack { .. }
             | p2pchat_core::wire::PublicResponse::Forwarded { .. }
-            | p2pchat_core::wire::PublicResponse::Dht(_) => {
+            | p2pchat_core::wire::PublicResponse::Dht(_)
+            | p2pchat_core::wire::PublicResponse::Observed { .. } => {
                 Err(anyhow!("the node answered a different question"))
             }
         }
@@ -1584,15 +1665,20 @@ async fn poll_status(node: &Arc<Node>, peer: UserId, addr: SocketAddr, first: Du
 /// one-second cadence rather than sleeping after the previous probe
 /// completes. This permits at most twenty probes in a twenty-second stale
 /// dial, while a slow lookup cannot push the next start onto the deadline.
-fn watch_moved_record(node: Arc<Node>, dht: Arc<Dht>, peer: UserId, current: AddressRecord) {
+fn watch_moved_record(
+    node: Arc<Node>,
+    dht: Arc<Dht>,
+    peer: UserId,
+    current: AddressRecord,
+    holders: Vec<Contact>,
+) {
     tokio::spawn(async move {
         let Some(newer) = newer_record_until(
             dht,
             peer,
             &current,
+            holders,
             Instant::now() + MOVED_RECORD_WATCH,
-            MOVED_RECORD_POLL_MAX,
-            true,
         )
         .await
         else {
@@ -1614,85 +1700,55 @@ async fn newer_record_until(
     dht: Arc<Dht>,
     peer: UserId,
     current: &AddressRecord,
+    holders: Vec<Contact>,
     deadline: Instant,
-    poll_max: Duration,
-    bootstrap: bool,
 ) -> Option<AddressRecord> {
+    if holders.is_empty() {
+        return None;
+    }
     let trace = m17_trace();
     let traced_at = Instant::now();
-    let mut next = traced_at;
-    let mut cadence = NEWER_RECORD_POLL_MIN;
+    let gap = reconnect_probe_gap(holders.len());
+    let mut next = traced_at + gap;
     let mut attempt = 0_u32;
-    let mut lookups = JoinSet::new();
     loop {
         if Instant::now() >= deadline {
-            lookups.abort_all();
             return None;
         }
-
-        while Instant::now() >= next && lookups.len() < NEWER_RECORD_LOOKUPS_IN_FLIGHT {
-            attempt += 1;
-            let this_attempt = attempt;
-            let interval = cadence;
-            next += interval;
-            cadence = (cadence * 2).min(poll_max);
-            if trace {
-                eprintln!(
-                    "m17 trace newer lookup started peer={peer} attempt={this_attempt} cadence_ms={} elapsed_ms={}",
-                    interval.as_millis(),
-                    traced_at.elapsed().as_millis(),
-                );
-            }
-            let dht = Arc::clone(&dht);
-            let current_seq = current.body.seq;
-            lookups.spawn(async move {
-                let lookup_started = Instant::now();
-                let found = if bootstrap {
-                    tokio::time::timeout(
-                        NEWER_RECORD_LOOKUP_TIMEOUT,
-                        dht.lookup_newer_bootstrap(peer, current_seq),
-                    )
-                    .await
-                } else {
-                    tokio::time::timeout(
-                        NEWER_RECORD_LOOKUP_TIMEOUT,
-                        dht.lookup_newer(peer, current_seq),
-                    )
-                    .await
-                };
-                let timed_out = found.is_err();
-                let found = found.ok();
-                let rpcs = found.as_ref().map_or(0, |found| found.rpcs);
-                let value = found.and_then(|found| found.value);
-                (
-                    this_attempt,
-                    rpcs,
-                    value,
-                    timed_out,
-                    lookup_started.elapsed(),
-                )
-            });
+        tokio::time::sleep_until(next.into()).await;
+        if Instant::now() >= deadline {
+            return None;
         }
-
-        let wake = next.min(deadline);
-        tokio::select! {
-            Some(done) = lookups.join_next(), if !lookups.is_empty() => {
-                let Ok((this_attempt, rpcs, found, timed_out, lookup_elapsed)) = done else { continue; };
-                if trace {
-                    eprintln!(
-                        "m17 trace newer lookup finished peer={peer} attempt={this_attempt} elapsed_ms={} lookup_ms={} rpcs={rpcs} timed_out={timed_out} found_newer={}",
-                        traced_at.elapsed().as_millis(),
-                        lookup_elapsed.as_millis(),
-                        found.is_some(),
-                    );
-                }
-                if let Some(record) = found.filter(|record| record.body.addrs != current.body.addrs) {
-                    lookups.abort_all();
-                    return Some(record);
-                }
-            }
-            _ = tokio::time::sleep_until(wake.into()) => {}
+        attempt += 1;
+        let holder =
+            holders[(usize::try_from(attempt).expect("attempt fits usize") - 1) % holders.len()];
+        if trace {
+            eprintln!(
+                "m17 trace holder probe started peer={peer} attempt={attempt} holder={} elapsed_ms={}",
+                holder.id,
+                traced_at.elapsed().as_millis(),
+            );
         }
+        let found = tokio::time::timeout(
+            NEWER_RECORD_LOOKUP_TIMEOUT,
+            dht.probe_newer(holder, peer, current.body.seq),
+        )
+        .await;
+        let timed_out = found.is_err();
+        let found = found.ok();
+        let rpcs = found.as_ref().map_or(0, |found| found.rpcs);
+        let newer = found.and_then(|found| found.value);
+        if trace {
+            eprintln!(
+                "m17 trace holder probe finished peer={peer} attempt={attempt} elapsed_ms={} rpcs={rpcs} timed_out={timed_out} found_newer={}",
+                traced_at.elapsed().as_millis(),
+                newer.is_some(),
+            );
+        }
+        if let Some(record) = newer.filter(|record| record.body.addrs != current.body.addrs) {
+            return Some(record);
+        }
+        next = Instant::now() + gap;
     }
 }
 
@@ -1986,22 +2042,11 @@ mod tests {
         }
     }
 
-    /// M17a's stale-dial relookup cadence starts a probe every second. Keep
-    /// this independent of the integration gate so a slower cap cannot hide
-    /// behind a lucky first lookup on loopback.
-    #[test]
-    fn newer_record_retries_cap_at_five_seconds() {
-        let mut cadence = NEWER_RECORD_POLL_MIN;
-        for expected in [1_u64; 6] {
-            assert_eq!(cadence, Duration::from_secs(expected));
-            cadence = (cadence * 2).min(NEWER_RECORD_POLL_MAX);
-        }
-    }
-
     #[test]
     fn a_refused_newer_record_lookup_is_not_an_empty_result() {
         let refused = p2pchat_net::dht::Found {
             value: None,
+            value_holders: Vec::new(),
             closest: Vec::new(),
             rpcs: 1,
             failed_rpcs: 1,
@@ -2035,6 +2080,51 @@ mod tests {
     }
 
     /// Past the end of it the interval stops growing and starts scattering.
+    #[test]
+    fn reconnect_request_plan_stays_within_half_the_real_limiter() {
+        let requests = reconnect_requests(RECONNECT_HOLDERS, Duration::from_secs(10 * 60));
+        assert_eq!(
+            reconnect_probe_gap(RECONNECT_HOLDERS),
+            Duration::from_millis(1_875)
+        );
+        assert!(
+            reconnect_within_half_allowance(&requests),
+            "every holder must receive at most five reconnect requests in every real 60-second window"
+        );
+    }
+
+    #[test]
+    fn fixed_one_second_reconnect_probes_breach_the_gate() {
+        let mut requests = reconnect_requests(RECONNECT_HOLDERS, Duration::from_secs(60));
+        for second in 1..60 {
+            requests.push(ReconnectRequest {
+                at: Duration::from_secs(second),
+                holder: 0,
+                kind: ReconnectRequestKind::Probe,
+            });
+        }
+        assert!(
+            !reconnect_within_half_allowance(&requests),
+            "a fixed one-second cadence is not an admissible reconnect schedule"
+        );
+    }
+
+    #[test]
+    fn all_contact_diagnostic_breaches_the_gate() {
+        let mut requests = reconnect_requests(RECONNECT_HOLDERS, Duration::from_secs(60));
+        for _ in 0..20 {
+            requests.push(ReconnectRequest {
+                at: Duration::from_secs(3),
+                holder: 0,
+                kind: ReconnectRequestKind::Probe,
+            });
+        }
+        assert!(
+            !reconnect_within_half_allowance(&requests),
+            "a twenty-contact diagnostic cannot bypass the reconnect budget"
+        );
+    }
+
     #[test]
     fn the_backoff_settles_at_thirty_seconds_with_jitter() {
         let mut seen = HashSet::new();
