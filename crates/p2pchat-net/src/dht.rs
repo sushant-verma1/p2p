@@ -764,9 +764,31 @@ impl Dht {
         }
     }
 
+    /// A liveness or reconnect probe uses the residual probe share of the
+    /// client-wide destination budget.  It otherwise has precisely the same
+    /// wire format and verification as a control RPC.
+    async fn ask_probe(&self, addr: SocketAddr, query: DhtQuery) -> Result<DhtResponse, NetError> {
+        let request = PublicRequest::Dht(DhtRequest {
+            version: PROTOCOL_VERSION,
+            from: self.member().map(|port| Member { id: self.me, port }),
+            query,
+        });
+        let started = Instant::now();
+        let answer =
+            public::probe_request(&self.endpoint, addr, &request, self.params.rpc_timeout).await;
+        match answer {
+            Ok(PublicResponse::Dht(response)) => Ok(response),
+            Ok(_) => Err(NetError::WrongAnswer),
+            Err(error) => {
+                tracing::debug!(%addr, %error, elapsed_ms = started.elapsed().as_millis() as u64, "probe deferred or failed");
+                Err(error)
+            }
+        }
+    }
+
     /// The liveness check: a `Ping` answered by the ID we hold for it.
     async fn ping(&self, contact: Contact) -> bool {
-        matches!(self.ask(contact.addr, DhtQuery::Ping).await, Ok(r) if r.id == contact.id)
+        matches!(self.ask_probe(contact.addr, DhtQuery::Ping).await, Ok(r) if r.id == contact.id)
     }
 
     /// The iterative lookup: `alpha` RPCs in flight, each answer's contacts
@@ -801,7 +823,9 @@ impl Dht {
     /// One bounded `FIND_VALUE` probe to a member that returned this record.
     /// This is the reconnect path's only post-resolve DHT request.
     pub async fn probe_newer(&self, holder: Contact, target: UserId, seq: u64) -> Found {
-        let result = self.ask(holder.addr, DhtQuery::FindValue(target)).await;
+        let result = self
+            .ask_probe(holder.addr, DhtQuery::FindValue(target))
+            .await;
         let (value, failed_rpcs) = match result {
             Ok(response) if response.id == holder.id => match response.answer {
                 DhtAnswer::Value(record)
@@ -813,7 +837,9 @@ impl Dht {
                 }
                 _ => (None, 0),
             },
-            Ok(_) => (None, 0),
+            // A malformed or mismatched response is not an empty holder.
+            // Diagnosis must retain uncertainty exactly as for a refusal.
+            Ok(_) => (None, 1),
             Err(_) => (None, 1),
         };
         let stop = if value.is_some() {
