@@ -88,10 +88,13 @@ enum EarlyObserved {
 }
 
 fn classify_observed(observations: &[(SocketAddr, Option<SocketAddr>)]) -> EarlyObserved {
-    let mut answers: HashMap<SocketAddr, HashSet<SocketAddr>> = HashMap::new();
+    // Two sockets on one member IP are not independent observers: a shared
+    // host/NAT can give both the same misleading observation. Count member
+    // IPs, while retaining the full observed address as the candidate.
+    let mut answers: HashMap<SocketAddr, HashSet<IpAddr>> = HashMap::new();
     for &(member, observed) in observations {
         if let Some(observed) = observed {
-            answers.entry(observed).or_default().insert(member);
+            answers.entry(observed).or_default().insert(member.ip());
         }
     }
     if let Some((&addr, _)) = answers.iter().find(|(_, members)| members.len() >= 2) {
@@ -461,6 +464,14 @@ mod tests {
         assert_eq!(
             classify_observed(&[(first, Some(observed))]),
             EarlyObserved::Unknown
+        );
+        assert_eq!(
+            classify_observed(&[
+                (first, Some(observed)),
+                (addr("198.51.100.1:47101"), Some(observed)),
+            ]),
+            EarlyObserved::Unknown,
+            "two members behind one IP are one observer"
         );
     }
 
