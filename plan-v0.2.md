@@ -247,6 +247,22 @@ lookup, per-nearest-node/minute RPCs, refusals, and mobile-data byte/hour
 projection. If that run reaches the stranger allowance, its lookup work is
 capped per dial attempt rather than raising the stranger limit.
 
+**M17b lookup budget record.** The client has one send-site sliding budget per
+owned private socket and destination: five public/DHT requests in 60 seconds,
+of which no more than two are probes and at least three remain available for
+control. It covers lookup RPCs, STORE, Observe, dial-back, reconnect resolves,
+holder probes and the 120-second watcher alike. A deferred request waits only
+until its own deadline, then sends nothing and reports `PacedOut`; a refusal
+or deferral is never treated as an empty record. The bound is per destination,
+not a claim that simultaneous destinations or clients sharing a CGNAT source
+IP are globally bounded. The holder set is the up-to-eight record responders,
+not a fresh twenty-contact diagnostic lookup.
+
+Two record changes are deliberately **not** made: a same-sequence observation
+does not prove the address is live, and a refused/deferred probe does not prove
+there is no newer record. The first retains M12's "address may be stale"
+checklist; the second is the distinct "could not check" outcome.
+
 **DHT lookup address policy.** A record is rejected, both before signing and
 after verifying its owner signature, if an address is unspecified, multicast,
 or uses port 0. A valid loopback, RFC1918 IPv4, or IPv6 ULA address is not

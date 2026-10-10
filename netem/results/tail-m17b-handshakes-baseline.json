@@ -1,0 +1,1066 @@
+{
+ "profile": "baseline",
+ "netem": null,
+ "ping": {
+  "replies": 2000,
+  "loss_pct": 0.0,
+  "rtt_min_avg_max_mdev": [
+   0.033,
+   0.055,
+   0.183,
+   0.01
+  ],
+  "replies_out_of_order": 0,
+  "loss_runs": 0,
+  "loss_run_mean": 0,
+  "loss_run_max": 0
+ },
+ "requests": {
+  "n": 0,
+  "failed": 0,
+  "stats": {
+   "n": 0,
+   "p50": null,
+   "p90": null,
+   "p99": null,
+   "max": null
+  },
+  "sorted": [],
+  "failures": []
+ },
+ "handshake": {
+  "n": 100,
+  "failed": 0,
+  "retried": 0,
+  "alice_missed": 0,
+  "handshake": {
+   "n": 100,
+   "p50": 0.001,
+   "p90": 0.001,
+   "p99": 0.002,
+   "max": 0.002
+  },
+  "connect": {
+   "n": 100,
+   "p50": 0.001,
+   "p90": 0.002,
+   "p99": 0.002,
+   "max": 0.002
+  },
+  "dial": {
+   "n": 100,
+   "p50": 0.002,
+   "p90": 0.002,
+   "p99": 0.003,
+   "max": 0.004
+  },
+  "handshake_sorted": [
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.001,
+   0.002,
+   0.002,
+   0.002,
+   0.002
+  ],
+  "samples": [
+   {
+    "connect": 0.0011202999994566198,
+    "handshake": 0.0010550999995757593,
+    "dial": 0.002175399999032379,
+    "phase_events": 3,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0008906999992177589,
+    "handshake": 0.0009086999998544343,
+    "dial": 0.0017993999990721932,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0012146999997639796,
+    "handshake": 0.00042469999971217476,
+    "dial": 0.0016393999994761543,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0014303000007203082,
+    "handshake": 0.00030049999986658804,
+    "dial": 0.0017308000005868962,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0010601999983919086,
+    "handshake": 0.0006690999998681946,
+    "dial": 0.0017292999982601032,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0019159000003128313,
+    "handshake": 7.780000123602804e-05,
+    "dial": 0.0019937000015488593,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.000509700001202873,
+    "handshake": 0.0006185999991430435,
+    "dial": 0.0011283000003459165,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0011247000002185814,
+    "handshake": 0.0005486999998538522,
+    "dial": 0.0016734000000724336,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.00014089999967836775,
+    "handshake": 0.00083710000035353,
+    "dial": 0.0009780000000318978,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0011092000004282454,
+    "handshake": 0.00022910000006959308,
+    "dial": 0.0013383000004978385,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0005037000009906478,
+    "handshake": 0.0005514999993465608,
+    "dial": 0.0010552000003372086,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0004487999995035352,
+    "handshake": 0.0005990999998175539,
+    "dial": 0.0010478999993210891,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0008266999993793434,
+    "handshake": 0.0006090000006224727,
+    "dial": 0.001435700000001816,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0005820000005769543,
+    "handshake": 0.000773900001149741,
+    "dial": 0.0013559000017266953,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0007430999994539889,
+    "handshake": 0.0006186000009620329,
+    "dial": 0.0013617000004160218,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0005719000000681262,
+    "handshake": 0.0005947999998170417,
+    "dial": 0.001166699999885168,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0010488999996596249,
+    "handshake": 0.0004519000012805918,
+    "dial": 0.0015008000009402167,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.001181799998448696,
+    "handshake": 0.00044320000051811803,
+    "dial": 0.001624999998966814,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.00048160000005736947,
+    "handshake": 0.0008391999999730615,
+    "dial": 0.001320800000030431,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0006482999997388106,
+    "handshake": 0.0009450000015931437,
+    "dial": 0.0015933000013319543,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0011885000003530877,
+    "handshake": 0.0008938999999372754,
+    "dial": 0.002082400000290363,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.001229800000146497,
+    "handshake": 0.0008775999995123129,
+    "dial": 0.00210739999965881,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.000987600000371458,
+    "handshake": 0.00016119999963848386,
+    "dial": 0.0011488000000099419,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0012045999992551515,
+    "handshake": 0.0005404999992606463,
+    "dial": 0.0017450999985157978,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0007108999998308718,
+    "handshake": 0.0005977000000711996,
+    "dial": 0.0013085999999020714,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0017361999998684041,
+    "handshake": 0.0006577000003744615,
+    "dial": 0.0023939000002428656,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0008053000001382316,
+    "handshake": 0.000671600000714534,
+    "dial": 0.0014769000008527655,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0006897000002936693,
+    "handshake": 0.0006405000003724126,
+    "dial": 0.001330200000666082,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.000571299999137409,
+    "handshake": 0.0007397999997920124,
+    "dial": 0.0013110999989294214,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0004558000000542961,
+    "handshake": 0.0007177999996201834,
+    "dial": 0.0011735999996744795,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.00047199999971780926,
+    "handshake": 0.0010421000006317627,
+    "dial": 0.001514100000349572,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0015275000005203765,
+    "handshake": 0.00026059999981953297,
+    "dial": 0.0017881000003399095,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0011406000012357254,
+    "handshake": 0.0009307999989687232,
+    "dial": 0.0020714000002044486,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0013483999991876772,
+    "handshake": 0.0010142000010091579,
+    "dial": 0.002362600000196835,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0012010000009468058,
+    "handshake": 0.0010683000000426546,
+    "dial": 0.0022693000009894604,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0009276000000681961,
+    "handshake": 0.0009016000003612135,
+    "dial": 0.0018292000004294096,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0005369999998947605,
+    "handshake": 0.0006297999989328673,
+    "dial": 0.0011667999988276279,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0013314999996509869,
+    "handshake": 0.0011137999990751268,
+    "dial": 0.0024452999987261137,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.000475499999083695,
+    "handshake": 0.0007289000004675472,
+    "dial": 0.0012043999995512422,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0011217999999644235,
+    "handshake": 0.000487299999804236,
+    "dial": 0.0016090999997686595,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0006396999997377861,
+    "handshake": 0.0006410000005416805,
+    "dial": 0.0012807000002794666,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0005789999995613471,
+    "handshake": 0.0012602999995579012,
+    "dial": 0.0018392999991192482,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0006589999993593665,
+    "handshake": 0.0009013000017148443,
+    "dial": 0.0015603000010742107,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0013331999998626998,
+    "handshake": 0.0003986000010627322,
+    "dial": 0.001731800000925432,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.00035370000114198774,
+    "handshake": 0.0015561999989586184,
+    "dial": 0.0019099000001006061,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 9.890000001178123e-05,
+    "handshake": 0.001421400000253925,
+    "dial": 0.0015203000002657063,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0014747000004717847,
+    "handshake": 0.0005485999990924029,
+    "dial": 0.0020232999995641876,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0009542000007058959,
+    "handshake": 0.00028220000058354344,
+    "dial": 0.0012364000012894394,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.000512100001287763,
+    "handshake": 0.0007268999997904757,
+    "dial": 0.0012390000010782387,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0008013000006030779,
+    "handshake": 0.0005227999990893295,
+    "dial": 0.0013240999996924074,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.000659799999993993,
+    "handshake": 0.0008911000004445668,
+    "dial": 0.0015509000004385598,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0011902000005648006,
+    "handshake": 0.0009795999994821614,
+    "dial": 0.002169800000046962,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0006131999998615356,
+    "handshake": 0.0007658000013179844,
+    "dial": 0.00137900000117952,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0010502000004635192,
+    "handshake": 0.0011070000000472646,
+    "dial": 0.002157200000510784,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0009379999992233934,
+    "handshake": 0.0004336000001785578,
+    "dial": 0.0013715999994019512,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0009401999996043742,
+    "handshake": 0.0007645000005140901,
+    "dial": 0.0017047000001184642,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0006800000010116491,
+    "handshake": 0.0014121999993221834,
+    "dial": 0.0020922000003338326,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0016261000000667991,
+    "handshake": 0.0002040999988821568,
+    "dial": 0.001830199998948956,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0009931000004144153,
+    "handshake": 0.00022050000006856862,
+    "dial": 0.0012136000004829839,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0008089000002655666,
+    "handshake": 0.0007512999982282054,
+    "dial": 0.001560199998493772,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0010259999999107094,
+    "handshake": 0.0005884999991394579,
+    "dial": 0.0016144999990501674,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0007600000008096686,
+    "handshake": 0.0009672999985923525,
+    "dial": 0.001727299999402021,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0015263999994203914,
+    "handshake": 0.0006911000000400236,
+    "dial": 0.002217499999460415,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0007588999997096835,
+    "handshake": 0.0008383000003959751,
+    "dial": 0.0015972000001056585,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.000997700000880286,
+    "handshake": 0.00042469999971217476,
+    "dial": 0.0014224000005924609,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0013385999991442077,
+    "handshake": 0.00083710000035353,
+    "dial": 0.0021756999994977377,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0013168000004952773,
+    "handshake": 0.0006091999985073926,
+    "dial": 0.00192599999900267,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0015843999990465818,
+    "handshake": 0.0015048999994178303,
+    "dial": 0.003089299998464412,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0011986000008619158,
+    "handshake": 0.001110899998820969,
+    "dial": 0.0023094999996828847,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0023516000001109205,
+    "handshake": 0.0009557999983371701,
+    "dial": 0.0033073999984480906,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0007955000000947621,
+    "handshake": 0.0007320999993680744,
+    "dial": 0.0015275999994628364,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0006398999994416954,
+    "handshake": 0.0008592000012868084,
+    "dial": 0.0014991000007285038,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0023801000006642425,
+    "handshake": 8.099999831756577e-05,
+    "dial": 0.0024610999989818083,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0007222000003821449,
+    "handshake": 0.000778800000261981,
+    "dial": 0.001501000000644126,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0006112000010034535,
+    "handshake": 0.0007621000004292,
+    "dial": 0.0013733000014326535,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0009348999992653262,
+    "handshake": 5.720000081055332e-05,
+    "dial": 0.0009921000000758795,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0010257000012643402,
+    "handshake": 0.000987699999313918,
+    "dial": 0.002013400000578258,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0010968000005959766,
+    "handshake": 0.0008533999989595031,
+    "dial": 0.0019501999995554797,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0008805999987089308,
+    "handshake": 0.0002730000014707912,
+    "dial": 0.001153600000179722,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0007905000002210727,
+    "handshake": 0.0005342999993445119,
+    "dial": 0.0013247999995655846,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.000481999999465188,
+    "handshake": 0.0015979999989212956,
+    "dial": 0.0020799999983864836,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0010963000004267087,
+    "handshake": 0.001003100000161794,
+    "dial": 0.0020994000005885027,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0008325999988301191,
+    "handshake": 0.00041370000144524965,
+    "dial": 0.0012463000002753688,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0006482999997388106,
+    "handshake": 0.0006970000013097888,
+    "dial": 0.0013453000010485994,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.000740100000257371,
+    "handshake": 0.000584299999900395,
+    "dial": 0.001324400000157766,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0004250999991199933,
+    "handshake": 0.000884000000951346,
+    "dial": 0.0013091000000713393,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0007240999984787777,
+    "handshake": 0.0006859000004624249,
+    "dial": 0.0014099999989412026,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0005633000000671018,
+    "handshake": 0.0010591999998723622,
+    "dial": 0.001622499999939464,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0014432999996643048,
+    "handshake": 0.002074500000162516,
+    "dial": 0.0035177999998268206,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0006711000005452661,
+    "handshake": 0.0004465000001800945,
+    "dial": 0.0011176000007253606,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0019081000009464333,
+    "handshake": 0.0004956999982823618,
+    "dial": 0.002403799999228795,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.00040520000038668513,
+    "handshake": 0.00034049999885610305,
+    "dial": 0.0007456999992427882,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0008500999992975267,
+    "handshake": 0.0009392000010848278,
+    "dial": 0.0017893000003823545,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0007249000009323936,
+    "handshake": 0.0010530999988986878,
+    "dial": 0.0017779999998310814,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.002285499998833984,
+    "handshake": 0.0010455000010551885,
+    "dial": 0.0033309999998891726,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0012127999998483574,
+    "handshake": 0.00029690000155824237,
+    "dial": 0.0015097000014065998,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0011214999994990649,
+    "handshake": 0.0010094000008393778,
+    "dial": 0.0021309000003384426,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0008950999999797205,
+    "handshake": 0.0012227000006532762,
+    "dial": 0.0021178000006329967,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0007858000008127419,
+    "handshake": 0.0010676000001694774,
+    "dial": 0.0018534000009822194,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   },
+   {
+    "connect": 0.0016209000004892005,
+    "handshake": 0.0014228999989427393,
+    "dial": 0.00304379999943194,
+    "phase_events": 4,
+    "ok": true,
+    "dial_failed": [],
+    "alice_session": true
+   }
+  ]
+ },
+ "warnings": {
+  "wan-alice": [],
+  "wan-bob": []
+ }
+}
