@@ -384,8 +384,10 @@ fn m17_gates_on_loopback() {
         "gate 2: propagated={propagated:?}, redial={redial:?}, failures={reasons:?}, result={result:?}",
     );
 
-    // Gate 4: with no newer record, preserve M12's diagnosis. C never held
-    // a session with B, so no reconnect loop races this one-shot control.
+    // Gate 4: no newer record preserves M12's diagnosis. This follows the
+    // busy gates above, so a limiter refusal is valid only as an explicitly
+    // uncertain result, never as a fabricated no-newer result. C never held
+    // a session with B, so no reconnect loop races this control.
     stop(b);
     let dir_c = tempfile::tempdir().unwrap();
     let c = start(dir_c.path(), ip(6), false, &net.seeds);
@@ -398,8 +400,12 @@ fn m17_gates_on_loopback() {
     };
     eprintln!("m17 gate 4: {no_newer:#}");
     assert!(
-        !no_newer.is::<NotFound>() && no_newer.to_string().contains("DHT address may be stale"),
-        "gate 4 lost M12's no-newer diagnosis: {no_newer:#}",
+        !no_newer.is::<NotFound>()
+            && (no_newer.to_string().contains("DHT address may be stale")
+                || no_newer
+                    .to_string()
+                    .contains("could not establish whether a newer record exists")),
+        "gate 4 lost both the M12 diagnosis and refusal uncertainty: {no_newer:#}",
     );
 
     drop((p, q, a, c));
