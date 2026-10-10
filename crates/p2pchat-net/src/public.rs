@@ -27,10 +27,10 @@
 //! on (§2). Requests arrive here and leave over [`PublicNode::requests`] with a
 //! oneshot for the answer; the binary is what joins the two.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::future::Future;
 use std::net::{IpAddr, SocketAddr};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, OnceLock};
 use std::time::Duration;
 
 use quinn::Endpoint;
@@ -751,6 +751,104 @@ impl Proven {
 // Client side
 // ---------------------------------------------------------------------------
 
+/// How a client spends a destination's five-request sliding-window budget.
+/// Control can use all five slots; probes can use only two, reserving three
+/// for Observe, dial-back, lookup and STORE control traffic.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RequestClass {
+    Control,
+    Probe,
+}
+
+pub const CLIENT_REQUESTS_PER_DESTINATION: usize = 5;
+pub const CLIENT_PROBES_PER_DESTINATION: usize = 2;
+pub const CLIENT_PACER_WINDOW: Duration = Duration::from_secs(60);
+
+#[derive(Clone, Copy)]
+struct ClientStamp {
+    at: Instant,
+    class: RequestClass,
+}
+
+/// The pure sliding-window core.  Tests feed it arbitrary instants; production
+/// waits at the common send site below.
+#[derive(Default)]
+struct ClientPacer {
+    sent: VecDeque<ClientStamp>,
+}
+
+impl ClientPacer {
+    fn prune(&mut self, now: Instant) {
+        while self
+            .sent
+            .front()
+            .is_some_and(|stamp| now.duration_since(stamp.at) >= CLIENT_PACER_WINDOW)
+        {
+            self.sent.pop_front();
+        }
+    }
+
+    /// `None` reserves a request. `Some` is the first time worth retrying.
+    fn reserve_or_wait(&mut self, now: Instant, class: RequestClass) -> Option<Instant> {
+        self.prune(now);
+        if self.sent.len() >= CLIENT_REQUESTS_PER_DESTINATION {
+            return self
+                .sent
+                .front()
+                .map(|stamp| stamp.at + CLIENT_PACER_WINDOW);
+        }
+        if class == RequestClass::Probe {
+            let probes: Vec<_> = self
+                .sent
+                .iter()
+                .filter(|stamp| stamp.class == RequestClass::Probe)
+                .collect();
+            if probes.len() >= CLIENT_PROBES_PER_DESTINATION {
+                return probes.first().map(|stamp| stamp.at + CLIENT_PACER_WINDOW);
+            }
+        }
+        self.sent.push_back(ClientStamp { at: now, class });
+        None
+    }
+}
+
+/// Keyed by the endpoint's bound private address and the public destination,
+/// so every call path sharing the private socket shares one client budget.
+static CLIENT_PACERS: OnceLock<Mutex<HashMap<(SocketAddr, SocketAddr), ClientPacer>>> =
+    OnceLock::new();
+
+async fn pace(
+    endpoint: &Endpoint,
+    addr: SocketAddr,
+    class: RequestClass,
+    deadline: Instant,
+) -> Result<(), NetError> {
+    // A live endpoint always has a local address. If it was closed between
+    // the caller and the pacer, no safe client identity remains, so send
+    // nothing and make the caller's normal retry path decide what to do.
+    let local = endpoint.local_addr().map_err(|_| NetError::PacedOut)?;
+    let key = (local, addr);
+    loop {
+        let wake = {
+            let pacers = CLIENT_PACERS.get_or_init(|| Mutex::new(HashMap::new()));
+            let mut pacers = pacers
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            pacers
+                .entry(key)
+                .or_default()
+                .reserve_or_wait(Instant::now(), class)
+        };
+        let Some(wake) = wake else {
+            return Ok(());
+        };
+        if wake >= deadline {
+            return Err(NetError::PacedOut);
+        }
+        tokio::time::sleep_until(wake).await;
+    }
+}
+
 /// Asks a public node one question and reads the answer.
 ///
 /// The response is *not* trusted: a `Profile` carries a signed invite that the
@@ -762,7 +860,29 @@ pub async fn request(
     request: &PublicRequest,
     timeout: Duration,
 ) -> Result<PublicResponse, NetError> {
+    request_class(endpoint, addr, request, timeout, RequestClass::Control).await
+}
+
+/// Same common send path, explicitly for a bounded diagnostic/liveness probe.
+/// Probes use at most two slots per destination per sliding minute.
+pub async fn probe_request(
+    endpoint: &Endpoint,
+    addr: SocketAddr,
+    request: &PublicRequest,
+    timeout: Duration,
+) -> Result<PublicResponse, NetError> {
+    request_class(endpoint, addr, request, timeout, RequestClass::Probe).await
+}
+
+async fn request_class(
+    endpoint: &Endpoint,
+    addr: SocketAddr,
+    request: &PublicRequest,
+    timeout: Duration,
+    class: RequestClass,
+) -> Result<PublicResponse, NetError> {
     let deadline = Instant::now() + timeout;
+    pace(endpoint, addr, class, deadline).await?;
 
     let connection = by(deadline, connect_as(endpoint, NodeKind::Public, addr)).await??;
     let (mut send, mut recv) = by(deadline, connection.open_bi()).await??;
@@ -777,6 +897,7 @@ pub async fn request(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use proptest::prelude::*;
 
     const SOURCE: IpAddr = IpAddr::V4(std::net::Ipv4Addr::new(203, 0, 113, 7));
 
@@ -873,5 +994,85 @@ mod tests {
         let later = now + Duration::from_secs(61);
         assert!(limiter.allow(source(9), later));
         assert!(limiter.seen.len() <= 4);
+    }
+
+    fn sent_in_every_window(sent: &[Instant]) -> bool {
+        sent.iter().all(|start| {
+            sent.iter()
+                .filter(|at| **at >= *start && **at < *start + CLIENT_PACER_WINDOW)
+                .count()
+                <= CLIENT_REQUESTS_PER_DESTINATION
+        })
+    }
+
+    fn schedule(mut requests: Vec<(Duration, RequestClass)>) -> Vec<Instant> {
+        requests.sort_by_key(|(at, _)| *at);
+        let base = Instant::now();
+        let mut floor = base;
+        let mut pacer = ClientPacer::default();
+        let mut sent = Vec::new();
+        for (at, class) in requests {
+            let mut now = (base + at).max(floor);
+            while let Some(wake) = pacer.reserve_or_wait(now, class) {
+                now = wake;
+            }
+            sent.push(now);
+            floor = now;
+        }
+        sent
+    }
+
+    proptest! {
+        /// Fake-clock property over ten minutes. The generated schedule is the
+        /// union of up to eight reconnect loops, a publisher, Observe calls,
+        /// and a re-test; the real five/two production constants are used.
+        #[test]
+        fn random_concurrent_control_and_probe_mix_never_sends_six(
+            events in prop::collection::vec((0u64..600, any::<bool>()), 1..400)
+        ) {
+            let requests = events.into_iter().map(|(second, probe)| {
+                (Duration::from_secs(second), if probe { RequestClass::Probe } else { RequestClass::Control })
+            }).collect();
+            prop_assert!(sent_in_every_window(&schedule(requests)));
+        }
+    }
+
+    #[test]
+    fn network_change_with_five_offline_contacts_defers_the_sixth_send() {
+        let base = Instant::now();
+        let mut pacer = ClientPacer::default();
+        for _ in 0..5 {
+            assert_eq!(pacer.reserve_or_wait(base, RequestClass::Control), None);
+        }
+        assert_eq!(
+            pacer.reserve_or_wait(base, RequestClass::Control),
+            Some(base + CLIENT_PACER_WINDOW),
+            "the re-test waits; it does not add a sixth packet to five offline contacts"
+        );
+    }
+
+    #[test]
+    fn control_is_reserved_and_probe_mutations_are_detected() {
+        let base = Instant::now();
+        let mut pacer = ClientPacer::default();
+        assert_eq!(pacer.reserve_or_wait(base, RequestClass::Probe), None);
+        assert_eq!(pacer.reserve_or_wait(base, RequestClass::Probe), None);
+        assert_eq!(
+            pacer.reserve_or_wait(base, RequestClass::Probe),
+            Some(base + CLIENT_PACER_WINDOW),
+            "a fixed one-second probe cadence cannot consume control's reserve"
+        );
+        for _ in 0..3 {
+            assert_eq!(pacer.reserve_or_wait(base, RequestClass::Control), None);
+        }
+        let bypass = vec![base; 6];
+        assert!(
+            !sent_in_every_window(&bypass),
+            "a publish bypass must fail the gate"
+        );
+        let all_contacts = (0..20)
+            .map(|_| (Duration::ZERO, RequestClass::Probe))
+            .collect();
+        assert!(sent_in_every_window(&schedule(all_contacts)));
     }
 }

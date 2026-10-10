@@ -112,6 +112,11 @@ pub enum NetError {
     #[error("public request timed out")]
     RequestTimeout,
 
+    /// The client-wide destination budget did not open before this request's
+    /// own deadline. Nothing was put on the wire.
+    #[error("public request deferred by the destination pacer until its deadline")]
+    PacedOut,
+
     /// A public node answered with a response to a different request.
     #[error("the node answered a different question")]
     WrongAnswer,

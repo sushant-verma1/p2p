@@ -336,6 +336,10 @@ requester only at the member it asked, and only for the proof lifetime.
 
 ## 14. V0.2 exposure: published records (M17)
 
+### Client request pacing and shared-CGNAT reasoning (M17b)
+
+The client limits its own private socket to five public/DHT requests per destination in every sliding 60 seconds. Two are available to probes and three are reserved for control, so an attacker cannot make reconnect diagnostics crowd out Observe, re-test, lookup, or publish control traffic. This is an outbound damage and load bound, not proof that a server will admit the request: public nodes still limit by source IP, and many honest clients behind a shared CGNAT IP consume that server-side source allowance together. The client cannot identify or fairly divide other clients behind that IP, so claiming a client-wide per-destination pace solves the shared-CGNAT-IP problem would be false. A request whose local deadline expires while waiting is sent nowhere and is reported as an unverified diagnosis, not as a missing record.
+
 **Where a node can be dialled privately is public.** Its record carries the
 address its last dial-back reached and its configured private address, and
 anyone who knows its user ID can look them up while it is online. In V0.1
