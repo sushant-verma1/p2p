@@ -109,7 +109,11 @@ fn reconnect_probe_gap(holders: usize) -> Duration {
     let millis = Limits::default().window.as_millis();
     let gap = (millis + u128::try_from(slots).expect("usize fits u128") - 1)
         / u128::try_from(slots).expect("usize fits u128");
+    // A dead holder holds the one reconnect probe task for three seconds.
+    // Keep the desired gap below that for every holder-set size, so a timeout
+    // is visible in the redial bound instead of being hidden by idle time.
     Duration::from_millis(u64::try_from(gap).expect("minute gap fits u64"))
+        .min(Duration::from_secs(2))
 }
 
 /// Resolving, scheduled probes, post-dial diagnostics, and the old 120-second
@@ -239,6 +243,10 @@ pub enum Diagnosis {
     /// No newer record, and this one is fresh: the owner stands behind the
     /// address, so it is not stale. `age` as above.
     Unreachable { age: u64 },
+    /// No probe reached a record holder before the request deadline. This is
+    /// intentionally distinct from an empty answer: a limiter refusal, a
+    /// timeout and a dead holder do not establish that no newer record exists.
+    CouldNotCheck,
 }
 
 /// How old a record can be before its owner has missed a republish — M17.
@@ -300,6 +308,10 @@ pub fn explain(addr: SocketAddr, waited: Duration, diagnosis: &Diagnosis) -> Str
              ago and has not replaced it, so as far as the DHT knows it is current. A peer that \
              changed network in the last minute may not have republished yet, and a retry would \
              find it",
+            no_answer(addr, waited)
+        ),
+        Diagnosis::CouldNotCheck => format!(
+            "{}. Could not check whether the DHT has a newer record: holder probes were refused, failed or deferred by the client pacer. Retry later; this address may be stale",
             no_answer(addr, waited)
         ),
     }
@@ -908,13 +920,13 @@ impl Node {
         tokio::pin!(newer);
         tokio::pin!(stale_dial);
 
-        let (addr, error, newer) = tokio::select! {
+        let (addr, error, newer, could_not_check) = tokio::select! {
             // If the old dial and signed evidence of a move become ready in
             // the same scheduler turn, do not report the old-address failure
             // first.  The evidence branch cancels that stale dial.
             biased;
             newer = &mut newer => match newer {
-                Some(newer) => {
+                (Some(newer), _) => {
                     if trace_m17 {
                         eprintln!("m17 trace redial started peer={peer} seq={}", newer.body.seq);
                         tracing::info!(
@@ -927,12 +939,12 @@ impl Node {
                     match self.dial_record(&newer, peer).await {
                         Ok(peer) => return Ok(peer),
                         Err((_, error)) if fatal(&error) => return Err(error),
-                        Err((addr, error)) => (addr, error, Some(newer)),
+                        Err((addr, error)) => (addr, error, Some(newer), false),
                     }
                 }
                 // The lookup deadline is the old dial's deadline too.  There
                 // is no second wait here; this is the no-newer M12 path.
-                None => match stale_dial.await {
+                (None, checked) => match stale_dial.await {
                     Ok(peer) => return Ok(peer),
                     Err((_, error)) if fatal(&error) => return Err(error),
                 Err((addr, error)) => {
@@ -941,7 +953,7 @@ impl Node {
                     // is the same post-deadline move case as the sibling
                     // select arm below, so it must start the same watcher.
                     watch_moved_record(Arc::clone(self), Arc::clone(dht), peer, record.clone(), holders.clone());
-                    (addr, error, None)
+                    (addr, error, None, !checked)
                 }
                 },
             },
@@ -954,7 +966,7 @@ impl Node {
                     // republish lands just after that deadline.  The watcher
                     // only acts on a signed, changed record.
                     watch_moved_record(Arc::clone(self), Arc::clone(dht), peer, record.clone(), holders.clone());
-                    (addr, error, None)
+                    (addr, error, None, true)
                 }
             },
         };
@@ -968,21 +980,14 @@ impl Node {
             // so it could contact the whole twenty-node shortlist outside the
             // reconnect budget. The scheduled holder probe above already
             // supplied this diagnosis; do not add an unscheduled request.
+            None if could_not_check => (None, Some(1)),
             None => (None, None),
         };
-        if newer.is_none() && failed_rpcs.is_some() {
-            let failed_rpcs = failed_rpcs.expect("checked above");
-            let reason = format!(
-                "no answer from {addr} after {:?}; DHT lookup could not establish whether a newer record exists: {failed_rpcs} RPCs were refused or failed. Retry later.",
-                dial_timeout(),
-            );
-            let _ = self.events.try_send(Event::DialFailed {
-                peer,
-                reason: reason.clone(),
-            });
-            return Err(anyhow!(reason));
-        }
-        let diagnosis = diagnose(&record, newer.as_ref(), invite::now());
+        let diagnosis = if newer.is_none() && failed_rpcs.is_some() {
+            Diagnosis::CouldNotCheck
+        } else {
+            diagnose(&record, newer.as_ref(), invite::now())
+        };
         let reason = explain(addr, dial_timeout(), &diagnosis);
         tracing::warn!(%peer, %addr, seq = record.body.seq, ?diagnosis, %error, "dial from the record failed");
         match newer {
@@ -1673,15 +1678,15 @@ fn watch_moved_record(
     holders: Vec<Contact>,
 ) {
     tokio::spawn(async move {
-        let Some(newer) = newer_record_until(
+        let (newer, _) = newer_record_until(
             dht,
             peer,
             &current,
             holders,
             Instant::now() + MOVED_RECORD_WATCH,
         )
-        .await
-        else {
+        .await;
+        let Some(newer) = newer else {
             return;
         };
         if m17_trace() {
@@ -1702,9 +1707,9 @@ async fn newer_record_until(
     current: &AddressRecord,
     holders: Vec<Contact>,
     deadline: Instant,
-) -> Option<AddressRecord> {
+) -> (Option<AddressRecord>, bool) {
     if holders.is_empty() {
-        return None;
+        return (None, false);
     }
     let trace = m17_trace();
     let traced_at = Instant::now();
@@ -1713,11 +1718,11 @@ async fn newer_record_until(
     let mut attempt = 0_u32;
     loop {
         if Instant::now() >= deadline {
-            return None;
+            return (None, false);
         }
         tokio::time::sleep_until(next.into()).await;
         if Instant::now() >= deadline {
-            return None;
+            return (None, false);
         }
         attempt += 1;
         let holder =
@@ -1737,6 +1742,7 @@ async fn newer_record_until(
         let timed_out = found.is_err();
         let found = found.ok();
         let rpcs = found.as_ref().map_or(0, |found| found.rpcs);
+        let checked = found.as_ref().is_some_and(|found| found.failed_rpcs == 0);
         let newer = found.and_then(|found| found.value);
         if trace {
             eprintln!(
@@ -1746,7 +1752,12 @@ async fn newer_record_until(
             );
         }
         if let Some(record) = newer.filter(|record| record.body.addrs != current.body.addrs) {
-            return Some(record);
+            return (Some(record), true);
+        }
+        // A holder that answered the same sequence is the no-newer outcome:
+        // M12's checklist still applies and the recorded address may be stale.
+        if checked {
+            return (None, true);
         }
         next = Instant::now() + gap;
     }
