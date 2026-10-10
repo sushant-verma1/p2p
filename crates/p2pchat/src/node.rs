@@ -1646,6 +1646,7 @@ async fn newer_record_until(
             let dht = Arc::clone(&dht);
             let current_seq = current.body.seq;
             lookups.spawn(async move {
+                let lookup_started = Instant::now();
                 let found = if bootstrap {
                     tokio::time::timeout(
                         NEWER_RECORD_LOOKUP_TIMEOUT,
@@ -1659,21 +1660,29 @@ async fn newer_record_until(
                     )
                     .await
                 };
+                let timed_out = found.is_err();
                 let found = found.ok();
                 let rpcs = found.as_ref().map_or(0, |found| found.rpcs);
                 let value = found.and_then(|found| found.value);
-                (this_attempt, rpcs, value)
+                (
+                    this_attempt,
+                    rpcs,
+                    value,
+                    timed_out,
+                    lookup_started.elapsed(),
+                )
             });
         }
 
         let wake = next.min(deadline);
         tokio::select! {
             Some(done) = lookups.join_next(), if !lookups.is_empty() => {
-                let Ok((this_attempt, rpcs, found)) = done else { continue; };
+                let Ok((this_attempt, rpcs, found, timed_out, lookup_elapsed)) = done else { continue; };
                 if trace {
                     eprintln!(
-                        "m17 trace newer lookup finished peer={peer} attempt={this_attempt} elapsed_ms={} rpcs={rpcs} found_newer={}",
+                        "m17 trace newer lookup finished peer={peer} attempt={this_attempt} elapsed_ms={} lookup_ms={} rpcs={rpcs} timed_out={timed_out} found_newer={}",
                         traced_at.elapsed().as_millis(),
+                        lookup_elapsed.as_millis(),
                         found.is_some(),
                     );
                 }
@@ -1780,6 +1789,9 @@ async fn publish(node: Arc<Node>, dht: Arc<Dht>) {
             match record::create(&node.identity, addrs.clone(), seq, published_at) {
                 Ok(record) => {
                     let started = Instant::now();
+                    if m17_trace() {
+                        eprintln!("m17 trace publish started seq={seq} addrs={addrs:?}");
+                    }
                     let stored = dht.publish(record).await.len();
                     // What `netem/dht.py` times gate 1 and gate 2 from.
                     tracing::info!(

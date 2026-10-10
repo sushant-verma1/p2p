@@ -23,8 +23,14 @@ profile and per sample, `move_to_session_established_s` and
 metric accepts a negative value. Containers share the host monotonic clock;
 that is recorded beside the metric as an explicit harness assumption.
 
-Current gate-result artifacts:
+Superseded after the bound audit (retain, do not cite as gate results):
 
 - `dht-redials-m17a-causal2-baseline.json`
 - `dht-redials-m17a-causal2-typical.json`
 - `dht-redials-m17a-causal2-poor.json`
+
+These files correctly use post-move STORE acceptance and atomic sample writes,
+but they applied `REPUBLISH + 30 + 5 s` to move-to-session.  That is not the
+M17a schedule-derived gate and incorrectly labels breached samples as passing.
+They remain useful raw observations only; replacement runs must use the bound
+recorded in their result JSON.

@@ -157,6 +157,13 @@ pub(crate) async fn ask(node: &Node, member: SocketAddr) -> Option<Answer> {
 /// Asks each bootstrap member in turn until one forwards the dial-back, and
 /// classifies on that — or, when none forwards, on the last answer.
 pub(crate) async fn test(node: &Node, bootstrap: &[SocketAddr]) -> Role {
+    let started = std::time::Instant::now();
+    if std::env::var_os("P2PCHAT_M17_TRACE").is_some() {
+        eprintln!(
+            "m17 trace reachability re-test started members={}",
+            bootstrap.len()
+        );
+    }
     let mut contacted = HashSet::new();
     let mut last = None;
     for &member in bootstrap {
@@ -170,6 +177,12 @@ pub(crate) async fn test(node: &Node, bootstrap: &[SocketAddr]) -> Role {
     }
     let (role, why) = classify(&contacted, last.as_ref());
     tracing::info!(?role, reason = ?why, members = bootstrap.len(), "reachability test");
+    if std::env::var_os("P2PCHAT_M17_TRACE").is_some() {
+        eprintln!(
+            "m17 trace reachability re-test completed elapsed_ms={} role={role:?}",
+            started.elapsed().as_millis()
+        );
+    }
     role
 }
 

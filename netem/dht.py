@@ -327,6 +327,15 @@ def stats(xs):
             "max": max(xs) if xs else None, "mean": round(sum(xs) / len(xs), 2) if xs else None}
 
 
+def sample_stats(xs):
+    """A 20-sample summary.  Do not label its largest order statistic p99."""
+    xs = [x for x in xs if x is not None]
+    return {"n": len(xs), "min": min(xs) if xs else None,
+            "p50": pct(xs, 50), "p90": pct(xs, 90),
+            "max": max(xs) if xs else None,
+            "mean": round(sum(xs) / len(xs), 2) if xs else None}
+
+
 def result_path(args):
     return os.path.join(args.out, f"dht-{args.scenario}{('-' + args.tag) if args.tag else ''}.json")
 
@@ -339,6 +348,7 @@ def write_result(args, result):
     client's session event; this is an assumption recorded beside the metric,
     not a claimed clock-synchronisation experiment.
     """
+    verify_provenance(args)
     binary, digest = verified_binary(args.binary)
     result["binary"] = {"path": binary, "sha256": digest,
                         "source_commit": args.source_commit}
@@ -350,6 +360,32 @@ def write_result(args, result):
         json.dump(result, f, indent=1, default=str)
         f.write("\n")
     os.replace(temporary, path)
+
+
+def verify_provenance(args):
+    """Reject a result whose executable cannot be tied to a clean HEAD.
+
+    The source checkout and binary are supplied separately to the privileged
+    namespace harness, so accepting a caller-provided commit string would not
+    be provenance.  The build recipe writes the adjacent marker after cargo
+    succeeds; both it and the checkout HEAD must equal --source-commit.
+    """
+    if not args.source_tree:
+        raise RuntimeError("refusing result: --source-tree is required for HEAD provenance")
+    head = sh(f"git -C {args.source_tree} rev-parse HEAD").strip()
+    clean = subprocess.run(["git", "-C", args.source_tree, "diff", "--quiet"])
+    if clean.returncode != 0:
+        raise RuntimeError("refusing result: source tree is dirty")
+    if head != args.source_commit:
+        raise RuntimeError(f"refusing result: HEAD {head} is not --source-commit {args.source_commit}")
+    marker = f"{args.binary}.source-commit"
+    try:
+        with open(marker, encoding="utf-8") as f:
+            built = f.read().strip()
+    except OSError as error:
+        raise RuntimeError(f"refusing result: missing binary provenance marker {marker}") from error
+    if built != head:
+        raise RuntimeError(f"refusing result: binary was built from {built}, not HEAD {head}")
 
 
 class H:
@@ -1624,15 +1660,24 @@ def redials(args):
     waits until it has actually begun the stale dial, then moves the same live
     peer.  The observer and all timestamps are independent of that client.
     """
+    if args.connect_handshake_p99_s is None:
+        raise SystemExit("redials requires --connect-handshake-p99-s from the M12/M12c profile run")
     h = H(args, binary=args.binary, env={"P2PCHAT_M17_TRACE": "1"})
     offsets = [float(value) for value in args.move_offsets.split(",")]
     if not offsets or any(offset < 0 for offset in offsets):
         raise SystemExit("--move-offsets must be one or more non-negative seconds")
-    R = {"profile": args.profile, "redial_bound_s": REDIAL_AFTER_NEW_RECORD,
+    post_store_gate = 1 + 3 + args.connect_handshake_p99_s
+    R = {"profile": args.profile,
+         "gate_bound_s": post_store_gate,
+         "gate_formula": {"max_probe_start_gap_s": 1, "lookup_budget_s": 3,
+                          "connect_and_handshake_p99_s": args.connect_handshake_p99_s},
+         "gate_set_in": "netem/dht.py:redials",
+         "gate_changed": "M17a bound audit: replaced REPUBLISH + 30 + 5 move gate",
+         "redial_bound_s": REDIAL_AFTER_NEW_RECORD,
          "findability_bound_s": REPUBLISH + 30,
          "end_to_end_bound_s": REPUBLISH + 30 + REDIAL_AFTER_NEW_RECORD,
          "causal_reference": "member-side STORE-accepted timestamp",
-         "gate_metric": "move_to_session_established_s",
+         "gate_metric": "store_accepted_to_session_established_s",
          "reported_metrics": ["move_to_session_established_s", "store_accepted_to_session_established_s"],
          # A start every second plus a three-second lookup budget is the
          # five-second claim below. The product caps concurrency at four.
@@ -1721,6 +1766,12 @@ def redials(args):
             new_record_at = observed_started + prop if prop is not None else None
             detection = b.wait(lambda line: "m17 trace observed address changed" in line and new in line,
                                30, b_mark)
+            reach_started = b.wait(lambda line: "m17 trace reachability re-test started" in line,
+                                   30, b_mark)
+            reach_completed = b.wait(lambda line: "m17 trace reachability re-test completed" in line,
+                                     30, b_mark)
+            publish_started = b.wait(lambda line: "m17 trace publish started" in line and new in line,
+                                     REPUBLISH + 30, b_mark)
             published = b.wait(lambda line: "m17 trace publish completed" in line and new in line,
                                REPUBLISH + 30, b_mark)
             stores = []
@@ -1751,6 +1802,13 @@ def redials(args):
                 for match in [re.search(r"rpcs=(\d+)", item["line"])] if match
             )
             probe_starts = sum("newer lookup started" in item["line"] for item in trace)
+            lookup_samples = []
+            for item in trace:
+                match = re.search(r"newer lookup finished.*lookup_ms=(\d+).*timed_out=(true|false).*found_newer=(true|false)", item["line"])
+                if match:
+                    lookup_samples.append({"duration_s": round(int(match.group(1)) / 1000, 3),
+                                           "timed_out": match.group(2) == "true",
+                                           "found_newer": match.group(3) == "true"})
             failed = a.events("dial-failed", b.id, marker)
             redial_ended = redial_started[0] if redial_started is not None else time.monotonic()
             sample_result = {
@@ -1761,6 +1819,9 @@ def redials(args):
                 "new_addr": f"{new}:{PRIV}",
                 "stale_dial_started_after_move_s": round(stale_started[0] - changed_at, 3),
                 "change_detection_s": round(detection[0] - changed_at, 3) if detection else None,
+                "reachability_retest_started_s": round(reach_started[0] - changed_at, 3) if reach_started else None,
+                "reachability_retest_completed_s": round(reach_completed[0] - changed_at, 3) if reach_completed else None,
+                "publish_started_s": round(publish_started[0] - changed_at, 3) if publish_started else None,
                 "publish_completed_s": round(published[0] - changed_at, 3) if published else None,
                 "newer_store_accepted_s": round(store_accepted_at - changed_at, 3)
                                       if store_accepted_at is not None else None,
@@ -1768,15 +1829,15 @@ def redials(args):
                 "store_accepted_to_session_established_s": store_to_session,
                 "probe_starts": probe_starts,
                 "probe_rpcs": probe_rpcs,
+                "lookup_samples": lookup_samples,
                 "limiter_refusals_during_redial": h.rate_limited_between(changed_at, redial_ended),
                 "stale_dial_failures": [line for _, line in failed],
                 "trace": trace,
             }
             sample_result["pass"] = (
                 redial_started is not None and prop is not None and prop <= REPUBLISH + 30
-                and move_to_session is not None and move_to_session >= 0
-                and move_to_session <= REPUBLISH + 30 + REDIAL_AFTER_NEW_RECORD
                 and store_to_session is not None and store_to_session >= 0
+                and store_to_session <= post_store_gate
                 and not failed and sample_result["limiter_refusals_during_redial"] == 0
             )
             R["samples"].append(sample_result)
@@ -1798,15 +1859,21 @@ def redials(args):
                 b = h.nodes[b_i] = Subject(h, b_i)
                 if findable(observer, b.id, b.private, args.findable_s) is None:
                     raise RuntimeError(f"sample {sample + 1}: fresh moved peer was not externally findable")
-        R["move_to_session_established_s"] = stats([s["move_to_session_established_s"] for s in R["samples"]])
-        R["store_accepted_to_session_established_s"] = stats(
+        R["move_to_session_established_s"] = sample_stats([s["move_to_session_established_s"] for s in R["samples"]])
+        R["store_accepted_to_session_established_s"] = sample_stats(
             [s["store_accepted_to_session_established_s"] for s in R["samples"]]
         )
-        R["change_detection_s"] = stats([s["change_detection_s"] for s in R["samples"]])
-        R["publish_completed_s"] = stats([s["publish_completed_s"] for s in R["samples"]])
-        R["newer_store_accepted_s"] = stats([s["newer_store_accepted_s"] for s in R["samples"]])
-        R["probe_starts"] = stats([s["probe_starts"] for s in R["samples"]])
-        R["probe_rpcs"] = stats([s["probe_rpcs"] for s in R["samples"]])
+        R["change_detection_s"] = sample_stats([s["change_detection_s"] for s in R["samples"]])
+        R["publish_completed_s"] = sample_stats([s["publish_completed_s"] for s in R["samples"]])
+        R["newer_store_accepted_s"] = sample_stats([s["newer_store_accepted_s"] for s in R["samples"]])
+        R["probe_starts"] = sample_stats([s["probe_starts"] for s in R["samples"]])
+        R["probe_rpcs"] = sample_stats([s["probe_rpcs"] for s in R["samples"]])
+        all_lookups = [x for s in R["samples"] for x in s["lookup_samples"]]
+        R["lookups"] = {"issued": len(all_lookups),
+                        "success_rate": (sum(x["found_newer"] for x in all_lookups) / len(all_lookups)
+                                         if all_lookups else None),
+                        "timed_out": sum(x["timed_out"] for x in all_lookups),
+                        "duration_s": sample_stats([x["duration_s"] for x in all_lookups])}
         R["limiter_refusals_during_redials"] = sum(
             s["limiter_refusals_during_redial"] for s in R["samples"]
         )
@@ -1848,6 +1915,10 @@ def main():
                    help="comma-separated seconds after stale dial begins (redials only)")
     p.add_argument("--source-commit", required=True,
                    help="Git commit from which --binary was built")
+    p.add_argument("--source-tree", default=None,
+                   help="clean checkout used to build --binary; required for result writes")
+    p.add_argument("--connect-handshake-p99-s", type=float, default=None,
+                   help="profile M12/M12c connect+handshake p99; required by redials")
     args = p.parse_args()
     env = dict(e.split("=", 1) for e in args.env)
     if args.scenario == "selftest":
